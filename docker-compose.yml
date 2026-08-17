@@ -1,0 +1,77 @@
+# Local infrastructure for Arkin.
+#
+# Docker is currently broken on this machine, so the API is configured to work
+# without it: PostgreSQL 18 is already installed natively, and the job queue
+# falls back to in-process execution when REDIS_URL is empty. Bring this up
+# once Docker is healthy to get the async pipeline and object storage.
+#
+#   docker compose up -d
+#
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: arkin-postgres
+    environment:
+      POSTGRES_USER: arkin
+      POSTGRES_PASSWORD: arkin
+      POSTGRES_DB: arkin
+    ports:
+      # 5433 on the host: the native PostgreSQL 18 install already owns 5432.
+      - '5433:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U arkin']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: arkin-redis
+    ports:
+      - '6379:6379'
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
+  # S3-compatible object storage. Set STORAGE_DRIVER=s3 to use it.
+  minio:
+    image: minio/minio:latest
+    container_name: arkin-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: arkin
+      MINIO_ROOT_PASSWORD: arkin
+    ports:
+      - '9000:9000'
+      - '9001:9001' # web console
+    volumes:
+      - minio_data:/data
+
+  # Headless LibreOffice for batch document -> PDF conversion (feature 3).
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: arkin-gotenberg
+    ports:
+      - '3020:3000'
+
+  # Live co-editing for Word/Excel/PowerPoint (features 20 and 22).
+  # This is the buy-don't-build decision: embedding this is roughly two weeks,
+  # writing your own collaborative editor is a multi-year project.
+  onlyoffice:
+    image: onlyoffice/documentserver:latest
+    container_name: arkin-onlyoffice
+    environment:
+      JWT_ENABLED: 'true'
+      JWT_SECRET: change-me-to-match-ONLYOFFICE_JWT_SECRET
+    ports:
+      - '3021:80'
+    volumes:
+      - onlyoffice_data:/var/www/onlyoffice/Data
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  onlyoffice_data:

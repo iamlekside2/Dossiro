@@ -1,0 +1,914 @@
+/* =============================================================================
+   The three-pane workbench shell.
+
+   Fixed-minimum-width application shell: below 1180px it scrolls horizontally
+   rather than reflowing. That is deliberate — phones get a separate client.
+   ========================================================================== */
+
+.wb {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  min-width: var(--w-min-shell);
+  background: var(--desk);
+}
+
+.wb__scroll {
+  height: 100vh;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* -- Tab strip ----------------------------------------------------------- */
+.tabstrip {
+  flex: 0 0 auto;
+  height: var(--h-tabstrip);
+  display: flex;
+  align-items: stretch;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+}
+
+.tabstrip__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 700;
+  border-right: 1px solid var(--border);
+}
+
+.tabstrip__mark {
+  width: 14px;
+  height: 14px;
+  background: var(--blue);
+}
+
+.tabstrip__tabs {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--border);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  background: var(--border-soft);
+}
+
+.tab.is-active {
+  background: var(--surface);
+  font-weight: 600;
+  box-shadow: inset 0 -2px 0 var(--blue);
+}
+
+.tab__count {
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.tabstrip__spacer {
+  flex: 1 1 auto;
+}
+
+.tabstrip__userWrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.tabstrip__user {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 12px;
+  border: 0;
+  border-left: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+.tabstrip__user:hover {
+  background: var(--border-soft);
+}
+
+/* -- User menu ----------------------------------------------------------- */
+.usermenu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 50;
+  width: 268px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  /* The one place a shadow is justified: a menu floating over content needs to
+     read as detached, and there is no border arrangement that conveys it. */
+  box-shadow: 0 8px 24px rgba(26, 29, 33, 0.14);
+}
+
+.usermenu__head {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.usermenu__name {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.usermenu__email {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.usermenu__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.usermenu__item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 11px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.usermenu__item:hover {
+  background: var(--row-hover);
+}
+
+.usermenu__note {
+  margin: 0;
+  padding: 0 14px 12px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.tabstrip__userText {
+  text-align: right;
+  line-height: 1.15;
+}
+
+.tabstrip__userName {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.tabstrip__userRole {
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.tabstrip__avatar {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  background: var(--blue);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* -- Toolbar ------------------------------------------------------------- */
+.toolbar {
+  flex: 0 0 auto;
+  height: var(--h-toolbar);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  background: var(--surface-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.crumbs__sep {
+  color: var(--crumb-sep);
+}
+
+.crumbs__last {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.toolbar__divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  flex: 0 0 auto;
+}
+
+.toolbar__verbs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.toolbar__verbs::-webkit-scrollbar {
+  display: none;
+}
+
+.verb {
+  height: 26px;
+  padding: 0 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.verb:first-child {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.verb:hover {
+  background: var(--border-soft);
+}
+
+.toolbar__spacer {
+  flex: 1 1 auto;
+}
+
+.find {
+  flex: 0 1 250px;
+  min-width: 150px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+}
+
+.find input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  font-size: 12.5px;
+  background: transparent;
+  color: var(--ink);
+}
+
+.find input::placeholder {
+  color: var(--text-ghost);
+}
+
+/* -- Body: three panes --------------------------------------------------- */
+.wb__body {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
+}
+
+/* -- Scope pane ---------------------------------------------------------- */
+.scope {
+  flex: 0 0 var(--w-scope);
+  width: var(--w-scope);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-2);
+  border-right: 1px solid var(--border);
+  min-height: 0;
+}
+
+.scope__head {
+  flex: 0 0 auto;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.scope__list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.scope__row {
+  width: 100%;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  font-size: 13px;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.scope__row:hover {
+  background: var(--border-faint);
+}
+
+.scope__row.is-active {
+  background: var(--blue-tint);
+  font-weight: 600;
+}
+
+.scope__mark {
+  flex: 0 0 auto;
+  font-size: 9px;
+  color: var(--text-faint);
+  width: 8px;
+}
+
+.scope__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scope__count {
+  flex: 0 0 auto;
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.scope__note {
+  flex: 0 0 auto;
+  padding: 11px 12px 13px;
+  border-top: 1px solid var(--border-soft);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+/* -- List pane ----------------------------------------------------------- */
+.list {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  min-height: 0;
+}
+
+.list__head {
+  flex: 0 0 auto;
+  display: grid;
+  gap: 14px;
+  padding: 0 16px;
+  height: var(--h-listhead);
+  align-items: center;
+  background: var(--surface-3);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
+.list__col {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  padding: 0;
+  text-align: left;
+}
+
+.list__col.is-sorted {
+  color: var(--ink);
+}
+
+.list__caret {
+  font-size: 8px;
+  color: transparent;
+  transition: transform 0.12s;
+}
+
+.list__col.is-sorted .list__caret {
+  color: var(--text-soft);
+}
+
+.list__caret.is-asc {
+  transform: rotate(180deg);
+}
+
+.list__rows {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.row {
+  display: grid;
+  gap: 14px;
+  align-items: center;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--border-faint);
+  cursor: pointer;
+}
+
+.row:hover {
+  background: var(--row-hover);
+}
+
+.row.is-selected {
+  background: var(--blue-tint);
+}
+
+.row__record {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.row__check {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+  cursor: pointer;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  padding: 0;
+  color: transparent;
+}
+
+.row__check.is-checked {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+
+.row__kind {
+  width: 30px;
+  height: 22px;
+  flex: 0 0 30px;
+  background: var(--border-faint);
+  border: 1px solid var(--neutral-border);
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--text-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.row__text {
+  min-width: 120px; /* so the name can never be crushed to zero */
+  flex: 1 1 auto;
+}
+
+.row__name {
+  font-size: 13.5px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin-top: 2px;
+}
+
+.row__metaText {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row__cell {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  min-width: 0;
+  /* A chip inside must not stretch to fill the cell. */
+  display: flex;
+  align-items: center;
+}
+
+/* -- Build-state banner --------------------------------------------------- */
+.buildstate {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.buildstate--sample {
+  background: var(--ochre-bg);
+  border-bottom-color: var(--ochre-border);
+  color: var(--ochre);
+}
+
+.buildstate--ready {
+  background: var(--blue-bg);
+  border-bottom-color: var(--blue-border);
+  color: var(--text-muted);
+}
+
+.buildstate__text {
+  min-width: 0;
+}
+
+.buildstate code {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  padding: 0 4px;
+  white-space: nowrap;
+}
+
+/* Tab marker for areas that are not live. */
+.tab__marker {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 1px 4px;
+  border: 1px solid var(--ochre-border);
+  background: var(--ochre-bg);
+  color: var(--ochre);
+  white-space: nowrap;
+}
+
+.tab__marker--ready {
+  border-color: var(--blue-border);
+  background: var(--blue-bg);
+  color: var(--blue);
+}
+
+/* -- Bulk action bar ----------------------------------------------------- */
+.bulk {
+  flex: 0 0 auto;
+  height: var(--h-bulkbar);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  background: var(--ink);
+  color: #fff;
+}
+
+.bulk__count {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.bulk__link {
+  font-size: 12.5px;
+  color: var(--blue-text-on-dark);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+}
+
+.bulk__divider {
+  width: 1px;
+  height: 18px;
+  background: #4a4f57;
+}
+
+.bulk__verb {
+  height: 26px;
+  padding: 0 10px;
+  font-size: 12.5px;
+  color: #fff;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.bulk__verb:first-of-type {
+  font-weight: 600;
+}
+
+.bulk__verb:hover {
+  background: var(--ink-2);
+}
+
+.bulk__clear {
+  font-size: 12.5px;
+  color: var(--crumb-sep);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+/* -- List states --------------------------------------------------------- */
+.state {
+  padding: 44px 40px;
+  max-width: 560px;
+}
+
+.state__title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.state__body {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  margin: 0 0 8px;
+}
+
+.state__note {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 14px;
+  line-height: 1.55;
+}
+
+.state__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.state__lock {
+  margin-bottom: 14px;
+  color: var(--text-faint);
+}
+
+/* Loading */
+.loading__strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 16px;
+  background: var(--ochre-bg);
+  border-bottom: 1px solid var(--ochre-border);
+  font-size: 12.5px;
+  color: var(--ochre);
+}
+
+.loading__bar {
+  height: 2px;
+  background: var(--border-soft);
+}
+
+.loading__fill {
+  height: 2px;
+  background: var(--ochre);
+}
+
+.skel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border-faint);
+  animation: cv-skeleton 1.4s ease-in-out infinite;
+}
+
+.skel__box {
+  width: 30px;
+  height: 22px;
+  flex: 0 0 30px;
+  background: var(--skeleton);
+}
+
+.skel__lines {
+  flex: 1 1 auto;
+}
+
+.skel__line {
+  height: 9px;
+  background: var(--skeleton);
+  margin-bottom: 6px;
+}
+
+.skel__line--2 {
+  height: 8px;
+  background: var(--skeleton-2);
+  margin: 0;
+}
+
+/* -- Inspector ----------------------------------------------------------- */
+.inspector {
+  flex: 0 0 var(--w-inspector);
+  width: var(--w-inspector);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-2);
+  border-left: 1px solid var(--border);
+  min-height: 0;
+}
+
+.inspector__tabs {
+  flex: 0 0 auto;
+  height: var(--h-inspector-tabs);
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--border);
+}
+
+.itab {
+  padding: 0 13px;
+  font-size: 12.5px;
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--border);
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.itab:hover {
+  background: var(--border-soft);
+}
+
+.itab.is-active {
+  background: var(--surface);
+  font-weight: 600;
+  box-shadow: inset 0 -2px 0 var(--blue);
+}
+
+.inspector__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.ins {
+  padding: 14px 16px;
+}
+
+.ins__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  margin-bottom: 8px;
+}
+
+.ins__label--blue {
+  color: var(--blue);
+}
+
+.ins__section {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.ins__note {
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--text-dim);
+  margin-top: 10px;
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  align-items: baseline;
+}
+
+.kv__k {
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.kv__v {
+  font-size: 14px;
+  color: var(--ink);
+  text-align: right;
+}
+
+.kv__conf {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--blue);
+}
+
+.kvrow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+}
+
+/* -- Status bar ---------------------------------------------------------- */
+.statusbar {
+  flex: 0 0 auto;
+  height: var(--h-statusbar);
+  display: flex;
+  align-items: stretch;
+  background: var(--chrome);
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.statusbar__cell {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-left: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.statusbar__cell:first-child {
+  border-left: 0;
+}
+
+.statusbar__spacer {
+  flex: 1 1 auto;
+}
+
+.statusbar__sync {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border-left: 1px solid var(--border);
+}
+
+.statusbar__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+}
