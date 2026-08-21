@@ -37,7 +37,7 @@ config();
 // that is not on UTC — see the comment in database.service.ts.
 types.setTypeParser(types.builtins.TIMESTAMP, (v: string) => new Date(`${v.replace(' ', 'T')}Z`));
 
-const DEV_PASSWORD = 'Arkin!2026';
+const DEV_PASSWORD = 'Dossiro!2026';
 const PLATFORM_PASSWORD = 'CalmGlobal!2026';
 const HARBOR_PASSWORD = 'HarborFreight!2026';
 
@@ -59,7 +59,7 @@ async function maybeOne<T>(text: string, values: unknown[] = []): Promise<T | nu
 
 async function main(): Promise<void> {
   await db.connect();
-  console.log('Seeding Arkin...');
+  console.log('Seeding Dossiro...');
 
   const org = await upsertOrg('Acme Corporation', 'acme', { status: 'TRIAL' });
   const roles = await seedRoles(org.id);
@@ -123,8 +123,8 @@ async function main(): Promise<void> {
   // Real bytes on disk, so downloads, share links and full-text search all have
   // something to work with. Named to match what the verification suites search
   // for.
-  await upsertDocument(org.id, admin.id, financeFolder.id, 'arkin-test.txt', [
-    'Arkin acceptance fixture.',
+  await upsertDocument(org.id, admin.id, financeFolder.id, 'dossiro-test.txt', [
+    'Dossiro acceptance fixture.',
     'Quarterly reconciliation notes for the Finance cabinet.',
   ]);
   const invoice = await upsertDocument(org.id, manager.id, invoices.id, 'invoice-0001.txt', [

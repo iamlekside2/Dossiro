@@ -374,7 +374,7 @@ export class OrganizationsService {
             VALUES ($1, $2, $3, $4, now())
          RETURNING *`,
       // Self-service additions must prove ownership before they resolve.
-      [newId(), organizationId, domain, `arkin-verify=${randomBytes(16).toString('hex')}`],
+      [newId(), organizationId, domain, `dossiro-verify=${randomBytes(16).toString('hex')}`],
     );
 
     await this.audit.record({

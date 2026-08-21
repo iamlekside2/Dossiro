@@ -1,4 +1,4 @@
-# Arkin
+# Dossiro
 
 Enterprise document management: storage, retrieval, access control, sharing, and
 multi-channel intake.
@@ -45,7 +45,7 @@ what enforces access. It exists so the screens run in the right order.
 Below 1180px the secondary list columns fold into a meta line under the record
 name rather than being dropped, and the page never scrolls horizontally.
 
-Local dev database is already provisioned (`arkin` on PostgreSQL 18,
+Local dev database is already provisioned (`dossiro` on PostgreSQL 18,
 migration `20260813121046_init`). One caveat: **`pgvector` is not installed on
 this machine**, so semantic search is disabled. `001_search.sql` degrades
 gracefully with a notice; full-text search is unaffected.
@@ -133,7 +133,7 @@ npm --workspace api run db:seed
 ```
 
 Creates four users at different tiers, sharing the password
-`Arkin!2026`. The interesting one is `clerk@acme.test`: they inherit
+`Dossiro!2026`. The interesting one is `clerk@acme.test`: they inherit
 WRITE on the Finance folder but carry an explicit deny on `Invoices 2026`, which
 is what proves deny-at-a-deeper-scope beats inherited allow.
 

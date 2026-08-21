@@ -53,7 +53,7 @@ export default function TabStrip({ tabs, active, onSelect }) {
     <div className="tabstrip">
       <div className="tabstrip__brand">
         <span className="tabstrip__mark" aria-hidden="true" />
-        <span>Arkin</span>
+        <span>Dossiro</span>
       </div>
 
       <div className="tabstrip__tabs" role="tablist">

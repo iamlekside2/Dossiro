@@ -22,7 +22,7 @@ const DEVICE_FACTS = [
 const NOTES = [
   {
     title: 'No password to steal',
-    text: 'Authentication will happen at Microsoft or Okta. Arkin only receives who you are and which groups you belong to.',
+    text: 'Authentication will happen at Microsoft or Okta. Dossiro only receives who you are and which groups you belong to.',
   },
   {
     title: 'Role, then drawer, then document',
@@ -71,7 +71,7 @@ function BrandLock() {
   return (
     <div className="brandlock">
       <span className="brandlock__mark" aria-hidden="true" />
-      <span className="brandlock__name">Arkin</span>
+      <span className="brandlock__name">Dossiro</span>
     </div>
   );
 }

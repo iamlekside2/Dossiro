@@ -56,7 +56,7 @@ export class HostnamesService {
             VALUES ($1, $2, $3, $4, false, now())
          RETURNING *`,
       // The first one becomes primary once verified; until then nothing is.
-      [newId(), user.organizationId, hostname, `arkin-site-verification=${randomBytes(16).toString('hex')}`],
+      [newId(), user.organizationId, hostname, `dossiro-site-verification=${randomBytes(16).toString('hex')}`],
     );
 
     await this.audit.record({

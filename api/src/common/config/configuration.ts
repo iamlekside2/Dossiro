@@ -80,7 +80,7 @@ const schema = z.object({
   SMTP_SECURE: bool(false),
   SMTP_USER: z.string().optional().default(''),
   SMTP_PASS: z.string().optional().default(''),
-  MAIL_FROM: z.string().default('Arkin <no-reply@example.com>'),
+  MAIL_FROM: z.string().default('Dossiro <no-reply@example.com>'),
   EMAIL_INBOUND_SECRET: z.string().optional().default(''),
 
   AI_PROVIDER: z.enum(['anthropic', 'none']).default('none'),

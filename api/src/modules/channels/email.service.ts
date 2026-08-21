@@ -108,8 +108,8 @@ export class EmailService {
       if (from) {
         await this.send(
           from,
-          'Arkin: address not recognised',
-          'This address is not linked to an Arkin account. Ask an administrator to add and verify it in your profile before emailing documents in.',
+          'Dossiro: address not recognised',
+          'This address is not linked to a Dossiro account. Ask an administrator to add and verify it in your profile before emailing documents in.',
         );
       }
       return { stored: 0, messageId };
@@ -158,7 +158,7 @@ export class EmailService {
     if (stored.length > 0 && from) {
       await this.send(
         from,
-        `Arkin: ${stored.length} file(s) stored`,
+        `Dossiro: ${stored.length} file(s) stored`,
         `Filed into your Email Inbox:\n\n${stored.map((n) => `- ${n}`).join('\n')}`,
       );
     }
@@ -171,13 +171,13 @@ export class EmailService {
     const { items } = await this.search.search(sender, { q: query, take: 5 });
 
     if (items.length === 0) {
-      await this.send(to, `Arkin: nothing found for "${query}"`, `No documents matched "${query}".`);
+      await this.send(to, `Dossiro: nothing found for "${query}"`, `No documents matched "${query}".`);
       return;
     }
     if (items.length > 1) {
       await this.send(
         to,
-        `Arkin: ${items.length} matches for "${query}"`,
+        `Dossiro: ${items.length} matches for "${query}"`,
         `Several documents matched. Reply with a more specific name:\n\n${items.map((d) => `- ${d.name}`).join('\n')}`,
       );
       return;
@@ -186,7 +186,7 @@ export class EmailService {
     const doc = items[0];
     const level = await this.access.getDocumentAccess(sender, doc.id);
     if (level === AccessLevel.NONE) {
-      await this.send(to, 'Arkin: access denied', 'You do not have access to that document.');
+      await this.send(to, 'Dossiro: access denied', 'You do not have access to that document.');
       return;
     }
 
@@ -200,11 +200,11 @@ export class EmailService {
       });
       await this.send(
         to,
-        `Arkin: ${doc.name}`,
+        `Dossiro: ${doc.name}`,
         `Here is your link. It is valid for 72 hours and 5 downloads.\n\n${url}`,
       );
     } catch (err) {
-      await this.send(to, 'Arkin: cannot share that document', (err as Error).message);
+      await this.send(to, 'Dossiro: cannot share that document', (err as Error).message);
     }
   }
 

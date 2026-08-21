@@ -72,7 +72,7 @@ async function bootstrap(): Promise<void> {
 
   if (!cfg.isProd) {
     const swagger = new DocumentBuilder()
-      .setTitle('Arkin API')
+      .setTitle('Dossiro API')
       .setDescription('Enterprise document management: storage, access control, sharing, channels.')
       .setVersion('0.1.0')
       .addBearerAuth()
@@ -82,7 +82,7 @@ async function bootstrap(): Promise<void> {
   }
 
   await app.listen(cfg.port);
-  logger.log(`Arkin API listening on ${cfg.apiBaseUrl} (${cfg.env})`);
+  logger.log(`Dossiro API listening on ${cfg.apiBaseUrl} (${cfg.env})`);
 }
 
 void bootstrap();

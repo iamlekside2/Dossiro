@@ -127,9 +127,9 @@ export class ChannelsController {
     );
 
     if (body.channel === ChannelType.WHATSAPP) {
-      await this.whatsapp.sendText(identifier, `Your Arkin verification code is ${code}`);
+      await this.whatsapp.sendText(identifier, `Your Dossiro verification code is ${code}`);
     } else {
-      await this.email.send(identifier, 'Arkin verification code', `Your verification code is ${code}`);
+      await this.email.send(identifier, 'Dossiro verification code', `Your verification code is ${code}`);
     }
 
     return { id: identity.id, channel: identity.channel, identifier, verified: false };

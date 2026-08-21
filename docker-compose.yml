@@ -1,4 +1,4 @@
-# Local infrastructure for Arkin.
+# Local infrastructure for Dossiro.
 #
 # Docker is currently broken on this machine, so the API is configured to work
 # without it: PostgreSQL 18 is already installed natively, and the job queue
@@ -10,25 +10,25 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: arkin-postgres
+    container_name: dossiro-postgres
     environment:
-      POSTGRES_USER: arkin
-      POSTGRES_PASSWORD: arkin
-      POSTGRES_DB: arkin
+      POSTGRES_USER: dossiro
+      POSTGRES_PASSWORD: dossiro
+      POSTGRES_DB: dossiro
     ports:
       # 5433 on the host: the native PostgreSQL 18 install already owns 5432.
       - '5433:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U arkin']
+      test: ['CMD-SHELL', 'pg_isready -U dossiro']
       interval: 5s
       timeout: 5s
       retries: 10
 
   redis:
     image: redis:7-alpine
-    container_name: arkin-redis
+    container_name: dossiro-redis
     ports:
       - '6379:6379'
     command: redis-server --appendonly yes
@@ -38,11 +38,11 @@ services:
   # S3-compatible object storage. Set STORAGE_DRIVER=s3 to use it.
   minio:
     image: minio/minio:latest
-    container_name: arkin-minio
+    container_name: dossiro-minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: arkin
-      MINIO_ROOT_PASSWORD: arkin
+      MINIO_ROOT_USER: dossiro
+      MINIO_ROOT_PASSWORD: dossiro
     ports:
       - '9000:9000'
       - '9001:9001' # web console
@@ -52,7 +52,7 @@ services:
   # Headless LibreOffice for batch document -> PDF conversion (feature 3).
   gotenberg:
     image: gotenberg/gotenberg:8
-    container_name: arkin-gotenberg
+    container_name: dossiro-gotenberg
     ports:
       - '3020:3000'
 
@@ -61,7 +61,7 @@ services:
   # writing your own collaborative editor is a multi-year project.
   onlyoffice:
     image: onlyoffice/documentserver:latest
-    container_name: arkin-onlyoffice
+    container_name: dossiro-onlyoffice
     environment:
       JWT_ENABLED: 'true'
       JWT_SECRET: change-me-to-match-ONLYOFFICE_JWT_SECRET

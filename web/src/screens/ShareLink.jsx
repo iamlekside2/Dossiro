@@ -144,7 +144,7 @@ function BrandLock() {
   return (
     <div className="brandlock">
       <span className="brandlock__mark" aria-hidden="true" />
-      <span className="brandlock__name">Arkin</span>
+      <span className="brandlock__name">Dossiro</span>
       <span className="brandlock__by">shared by Calm Global</span>
     </div>
   );

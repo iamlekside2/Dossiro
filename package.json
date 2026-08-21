@@ -1,8 +1,8 @@
 {
-  "name": "arkin",
+  "name": "dossiro",
   "private": true,
   "version": "0.1.0",
-  "description": "Arkin - document sharing with expiring links, plus WhatsApp & email upload/download",
+  "description": "Dossiro - document sharing with expiring links, plus WhatsApp & email upload/download",
   "workspaces": [
     "api",
     "web"

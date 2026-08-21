@@ -74,7 +74,7 @@ export class LicenseService implements OnModuleInit {
             VALUES ($1, $2, $3)
        ON CONFLICT DO NOTHING
          RETURNING "deploymentId"`,
-      [newId(), `ak-${randomUUID()}`, this.config.get('app', { infer: true }).deploymentMode],
+      [newId(), `ds-${randomUUID()}`, this.config.get('app', { infer: true }).deploymentMode],
     );
 
     // No row back means another worker won the race; read theirs.

@@ -148,7 +148,7 @@ function Frame({ children }) {
       <div className="card card--gate">
         <div className="brandlock">
           <span className="brandlock__mark" aria-hidden="true" />
-          <span className="brandlock__name">Arkin</span>
+          <span className="brandlock__name">Dossiro</span>
         </div>
         {children}
       </div>

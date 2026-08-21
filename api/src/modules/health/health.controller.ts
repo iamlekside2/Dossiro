@@ -29,7 +29,7 @@ export class HealthController {
 
     return {
       status: database === 'up' ? 'ok' : 'degraded',
-      service: 'arkin-api',
+      service: 'dossiro-api',
       env: app.env,
       timestamp: new Date().toISOString(),
       dependencies: {

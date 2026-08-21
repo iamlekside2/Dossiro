@@ -1,8 +1,8 @@
 {
-  "name": "@arkin/api",
+  "name": "@dossiro/api",
   "private": true,
   "version": "0.1.0",
-  "description": "Arkin API - enterprise document management",
+  "description": "Dossiro API - enterprise document management",
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",

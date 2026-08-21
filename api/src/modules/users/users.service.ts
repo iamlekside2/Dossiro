@@ -79,8 +79,8 @@ export class UsersService {
       `${opts.displayName},`,
       '',
       opts.invitedBy
-        ? `${opts.invitedBy} has invited you to ${opts.organizationName} on Arkin.`
-        : `You have been invited to set up ${opts.organizationName} on Arkin.`,
+        ? `${opts.invitedBy} has invited you to ${opts.organizationName} on Dossiro.`
+        : `You have been invited to set up ${opts.organizationName} on Dossiro.`,
       '',
       'Open this link to choose a password and get in:',
       url,

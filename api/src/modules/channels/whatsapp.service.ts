@@ -158,7 +158,7 @@ export class WhatsAppService {
     if (!sender) {
       await this.sendText(
         message.from,
-        'This number is not linked to an Arkin account. Ask an administrator to add and verify it in your profile before sending or requesting documents.',
+        'This number is not linked to a Dossiro account. Ask an administrator to add and verify it in your profile before sending or requesting documents.',
       );
       await this.db.execute(
         `UPDATE channel_messages
@@ -226,7 +226,7 @@ export class WhatsAppService {
         await this.sendText(
           from,
           [
-            'Arkin commands:',
+            'Dossiro commands:',
             '- Send any file to store it.',
             '- get <name> : search and receive a time-limited link',
             '- recent : your five most recent documents',
