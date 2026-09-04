@@ -26,7 +26,6 @@
   display: flex;
   align-items: center;
   gap: 1.75rem;
-  margin-right: auto;
 }
 .hdr__link {
   font-size: 0.9375rem;
@@ -39,7 +38,11 @@
 .hdr__link:hover { color: var(--ink); }
 .hdr__link.is-active { color: var(--blue); border-bottom-color: var(--blue); }
 
-.hdr__actions { display: flex; align-items: center; gap: 0.75rem; }
+/* The auto margin lives here, not on the nav. The nav is display:none below
+   820px, and a hidden element's auto margin pushes nothing — which left the
+   CTA and the menu button stranded beside the logo with the right half of the
+   bar empty. On the actions it holds at every width. */
+.hdr__actions { display: flex; align-items: center; gap: 0.75rem; margin-left: auto; }
 .hdr__cta { padding: 0.6rem 1.1rem; }
 
 .hdr__burger {
