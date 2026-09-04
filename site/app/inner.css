@@ -1,0 +1,139 @@
+/* =============================================================================
+   Shared patterns for the inner pages. Section-scoped; primitives in globals.
+   ========================================================================== */
+
+/* -- Page hero (compact, left-aligned) --------------------------------- */
+.phero {
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.phero__inner { padding-block: clamp(3rem, 6vw, 5rem); max-width: 52rem; }
+.phero__title { font-size: clamp(2.25rem, 5vw, 3.5rem); margin-bottom: 1.25rem; }
+.phero__lede { font-size: clamp(1.125rem, 1.7vw, 1.375rem); }
+
+/* -- Prose column ------------------------------------------------------- */
+.prose { max-width: var(--measure); }
+.prose > * + * { margin-top: 1.15rem; }
+.prose p { color: var(--ink-2); }
+.prose h3 { font-size: var(--step-2); margin-top: 2.5rem; }
+
+/* -- Capability rows (Product) ----------------------------------------- */
+.caps { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.cap {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: clamp(1.5rem, 4vw, 4rem);
+  padding-block: clamp(2rem, 4vw, 3rem);
+  border-bottom: 1px solid var(--line);
+  align-items: start;
+}
+.cap__k {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin-bottom: 0.75rem;
+}
+.cap__title { font-size: clamp(1.375rem, 2.2vw, 1.875rem); }
+.cap__body p + p { margin-top: 0.85rem; }
+.cap__body { color: var(--ink-2); }
+.cap__list { margin: 0.85rem 0 0; padding: 0; list-style: none; }
+.cap__list li {
+  position: relative;
+  padding-left: 1.4rem;
+  margin-top: 0.5rem;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+.cap__list li::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0.55em;
+  width: 8px; height: 8px;
+  background: var(--blue);
+}
+
+/* -- Status note: honest framing --------------------------------------- */
+.statusnote {
+  border: 1px solid var(--blue-line);
+  background: var(--blue-tint);
+  padding: 1.1rem 1.35rem;
+  font-size: 0.9375rem;
+  color: var(--blue-ink);
+  max-width: 48rem;
+}
+.statusnote strong { color: var(--blue-ink); }
+
+/* -- Big claim list (Security) ----------------------------------------- */
+.claims { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.claim { background: var(--surface); padding: clamp(1.5rem, 2.5vw, 2rem); }
+.claim__title { font-size: 1.25rem; margin-bottom: 0.6rem; }
+.claim__body { color: var(--muted); font-size: 0.9375rem; line-height: 1.55; }
+
+/* -- Steps (how it works) ---------------------------------------------- */
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 2.5rem; }
+.step__n {
+  font-family: var(--sans); font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem; font-weight: 700; color: var(--blue);
+  padding-bottom: 0.75rem; border-bottom: 2px solid var(--blue);
+  display: inline-block; margin-bottom: 1rem;
+}
+.step__title { font-size: 1.125rem; margin-bottom: 0.5rem; }
+.step__body { color: var(--muted); font-size: 0.9375rem; }
+
+/* -- Deployment comparison table --------------------------------------- */
+.cmp { width: 100%; border-collapse: collapse; margin-top: 2.5rem; font-size: 0.9375rem; }
+.cmp th, .cmp td { text-align: left; padding: 0.9rem 1rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+.cmp thead th {
+  font-family: var(--sans); font-size: 0.75rem; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+  background: var(--surface-2); border-bottom: 1px solid var(--line-strong);
+}
+.cmp td:first-child { font-weight: 600; color: var(--ink); }
+.cmp .yes { color: var(--blue); font-weight: 700; }
+.cmp .no { color: var(--faint); }
+.cmp__wrap { overflow-x: auto; }
+
+/* -- About: values ----------------------------------------------------- */
+.values { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); margin-top: 2.5rem; }
+.value { background: var(--surface); padding: clamp(1.5rem, 2.5vw, 2rem); }
+.value__title { font-size: 1.125rem; margin-bottom: 0.5rem; }
+.value__body { color: var(--muted); font-size: 0.9375rem; }
+
+/* -- Contact form ------------------------------------------------------- */
+.contact__grid { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: clamp(2rem, 5vw, 4rem); align-items: start; }
+.field { display: flex; flex-direction: column; margin-bottom: 1.1rem; }
+.field label { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.4rem; }
+.field input, .field select, .field textarea {
+  font-family: var(--sans); font-size: 1rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface); color: var(--ink);
+  border-radius: 0;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none; border-color: var(--blue);
+}
+.field textarea { resize: vertical; min-height: 120px; }
+.field__row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.form__note { font-size: 0.85rem; color: var(--faint); margin-top: 0.75rem; }
+.form__ok {
+  border: 1px solid var(--blue-line); background: var(--blue-tint);
+  padding: 1.5rem; color: var(--blue-ink);
+}
+.form__ok h3 { margin-bottom: 0.5rem; }
+
+.contact__aside { border-left: 2px solid var(--blue); padding-left: 1.5rem; }
+.contact__aside h3 { font-size: 1.25rem; margin-bottom: 0.85rem; }
+.contact__aside p { color: var(--muted); font-size: 0.9375rem; }
+.contact__aside p + p { margin-top: 0.85rem; }
+
+@media (max-width: 820px) {
+  .cap { grid-template-columns: 1fr; gap: 1rem; }
+  .claims, .values { grid-template-columns: 1fr; }
+  .steps { grid-template-columns: 1fr; }
+  .contact__grid { grid-template-columns: 1fr; }
+  .field__row { grid-template-columns: 1fr; }
+}

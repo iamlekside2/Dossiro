@@ -3,8 +3,11 @@
 Enterprise document management: storage, retrieval, access control, sharing, and
 multi-channel intake.
 
-- `api/` — NestJS + TypeScript + Prisma + PostgreSQL
-- `web/` — React + Vite + JavaScript (routing shell only; **design pending**)
+This repository is a monorepo:
+
+- `api/` — NestJS + TypeScript over **raw SQL** (node-postgres, no ORM) + PostgreSQL
+- `web/` — React + Vite + JavaScript (the application workbench)
+- `site/` — the public marketing site (Next.js), deployed separately to dossiro.com
 
 ---
 
