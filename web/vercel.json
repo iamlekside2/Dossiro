@@ -1,16 +1,3 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-
-  "//": [
-    "Single-page app fallback.",
-    "React Router owns the URLs, but Vercel serves files. A visitor who lands",
-    "on /signin directly, or reloads it, asks the server for a file that does",
-    "not exist and gets a 404 — even though the route works fine once the app",
-    "is running. This hands every unmatched path to index.html so the router",
-    "can resolve it in the browser.",
-    "Static assets are unaffected: Vercel checks the filesystem first and only",
-    "applies rewrites to paths that matched no file."
-  ],
-
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
