@@ -70,7 +70,7 @@ export class AuthService {
   async login(
     email: string,
     password: string,
-    ctx: { ip?: string; userAgent?: string; organizationId?: string },
+    ctx: { ip?: string; userAgent?: string; organizationId?: string; takeover?: boolean },
   ): Promise<{ accessToken: string; refreshToken: string; user: AuthUser }> {
     const normalised = email.trim().toLowerCase();
 
@@ -135,6 +135,20 @@ export class AuthService {
       });
       throw fail();
     }
+
+    // Single-session sign-in, when the organisation asks for it.
+    //
+    // Contentverse does this to protect a licence pool: with ten people sharing
+    // five concurrent licences the sixth is simply told to come back later.
+    // That is a commercial lock wearing a security costume, and it punishes the
+    // person who did nothing wrong.
+    //
+    // Here it is a security control instead, and it is off unless a tenant
+    // turns it on. Nobody is ever told to come back later: they are shown WHERE
+    // the other session is and given the choice to end it. Which means the
+    // refusal is also useful — if the device shown is not theirs, they have
+    // just learned their password is compromised.
+    await this.enforceSingleSession(user, ctx);
 
     const refreshToken = randomBytes(48).toString('base64url');
     const refreshTtlDays = this.config.get('app', { infer: true }).jwt.refreshTtlDays;
@@ -310,6 +324,73 @@ export class AuthService {
   // ---------------------------------------------------------------------------
 
   /**
+   * Refuses a second simultaneous sign-in, for organisations that want it.
+   *
+   * Enabled per tenant through `organizations.settings.security.singleSession`,
+   * because it is a policy decision, not a property of the software: a shared
+   * scanning workstation wants it, a team of consultants on three devices each
+   * does not. Off unless asked for.
+   */
+  private async enforceSingleSession(
+    user: User,
+    ctx: { ip?: string; userAgent?: string; takeover?: boolean },
+  ): Promise<void> {
+    const org = await this.db.maybeOne<{ settings: Record<string, unknown> | null }>(
+      'SELECT settings FROM organizations WHERE id = $1',
+      [user.organizationId],
+    );
+
+    const security = (org?.settings as { security?: { singleSession?: boolean } } | null)?.security;
+    if (!security?.singleSession) return;
+
+    const live = await this.db.query<Session>(
+      `SELECT * FROM sessions
+        WHERE "userId" = $1 AND "revokedAt" IS NULL AND "expiresAt" > now()
+        ORDER BY "createdAt" DESC`,
+      [user.id],
+    );
+    if (live.length === 0) return;
+
+    if (!ctx.takeover) {
+      // 409 rather than 401: the credentials were correct. Telling them it was
+      // a bad password here would send someone to reset a password that works.
+      throw new ConflictException({
+        message: 'This account is already signed in somewhere else.',
+        code: 'SESSION_ACTIVE',
+        // Enough for the person to recognise their own device, and no more.
+        // The full user-agent string and a precise address would tell an
+        // attacker who guessed the password exactly who they are up against.
+        sessions: live.map((s) => ({
+          startedAt: s.createdAt,
+          device: describeDevice(s.userAgent),
+          from: maskIp(s.ip),
+        })),
+      });
+    }
+
+    await this.db.execute(
+      `UPDATE sessions SET "revokedAt" = now()
+        WHERE "userId" = $1 AND "revokedAt" IS NULL`,
+      [user.id],
+    );
+
+    // Ending someone's session is a security event in its own right. If an
+    // account is being passed around, or taken over, this is the line in the
+    // trail that shows it.
+    await this.audit.record({
+      organizationId: user.organizationId,
+      actorId: user.id,
+      action: AuditAction.LOGOUT,
+      resourceType: 'Session',
+      resourceId: user.id,
+      resourceName: user.email,
+      ip: ctx.ip,
+      userAgent: ctx.userAgent,
+      metadata: { event: 'session_taken_over', endedSessions: live.length },
+    });
+  }
+
+  /**
    * A posting to the Kano office also counts as being in the North West zone
    * above it, so a grant made at zone level reaches the offices beneath.
    *
@@ -369,4 +450,45 @@ export class AuthService {
   private hashToken(token: string): string {
     return createHash('sha256').update(token).digest('hex');
   }
+}
+
+/**
+ * A phrase someone can recognise their own device by — "Chrome on Windows" —
+ * without publishing the exact browser build to whoever guessed the password.
+ */
+function describeDevice(userAgent: string | null): string {
+  if (!userAgent) return 'an unrecognised device';
+
+  const browser =
+    /Edg\//.test(userAgent) ? 'Edge'
+    : /OPR\//.test(userAgent) ? 'Opera'
+    : /Chrome\//.test(userAgent) ? 'Chrome'
+    : /Safari\//.test(userAgent) ? 'Safari'
+    : /Firefox\//.test(userAgent) ? 'Firefox'
+    : 'a browser';
+
+  const platform =
+    /Android/.test(userAgent) ? 'Android'
+    : /iPhone|iPad|iOS/.test(userAgent) ? 'iOS'
+    : /Windows/.test(userAgent) ? 'Windows'
+    : /Mac OS X/.test(userAgent) ? 'macOS'
+    : /Linux/.test(userAgent) ? 'Linux'
+    : null;
+
+  return platform ? `${browser} on ${platform}` : browser;
+}
+
+/**
+ * Enough of the address to tell "my own office" from "somewhere I have never
+ * been", with the host part dropped so the response is not a free lookup of
+ * where the other person actually is.
+ */
+function maskIp(ip: string | null): string {
+  if (!ip) return 'an unknown network';
+  if (ip.includes(':')) {
+    const head = ip.split(':').slice(0, 2).join(':');
+    return `${head}:...`;
+  }
+  const parts = ip.split('.');
+  return parts.length === 4 ? `${parts[0]}.${parts[1]}.${parts[2]}.x` : ip;
 }

@@ -33,6 +33,7 @@ export class AuthController {
       ip,
       userAgent: req.headers['user-agent'],
       organizationId: dto.organizationId,
+      takeover: dto.takeover,
     });
   }
 
