@@ -41,9 +41,9 @@ export default function Deployment() {
               <div className="cap__body">
                 <p>
                   The fastest way to begin. Your organisation gets its own sealed
-                  tenant on our managed platform — no servers to provision, no
-                  software to install, no maintenance to own. We keep it patched,
-                  backed up and running.
+                  and secured tenancy on our managed platform — no servers for you
+                  to provision, no software to install, no maintenance to own. We
+                  keep it patched, backed up and running.
                 </p>
                 <p style={{ color: 'var(--muted)', fontSize: '0.9375rem' }}>
                   Best for teams who want to be working this week.

@@ -39,7 +39,7 @@ const DEPLOY = [
   {
     k: 'Hosted',
     title: 'We run it for you',
-    body: 'The fastest way to start. Your organisation gets its own sealed tenant on our managed platform — nothing to install, nothing to maintain.',
+    body: 'The fastest way to start. Your organisation gets its own sealed and secured tenancy on our managed platform — nothing for you to install, nothing to maintain.',
   },
   {
     k: 'Dedicated',
@@ -182,13 +182,6 @@ export default function Home() {
                 <div>
                   <div className="sec__itemTitle">Tamper-evident by design</div>
                   <div className="sec__itemBody">The database itself refuses to edit or delete the record — not the app, the database.</div>
-                </div>
-              </div>
-              <div className="sec__item">
-                <span className="sec__tick" aria-hidden="true">✓</span>
-                <div>
-                  <div className="sec__itemTitle">Each tenant fully sealed</div>
-                  <div className="sec__itemBody">One organisation can never see another’s documents, people, or even totals.</div>
                 </div>
               </div>
               <div className="sec__item">

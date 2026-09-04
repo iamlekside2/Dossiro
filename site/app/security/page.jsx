@@ -17,10 +17,6 @@ const CLAIMS = [
     body: 'Every action is written to a chain where each entry is sealed to the one before. Edit any entry and the chain breaks. The database refuses updates and deletes outright — the guarantee does not depend on the application behaving.',
   },
   {
-    title: 'Each tenant fully sealed',
-    body: 'Every query is bound to the organisation of the person asking. Two customers on the same deployment cannot see each other’s documents, people, or even each other’s totals. The operator who runs the platform holds no customer documents at all.',
-  },
-  {
     title: 'A link is not a login',
     body: 'External recipients get a document, not an account. Their access carries only what the link allows — an expiry, a passcode, a download cap — and it can be revoked in an instant. None of it grants a way into anything else.',
   },
