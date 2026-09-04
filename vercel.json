@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+
+  "//": [
+    "Duplicate of web/vercel.json, on purpose.",
+    "Vercel reads vercel.json only from the project's configured Root",
+    "Directory. This repository holds both the app (web/) and the marketing",
+    "site (site/), so the correct location depends on a dashboard setting we",
+    "cannot see from here. Keeping a copy at the repository root means the SPA",
+    "fallback applies whether the root is set to the repository or to web/.",
+    "Whichever one is not in use is simply ignored."
+  ],
+
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
