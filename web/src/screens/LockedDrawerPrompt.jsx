@@ -36,8 +36,7 @@ export default function LockedDrawerPrompt({ drawer, onUnlock, onCancel }) {
     <div className="drawerlock">
       <div className="card card--gate drawerlock__card">
         <div className="brandlock">
-          <span className="brandlock__mark" aria-hidden="true" />
-          <span className="brandlock__name">Dossiro</span>
+          <img className="brandlock__logo" src="/brand/dossiro-logo.svg" alt="Dossiro" />
         </div>
 
         <h1 className="screen__h1">This drawer has its own passcode</h1>

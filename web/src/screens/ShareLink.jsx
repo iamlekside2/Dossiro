@@ -143,8 +143,7 @@ export default function ShareLink() {
 function BrandLock() {
   return (
     <div className="brandlock">
-      <span className="brandlock__mark" aria-hidden="true" />
-      <span className="brandlock__name">Dossiro</span>
+      <img className="brandlock__logo" src="/brand/dossiro-logo.svg" alt="Dossiro" />
       <span className="brandlock__by">shared by Calm Global</span>
     </div>
   );

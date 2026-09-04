@@ -147,8 +147,7 @@ function Frame({ children }) {
     <div className="sheetpage">
       <div className="card card--gate">
         <div className="brandlock">
-          <span className="brandlock__mark" aria-hidden="true" />
-          <span className="brandlock__name">Dossiro</span>
+          <img className="brandlock__logo" src="/brand/dossiro-logo.svg" alt="Dossiro" />
         </div>
         {children}
       </div>

@@ -52,6 +52,12 @@
   flex: 0 0 16px;
 }
 
+.brandlock__logo {
+  height: 30px;
+  width: auto;
+  display: block;
+}
+
 .brandlock__name {
   font-size: 14px;
   font-weight: 700;

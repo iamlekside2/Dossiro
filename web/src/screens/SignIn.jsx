@@ -70,8 +70,7 @@ export default function SignIn() {
 function BrandLock() {
   return (
     <div className="brandlock">
-      <span className="brandlock__mark" aria-hidden="true" />
-      <span className="brandlock__name">Dossiro</span>
+      <img className="brandlock__logo" src="/brand/dossiro-logo.svg" alt="Dossiro" />
     </div>
   );
 }

@@ -39,10 +39,10 @@
   border-right: 1px solid var(--border);
 }
 
-.tabstrip__mark {
-  width: 14px;
-  height: 14px;
-  background: var(--blue);
+.tabstrip__logo {
+  height: 20px;
+  width: auto;
+  display: block;
 }
 
 .tabstrip__tabs {

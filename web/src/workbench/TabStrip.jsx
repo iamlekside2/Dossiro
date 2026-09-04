@@ -52,8 +52,7 @@ export default function TabStrip({ tabs, active, onSelect }) {
   return (
     <div className="tabstrip">
       <div className="tabstrip__brand">
-        <span className="tabstrip__mark" aria-hidden="true" />
-        <span>Dossiro</span>
+        <img className="tabstrip__logo" src="/brand/dossiro-logo.svg" alt="Dossiro" />
       </div>
 
       <div className="tabstrip__tabs" role="tablist">
