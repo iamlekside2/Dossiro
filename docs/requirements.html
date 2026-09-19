@@ -1,0 +1,838 @@
+<title>Dossiro Requirements</title>
+
+<style>
+  :root {
+    --ground:    #ffffff;
+    --panel:     #f4f6f9;
+    --panel-alt: #eaeef4;
+    --rule:      #d8dee7;
+    --rule-firm: #b9c3d1;
+    --ink:       #141a22;
+    --ink-soft:  #5b6674;
+    --ink-faint: #8792a1;
+    --accent:    #25508c;
+
+    --p0:    #8f2230;  --p0-bg:    #fbe9eb;
+    --p1:    #8a5c07;  --p1-bg:    #f9efd9;
+    --p2:    #3d5a80;  --p2-bg:    #e8eef6;
+    --later: #626c7a;  --later-bg: #ecedf0;
+
+    --sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    --mono: "Cascadia Mono", "Cascadia Code", Consolas, ui-monospace, "SF Mono", Menlo, monospace;
+    --measure: 68ch;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0e1218; --panel: #151b24; --panel-alt: #1b222d;
+      --rule: #262f3c; --rule-firm: #384454;
+      --ink: #e4e9f0; --ink-soft: #94a0b0; --ink-faint: #6f7c8c;
+      --accent: #7ba6e3;
+      --p0: #e3717f; --p0-bg: #2c1418;
+      --p1: #d9a33f; --p1-bg: #2b2211;
+      --p2: #8fb0d8; --p2-bg: #16202c;
+      --later: #8a94a2; --later-bg: #1c222b;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0e1218; --panel: #151b24; --panel-alt: #1b222d;
+    --rule: #262f3c; --rule-firm: #384454;
+    --ink: #e4e9f0; --ink-soft: #94a0b0; --ink-faint: #6f7c8c;
+    --accent: #7ba6e3;
+    --p0: #e3717f; --p0-bg: #2c1418;
+    --p1: #d9a33f; --p1-bg: #2b2211;
+    --p2: #8fb0d8; --p2-bg: #16202c;
+    --later: #8a94a2; --later-bg: #1c222b;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.65;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 1fr;
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 24px 96px;
+  }
+  @media (min-width: 1040px) {
+    .shell { grid-template-columns: 208px minmax(0, 1fr); gap: 52px; padding: 0 32px 120px; }
+  }
+
+  /* ---- masthead ---- */
+  .masthead {
+    grid-column: 1 / -1;
+    border-bottom: 2px solid var(--ink);
+    padding: 56px 0 24px;
+    margin-bottom: 44px;
+  }
+  .kicker {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ink-faint); margin: 0 0 14px;
+  }
+  h1 {
+    font-size: clamp(36px, 5.6vw, 56px); line-height: 1.03; letter-spacing: -0.028em;
+    font-weight: 700; margin: 0 0 18px; text-wrap: balance;
+  }
+  .standfirst {
+    font-size: 19px; line-height: 1.55; color: var(--ink-soft);
+    max-width: 60ch; margin: 0 0 30px;
+  }
+  .facts { display: flex; flex-wrap: wrap; border-top: 1px solid var(--rule); }
+  .fact {
+    flex: 1 1 140px; padding: 14px 18px; border-right: 1px solid var(--rule);
+  }
+  .fact:first-child { padding-left: 0; }
+  .fact:last-child { border-right: 0; }
+  .fact__label {
+    display: block; font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--ink-faint); margin-bottom: 4px;
+  }
+  .fact__value { font-size: 15px; font-weight: 600; }
+
+  /* ---- rail ---- */
+  .rail { display: none; }
+  @media (min-width: 1040px) {
+    .rail {
+      display: block; position: sticky; top: 28px; align-self: start;
+      max-height: calc(100vh - 56px); overflow-y: auto; padding-bottom: 24px;
+    }
+  }
+  .rail__title {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--ink-faint); margin: 0 0 10px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--rule);
+  }
+  .rail ol { list-style: none; margin: 0; padding: 0; }
+  .rail a {
+    display: block; padding: 3px 0 3px 10px; margin-left: -12px;
+    color: var(--ink-soft); text-decoration: none; font-size: 13px; line-height: 1.35;
+    border-left: 2px solid transparent;
+  }
+  .rail a:hover { color: var(--accent); border-left-color: var(--accent); }
+  .rail a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .rail .grp {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-faint); margin: 14px 0 4px;
+  }
+
+  main { grid-column: 1 / -1; min-width: 0; }
+  @media (min-width: 1040px) { main { grid-column: 2; } }
+
+  section { margin-bottom: 58px; scroll-margin-top: 24px; }
+
+  h2 {
+    font-size: 26px; letter-spacing: -0.018em; font-weight: 700;
+    margin: 0 0 6px; text-wrap: balance;
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--accent); margin: 0 0 8px;
+  }
+  h3 { font-size: 17px; font-weight: 700; margin: 30px 0 8px; letter-spacing: -0.008em; }
+
+  p { margin: 0 0 15px; max-width: var(--measure); }
+  main ul, main ol { max-width: var(--measure); padding-left: 20px; margin: 0 0 15px; }
+  li { margin-bottom: 6px; }
+  strong { font-weight: 650; }
+  a { color: var(--accent); }
+
+  code {
+    font-family: var(--mono); font-size: 0.875em; background: var(--panel-alt);
+    padding: 1px 5px; border: 1px solid var(--rule);
+  }
+
+  .lede {
+    font-size: 17.5px; line-height: 1.6; color: var(--ink-soft);
+    max-width: 62ch; margin-bottom: 22px;
+  }
+
+  /* ---- requirement tables ---- */
+  .scroller { overflow-x: auto; margin: 0 0 18px; border: 1px solid var(--rule); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 640px; }
+  th {
+    text-align: left; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-faint); font-weight: 600;
+    padding: 9px 12px; background: var(--panel);
+    border-bottom: 1px solid var(--rule-firm); white-space: nowrap;
+  }
+  td {
+    padding: 10px 12px; border-bottom: 1px solid var(--rule);
+    vertical-align: top; line-height: 1.5;
+  }
+  tr:last-child td { border-bottom: 0; }
+  td.id {
+    font-family: var(--mono); font-size: 12px; white-space: nowrap;
+    color: var(--ink-soft); font-weight: 600;
+  }
+  td.pri { white-space: nowrap; }
+  .req { font-weight: 600; display: block; margin-bottom: 3px; }
+  .crit { color: var(--ink-soft); font-size: 13.2px; }
+  .crit::before {
+    content: "Accepted when ";
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--ink-faint);
+  }
+
+  .pill {
+    display: inline-block; font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.06em; font-weight: 600; padding: 2px 6px;
+    border: 1px solid currentColor; white-space: nowrap;
+  }
+  .pill--p0    { color: var(--p0);    background: var(--p0-bg); }
+  .pill--p1    { color: var(--p1);    background: var(--p1-bg); }
+  .pill--p2    { color: var(--p2);    background: var(--p2-bg); }
+  .pill--later { color: var(--later); background: var(--later-bg); }
+
+  .panel {
+    border: 1px solid var(--rule); border-left: 3px solid var(--accent);
+    background: var(--panel); padding: 17px 20px; margin: 0 0 18px;
+    max-width: var(--measure);
+  }
+  .panel p:last-child { margin-bottom: 0; }
+  .panel__title {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--ink-faint); margin: 0 0 8px;
+  }
+
+  footer {
+    grid-column: 1 / -1; border-top: 2px solid var(--ink);
+    padding-top: 20px; margin-top: 20px;
+    font-size: 13.5px; color: var(--ink-soft); max-width: var(--measure);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  }
+  html { scroll-behavior: smooth; }
+</style>
+
+<div class="shell">
+
+  <header class="masthead">
+    <p class="kicker">Product requirements · Calm Global · v1.0 · 19 September 2026</p>
+    <h1>Dossiro</h1>
+    <p class="standfirst">
+      What the product must do to be sold to Nigerian enterprises and public bodies as a
+      browser-delivered document management system. This document states requirements, not progress.
+    </p>
+    <div class="facts">
+      <div class="fact"><span class="fact__label">Requirements</span><span class="fact__value">133 across 14 areas</span></div>
+      <div class="fact"><span class="fact__label">Launch scope</span><span class="fact__value">65 must-haves</span></div>
+      <div class="fact"><span class="fact__label">Delivery</span><span class="fact__value">Managed service, self-host optional</span></div>
+      <div class="fact"><span class="fact__label">Market</span><span class="fact__value">Nigeria first</span></div>
+    </div>
+  </header>
+
+  <nav class="rail" aria-label="Contents">
+    <p class="rail__title">Contents</p>
+    <ol>
+      <li><a href="#purpose">Purpose</a></li>
+      <li><a href="#problem">The problem</a></li>
+      <li><a href="#objectives">Objectives</a></li>
+      <li><a href="#users">Users</a></li>
+      <li><a href="#bets">Product bets</a></li>
+      <li><a href="#language">Language</a></li>
+      <p class="grp">Requirements</p>
+      <li><a href="#ten">A · Tenancy and identity</a></li>
+      <li><a href="#fil">B · Filing structure</a></li>
+      <li><a href="#typ">C · Document types</a></li>
+      <li><a href="#cap">D · Capture and intake</a></li>
+      <li><a href="#src">E · Search</a></li>
+      <li><a href="#vew">F · Viewing and editing</a></li>
+      <li><a href="#shr">G · External sharing</a></li>
+      <li><a href="#wfl">H · Workflow and approvals</a></li>
+      <li><a href="#sig">I · Signatures and forms</a></li>
+      <li><a href="#gov">J · Governance</a></li>
+      <li><a href="#off">K · Offline and mobile</a></li>
+      <li><a href="#adm">L · Administration</a></li>
+      <li><a href="#lic">M · Platform and licensing</a></li>
+      <p class="grp">Beyond features</p>
+      <li><a href="#nfr">Non-functional</a></li>
+      <li><a href="#scope">Out of scope</a></li>
+      <li><a href="#phases">Release phases</a></li>
+      <li><a href="#open">Open questions</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <section id="purpose">
+      <p class="eyebrow">Purpose</p>
+      <h2>What this document is</h2>
+      <p class="lede">
+        The definition of done for Dossiro. Every requirement below is written so that it can be
+        judged true or false, and carries the condition under which it is accepted.
+      </p>
+      <p>
+        Priorities are fixed against a single question: <strong>can Dossiro be sold without
+        this?</strong>
+      </p>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Priority</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td class="pri"><span class="pill pill--p0">P0</span></td><td>Cannot launch without it. A buyer in this category will refuse the product, or a regulator will.</td></tr>
+            <tr><td class="pri"><span class="pill pill--p1">P1</span></td><td>Needed within two quarters of launch. Its absence loses competitive deals but not every deal.</td></tr>
+            <tr><td class="pri"><span class="pill pill--p2">P2</span></td><td>Expected eventually. Its absence is survivable and can be named honestly in a sales conversation.</td></tr>
+            <tr><td class="pri"><span class="pill pill--later">Later</span></td><td>Deliberately deferred. Recorded so the decision is not re-argued.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="problem">
+      <p class="eyebrow">Context</p>
+      <h2>The problem being solved</h2>
+      <p>
+        Nigerian enterprises, banks, hospitals and public agencies hold their records in shared
+        drives, email and paper. They are increasingly required — by regulators, by auditors, by the
+        Nigeria Data Protection Act, and by their own boards — to control who can see a record and to
+        show afterwards who did.
+      </p>
+      <p>
+        The established document management products in this market are Windows-era software: a
+        Windows-only server, a desktop administration tool, a Java desktop client, per-seat licences
+        priced for a different economy, and a deployment that needs a partner on site. They work, and
+        they are what buyers compare against, but they impose an IT burden most Nigerian organisations
+        do not want and a cost most cannot justify.
+      </p>
+      <p>
+        <strong>Dossiro's opportunity is the gap between the compliance requirement and the delivery
+        model.</strong> The compliance posture is not negotiable and must be matched. The delivery
+        model — install, maintain, administer from a desktop, one database at a time — is where an
+        incumbent can be beaten outright.
+      </p>
+    </section>
+
+    <section id="objectives">
+      <p class="eyebrow">Success</p>
+      <h2>Business objectives</h2>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Objective</th><th>Measured by</th></tr></thead>
+          <tbody>
+            <tr><td>A customer can be live without an engineer visiting</td><td>Time from signed contract to first document filed, target under one hour</td></tr>
+            <tr><td>Administration never requires software on a desktop</td><td>Every administrative task completable in a browser. No exceptions.</td></tr>
+            <tr><td>The audit position survives scrutiny</td><td>An external auditor accepts the trail as evidence without supplementary explanation</td></tr>
+            <tr><td>Price at a level the market can pay</td><td>Total first-year cost below the incumbent's licence cost alone</td></tr>
+            <tr><td>Records stay in the country when required</td><td>Nigerian data residency available on request, contractually</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="users">
+      <p class="eyebrow">Who for</p>
+      <h2>Users</h2>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>User</th><th>Needs</th><th>Fails if</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Records officer</strong><br><span class="crit" style="display:block">Files most of what enters the system</span></td>
+              <td>To capture a stack of paper, have it named and filed correctly, and find it again in seconds</td>
+              <td>Filing takes longer than the shared drive it replaced</td>
+            </tr>
+            <tr>
+              <td><strong>Department head</strong></td>
+              <td>To control who in their unit sees what, approve what needs approving, and share with counterparties safely</td>
+              <td>They must ask IT to change a permission</td>
+            </tr>
+            <tr>
+              <td><strong>Compliance or audit officer</strong></td>
+              <td>To answer "who opened this, and when" without asking anyone, and to export that answer</td>
+              <td>The trail is incomplete, or could have been edited</td>
+            </tr>
+            <tr>
+              <td><strong>IT administrator</strong></td>
+              <td>To connect existing identity, set policy once, and not be the bottleneck for daily requests</td>
+              <td>Routine administration requires them at all</td>
+            </tr>
+            <tr>
+              <td><strong>External counterparty</strong></td>
+              <td>To open exactly what was sent to them, without an account</td>
+              <td>They are asked to register, or they can reach more than was intended</td>
+            </tr>
+            <tr>
+              <td><strong>Platform operator</strong><br><span class="crit" style="display:block">Calm Global</span></td>
+              <td>To provision, suspend and meter customers, without the ability to read their records</td>
+              <td>Operating the platform grants sight of customer data</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="bets">
+      <p class="eyebrow">Strategy</p>
+      <h2>The product bets</h2>
+      <p>
+        Five decisions that the requirements below assume. They are stated here so that a requirement
+        derived from them is not later questioned in isolation.
+      </p>
+
+      <h3>1. Browser-first, with no desktop component at all</h3>
+      <p>
+        Including administration. Incumbent products administer from a Windows desktop tool; matching
+        that would concede the single clearest advantage available.
+      </p>
+
+      <h3>2. Multi-tenant SaaS as the default delivery</h3>
+      <p>
+        One deployment serving many organisations, each at its own address. Self-hosting is offered
+        where a regulator demands it, not as the standard path.
+      </p>
+
+      <h3>3. A customer configures their own document types</h3>
+      <p>
+        Without a developer. This is the backbone of the category: advanced search, retention rules,
+        workflow triggers and automatic indexing all key off it. A product without it is a file store
+        with permissions.
+      </p>
+
+      <h3>4. Capability is not divided into separate purchasable modules</h3>
+      <p>
+        Workflow, retention, notifications, indexing and search are one product. The incumbent pattern
+        of selling each as an add-on is a pricing habit, not a customer need, and undercutting it is
+        straightforwardly valuable.
+      </p>
+
+      <h3>5. Text extraction and AI assistance are core, not an upsell</h3>
+      <p>
+        Every document that enters is made searchable. Assistance that proposes a name, a folder and a
+        classification is part of filing, not a premium tier. The proposal is always confirmed by a
+        person before anything is renamed or moved.
+      </p>
+    </section>
+
+    <section id="language">
+      <p class="eyebrow">Vocabulary</p>
+      <h2>The language the product speaks</h2>
+      <p>
+        Buyers in this market already have words for these things, learned from the products they use
+        today. Dossiro uses those words rather than inventing better ones.
+      </p>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Term</th><th>Means</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Tenancy</strong></td><td>One customer organisation. Its own people, structure, records and address.</td></tr>
+            <tr><td><strong>Cabinet</strong></td><td>A top-level division of the filing structure — Finance, Legal, Human Resources.</td></tr>
+            <tr><td><strong>Drawer</strong></td><td>A division within a cabinet. May be locked, requiring a passcode even from someone whose role would otherwise permit entry.</td></tr>
+            <tr><td><strong>Folder</strong></td><td>Nests without limit beneath a drawer.</td></tr>
+            <tr><td><strong>Record</strong></td><td>A document and all its versions, its type, its index fields and its history.</td></tr>
+            <tr><td><strong>Classification</strong></td><td>How sensitive a record is, independent of who may reach it.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ================= REQUIREMENTS ================= -->
+
+    <section id="ten">
+      <p class="eyebrow">Requirements · A</p>
+      <h2>Tenancy and identity</h2>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>ID</th><th>Requirement</th><th>Pri</th></tr></thead>
+          <tbody>
+            <tr><td class="id">TEN-1</td><td><span class="req">Each customer is an isolated tenancy</span><span class="crit">no query, export or search can return another tenancy's data, and this is proven by automated test on every build</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">TEN-2</td><td><span class="req">A tenancy answers on its own web address</span><span class="crit">visiting it identifies the organisation before sign-in, and shows that organisation's name and branding</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">TEN-3</td><td><span class="req">One person may belong to more than one tenancy</span><span class="crit">a consultant signs in to each separately; nothing is shared between them, including sessions</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">TEN-4</td><td><span class="req">Sign-in with Microsoft Entra and Okta</span><span class="crit">an administrator connects the provider and passwords become unnecessary for staff</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">TEN-5</td><td><span class="req">Sign-in against on-premises Active Directory or LDAP</span><span class="crit">a self-hosted customer authenticates against their existing directory</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">TEN-6</td><td><span class="req">Two-factor authentication, enforceable as policy</span><span class="crit">an administrator can require it for a role or for everyone, and non-compliant accounts cannot sign in</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">TEN-7</td><td><span class="req">A tenancy may restrict an account to one active session</span><span class="crit">signing in elsewhere names the other device and requires an explicit takeover, which ends the first session immediately</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">TEN-8</td><td><span class="req">An administrator can end any session immediately</span><span class="crit">the revoked session's next request fails, without waiting for a token to expire</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">TEN-9</td><td><span class="req">Devices are recognised and can be individually revoked</span><span class="crit">revoking a device wipes any records cached on it for offline use</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">TEN-10</td><td><span class="req">Staff are organised into departments that nest</span><span class="crit">a grant to a parent department reaches its children without a second grant</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">TEN-11</td><td><span class="req">Staff are also organised by branch or location</span><span class="crit">a grant can be scoped to a branch and to the offices beneath it</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">TEN-12</td><td><span class="req">Roles are definable by the customer, not fixed by us</span><span class="crit">an administrator composes a role from individual permissions and assigns it</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="fil">
+      <p class="eyebrow">Requirements · B</p>
+      <h2>Filing structure and access</h2>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>ID</th><th>Requirement</th><th>Pri</th></tr></thead>
+          <tbody>
+            <tr><td class="id">FIL-1</td><td><span class="req">Cabinets, drawers and folders nesting without limit</span><span class="crit">depth is not capped, and moving a folder carries its whole subtree</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">FIL-2</td><td><span class="req">A drawer can be locked behind a passcode</span><span class="crit">entry requires the passcode even for someone whose role otherwise permits it, and each entry is recorded</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">FIL-3</td><td><span class="req">A folder can be sealed from inheritance</span><span class="crit">grants from above do not reach into it; only explicit grants apply</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">FIL-4</td><td><span class="req">Access is granted to a person, a department, or a role</span><span class="crit">all three resolve, and a person's effective access is the combination</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">FIL-5</td><td><span class="req">Access levels separate viewing from taking a copy</span><span class="crit">a person may be permitted to read a contract on screen and refused the download of it</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">FIL-6</td><td><span class="req">Access levels cover view, modify, delete, print, send, check out, and the right to grant access to others</span><span class="crit">each is independently assignable</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">FIL-7</td><td><span class="req">The nearest rule wins, and a denial beats a permission at the same distance</span><span class="crit">a person with department-wide access can be excluded from one folder inside it</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">FIL-8</td><td><span class="req">Records a person cannot reach are invisible, not locked</span><span class="crit">a folder listing shows no trace of what is withheld — not a greyed row, not a count</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">FIL-9</td><td><span class="req">Every record carries a classification that constrains it independently of permission</span><span class="crit">the most sensitive class cannot be sent outside the organisation by any route, by anyone</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">FIL-10</td><td><span class="req">A person can see why they can or cannot reach a record</span><span class="crit">the interface names the rule and where it came from</span></td><td class="pri"><span class="pill pill--p2">P2</span></td></tr>
+            <tr><td class="id">FIL-11</td><td><span class="req">Every edition of a record is kept, and any prior edition can be restored</span><span class="crit">restoring creates a new edition rather than overwriting history</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">FIL-12</td><td><span class="req">A record can be checked out, blocking others from editing</span><span class="crit">a second person is told who holds it and since when, and an administrator can force its release</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="typ">
+      <p class="eyebrow">Requirements · C</p>
+      <h2>Document types</h2>
+      <p class="lede">
+        The backbone of the product. Search filters, retention rules, workflow triggers, automatic
+        indexing and per-type watermarking all key off this, so it precedes them all.
+      </p>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>ID</th><th>Requirement</th><th>Pri</th></tr></thead>
+          <tbody>
+            <tr><td class="id">TYP-1</td><td><span class="req">A customer defines their own document types without a developer</span><span class="crit">an administrator creates a type such as Contract or Personnel File in the browser, and there is no limit on how many exist</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">TYP-2</td><td><span class="req">Each type carries typed index fields</span><span class="crit">text, date, number, yes/no and selection-list fields are all available, and each can be marked required</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">TYP-3</td><td><span class="req">Index fields are searchable as fields, not as text</span><span class="crit">a query can ask for contracts expiring between two dates, or where contractor equals a named party</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">TYP-4</td><td><span class="req">A selection-list field can draw its values from an external system</span><span class="crit">a customer's existing supplier list populates the field without re-keying</span></td><td class="pri"><span class="pill pill--p2">P2</span></td></tr>
+            <tr><td class="id">TYP-5</td><td><span class="req">Version keeping is configurable per type</span><span class="crit">a type can be set to hold one edition only, where history is unwanted</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">TYP-6</td><td><span class="req">A watermark can be set per type, not only per share</span><span class="crit">every view of a record of that type is watermarked, however it was reached</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">TYP-7</td><td><span class="req">A whole tenancy's configuration exports to a portable file and imports into another</span><span class="crit">types, retention rules, notification rules and structure move between a test and a live tenancy</span></td><td class="pri"><span class="pill pill--p2">P2</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="panel">
+        <p class="panel__title">Dependency</p>
+        <p>
+          TYP-1 to TYP-3 block SRC-4, GOV-4, WFL-2 and CAP-6. Sequencing them late delays a quarter of
+          the product.
+        </p>
+      </div>
+    </section>
+
+    <section id="cap">
+      <p class="eyebrow">Requirements · D</p>
+      <h2>Capture and intake</h2>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>ID</th><th>Requirement</th><th>Pri</th></tr></thead>
+          <tbody>
+            <tr><td class="id">CAP-1</td><td><span class="req">Documents are captured from a scanner in bulk</span><span class="crit">a stack scans in one pass, is deskewed, and separates into records without one-by-one handling</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">CAP-2</td><td><span class="req">Documents arrive by email to a monitored address</span><span class="crit">the sender is verified against a known account or domain before the attachment is filed</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">CAP-3</td><td><span class="req">Documents arrive by WhatsApp from verified senders</span><span class="crit">a field officer photographs a delivery note and it lands in the right folder</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">CAP-4</td><td><span class="req">Documents are captured from a phone camera with edge detection</span><span class="crit">a photographed page is corrected to a readable, straightened image</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">CAP-5</td><td><span class="req">Every document is made text-searchable on arrival</span><span class="crit">a scanned page is searchable by its content within minutes of filing, without anyone requesting it</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">CAP-6</td><td><span class="req">Index fields are filled automatically from the document</span><span class="crit">a recurring form has its fields read from known positions; a new layout is learned from one example</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">CAP-7</td><td><span class="req">A name, folder and classification are proposed for what arrives</span><span class="crit">the proposal is shown for confirmation and nothing is renamed or moved unattended</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">CAP-8</td><td><span class="req">Anything captured enters the same pipeline regardless of route</span><span class="crit">a WhatsApp photo and a scanner page receive identical naming, indexing and classification treatment</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">CAP-9</td><td><span class="req">Office documents convert to PDF in bulk</span><span class="crit">a folder of mixed formats converts without opening each one</span></td><td class="pri"><span class="pill pill--p2">P2</span></td></tr>
+            <tr><td class="id">CAP-10</td><td><span class="req">Extraction that is uncertain is queued for a person, never guessed</span><span class="crit">a low-confidence field is flagged for review and excluded from reports until confirmed</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="src">
+      <p class="eyebrow">Requirements · E</p>
+      <h2>Search</h2>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>ID</th><th>Requirement</th><th>Pri</th></tr></thead>
+          <tbody>
+            <tr><td class="id">SRC-1</td><td><span class="req">Search covers document content, not only names and metadata</span><span class="crit">a phrase inside a scanned contract is found</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">SRC-2</td><td><span class="req">Results never include a record the searcher cannot open</span><span class="crit">counts and result sets are scoped to permission, and reveal nothing by omission</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">SRC-3</td><td><span class="req">Results show why they matched</span><span class="crit">the matching phrase is quoted from the document with the matched words marked</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">SRC-4</td><td><span class="req">Search filters on document type and that type's fields</span><span class="crit">multiple field criteria combine in one query</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">SRC-5</td><td><span class="req">Search filters on cabinet, creator, date ranges and classification</span><span class="crit">created and modified ranges are independently selectable</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">SRC-6</td><td><span class="req">Exact phrase, any word and all words are all supported</span><span class="crit">each returns a demonstrably different result set</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">SRC-7</td><td><span class="req">Search covers the current edition by default, with prior editions optional</span><span class="crit">the choice is explicit in the interface</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">SRC-8</td><td><span class="req">Search filters on workflow state</span><span class="crit">everything awaiting a named person's approval is findable in one query</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">SRC-9</td><td><span class="req">A search can be saved and re-run</span><span class="crit">a saved search is available from the toolbar and can be shared with a department</span></td><td class="pri"><span class="pill pill--p2">P2</span></td></tr>
+            <tr><td class="id">SRC-10</td><td><span class="req">Search by meaning, not only by words</span><span class="crit">a query for "termination clause" finds a document phrasing it as "notice of cancellation"</span></td><td class="pri"><span class="pill pill--p2">P2</span></td></tr>
+            <tr><td class="id">SRC-11</td><td><span class="req">Results return within two seconds at one million records</span><span class="crit">measured at the 95th percentile on the reference deployment</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="vew">
+      <p class="eyebrow">Requirements · F</p>
+      <h2>Viewing, editing and collaboration</h2>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>ID</th><th>Requirement</th><th>Pri</th></tr></thead>
+          <tbody>
+            <tr><td class="id">VEW-1</td><td><span class="req">Documents are viewed in the browser with nothing installed</span><span class="crit">PDF, Office formats and images all render without a plug-in or a download</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">VEW-2</td><td><span class="req">Viewing does not require the ability to download</span><span class="crit">a view-only record is rendered without the original bytes ever reaching the browser</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">VEW-3</td><td><span class="req">Pages can be annotated with notes, highlights and stamps</span><span class="crit">annotations are separate from the document and can be hidden, and never alter the original</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">VEW-4</td><td><span class="req">Content can be redacted irreversibly for onward sharing</span><span class="crit">the redacted copy contains no recoverable trace of what was removed</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">VEW-5</td><td><span class="req">Comments can be attached to a record and replied to</span><span class="crit">a thread is visible to everyone with access and is part of the record's history</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">VEW-6</td><td><span class="req">Two people can edit one document at the same time</span><span class="crit">both see each other's changes live, and neither loses work</span></td><td class="pri"><span class="pill pill--p2">P2</span></td></tr>
+            <tr><td class="id">VEW-7</td><td><span class="req">Editions can be compared</span><span class="crit">what changed between two editions is shown without opening both</span></td><td class="pri"><span class="pill pill--p2">P2</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="shr">
+      <p class="eyebrow">Requirements · G</p>
+      <h2>External sharing</h2>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>ID</th><th>Requirement</th><th>Pri</th></tr></thead>
+          <tbody>
+            <tr><td class="id">SHR-1</td><td><span class="req">A record can be sent to someone with no account</span><span class="crit">the recipient opens exactly that record and can reach nothing else</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">SHR-2</td><td><span class="req">A share carries an expiry</span><span class="crit">it stops working at the stated time without anyone intervening</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">SHR-3</td><td><span class="req">A share can require an access code</span><span class="crit">the code is delivered separately from the link, and a wrong code is refused and recorded</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">SHR-4</td><td><span class="req">A share can be limited to named email addresses</span><span class="crit">a forwarded link does not work for an unnamed recipient</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">SHR-5</td><td><span class="req">A share can be view-only, and this is enforced server-side</span><span class="crit">requesting the document as a download is refused, not merely hidden in the interface</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">SHR-6</td><td><span class="req">A share can cap the number of downloads</span><span class="crit">the link closes itself once the cap is reached</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">SHR-7</td><td><span class="req">A shared view can be watermarked with the recipient and the time</span><span class="crit">a screenshot of the shared document identifies who it was sent to</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">SHR-8</td><td><span class="req">A share can be revoked with immediate effect</span><span class="crit">the next request fails, with no cached grace period</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">SHR-9</td><td><span class="req">Sharing is refused when it contradicts the classification</span><span class="crit">the refusal states which rule stopped it, rather than failing generically</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">SHR-10</td><td><span class="req">The sender can see how the recipient engaged</span><span class="crit">opens, time spent and which pages held attention are reported</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">SHR-11</td><td><span class="req">A customer's own website can present documents to the public</span><span class="crit">an external site retrieves permitted records through an interface, with no accounts for the public</span></td><td class="pri"><span class="pill pill--p2">P2</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="wfl">
+      <p class="eyebrow">Requirements · H</p>
+      <h2>Workflow and approvals</h2>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>ID</th><th>Requirement</th><th>Pri</th></tr></thead>
+          <tbody>
+            <tr><td class="id">WFL-1</td><td><span class="req">A workflow starts when a record is filed into a folder</span><span class="crit">no one has to remember to start it</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">WFL-2</td><td><span class="req">A workflow starts on index-field criteria, combinable</span><span class="crit">contracts above a value and of a named type route differently from the rest</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">WFL-3</td><td><span class="req">Steps assign to a person, a department or a role</span><span class="crit">a role assignment reaches whoever holds the role at that moment, not a fixed individual</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">WFL-4</td><td><span class="req">A step confers the access needed to complete it, for its duration only</span><span class="crit">the approver can open what they must approve without a standing grant, and loses it when the task closes</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">WFL-5</td><td><span class="req">Steps run in sequence or in parallel</span><span class="crit">a parallel step can require a stated number of several approvers</span></td><td class="pri"><span class="pill pill--p2">P2</span></td></tr>
+            <tr><td class="id">WFL-6</td><td><span class="req">An overdue step escalates to a named alternative</span><span class="crit">escalation happens on a schedule without intervention and is recorded</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">WFL-7</td><td><span class="req">A workflow is built in the browser without code</span><span class="crit">a department head composes a two-step approval unaided</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">WFL-8</td><td><span class="req">People are notified of what awaits them, and can choose how</span><span class="crit">notification preferences are set per person and per folder, on filing, change, approval and deletion</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">WFL-9</td><td><span class="req">Outstanding tasks are visible on arrival</span><span class="crit">a dashboard lists what is waiting for the person, oldest first</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="sig">
+      <p class="eyebrow">Requirements · I</p>
+      <h2>Signatures and forms</h2>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>ID</th><th>Requirement</th><th>Pri</th></tr></thead>
+          <tbody>
+            <tr><td class="id">SIG-1</td><td><span class="req">A signature can be requested on a record from inside the system</span><span class="crit">the signer receives it without an account and without a third-party service</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">SIG-2</td><td><span class="req">A signature can be drawn, typed or applied from a stored mark</span><span class="crit">all three produce a signature fixed to a position on the page</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">SIG-3</td><td><span class="req">Every signature carries evidence sufficient for a dispute</span><span class="crit">who signed, when, from which address, on which exact edition, sealed against later alteration</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">SIG-4</td><td><span class="req">Certificate-based signing for documents that require it</span><span class="crit">the signature validates in third-party readers</span></td><td class="pri"><span class="pill pill--p2">P2</span></td></tr>
+            <tr><td class="id">SIG-5</td><td><span class="req">Forms are built in the browser and published</span><span class="crit">a form is composed without code and made available internally or externally</span></td><td class="pri"><span class="pill pill--p2">P2</span></td></tr>
+            <tr><td class="id">SIG-6</td><td><span class="req">A submission becomes a record and can start a workflow</span><span class="crit">the submission is filed, indexed, searchable, and triggers routing</span></td><td class="pri"><span class="pill pill--p2">P2</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="gov">
+      <p class="eyebrow">Requirements · J</p>
+      <h2>Governance, retention and evidence</h2>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>ID</th><th>Requirement</th><th>Pri</th></tr></thead>
+          <tbody>
+            <tr><td class="id">GOV-1</td><td><span class="req">Every consequential action is recorded</span><span class="crit">who, what, when, from where, on which record — including refusals and views</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">GOV-2</td><td><span class="req">The record of actions cannot be altered by anyone</span><span class="crit">the database itself refuses modification and deletion, so the guarantee does not depend on application code or on trusting an administrator</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">GOV-3</td><td><span class="req">Tampering is detectable, not merely prevented</span><span class="crit">an integrity check recomputes the trail on demand and names the first entry that disagrees</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">GOV-4</td><td><span class="req">The trail exports for an auditor</span><span class="crit">a date range exports to a file an auditor can verify independently</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">GOV-5</td><td><span class="req">Anyone with access to a record can see that record's own history</span><span class="crit">without needing administrative rights or asking anyone</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">GOV-6</td><td><span class="req">Retention schedules are set per document type</span><span class="crit">a schedule states how long a record is kept and what happens at the end</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">GOV-7</td><td><span class="req">Disposition requires review before destruction, where configured</span><span class="crit">a named person confirms, and the confirmation is recorded</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">GOV-8</td><td><span class="req">A legal hold suspends all destruction</span><span class="crit">a held record cannot be deleted or purged by anyone, including the highest role, until released</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">GOV-9</td><td><span class="req">Deletion is recoverable for a stated window</span><span class="crit">a deleted record is restorable with its history intact until the window elapses</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">GOV-10</td><td><span class="req">Reports by date range, cabinet and person</span><span class="crit">a compliance officer produces activity and holdings reports unaided</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">GOV-11</td><td><span class="req">A person's data can be located and exported on request</span><span class="crit">a data subject request under the Nigeria Data Protection Act is answerable within the statutory period</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="off">
+      <p class="eyebrow">Requirements · K</p>
+      <h2>Offline and mobile</h2>
+      <div class="panel">
+        <p class="panel__title">Where the category is weakest</p>
+        <p>
+          Incumbent web clients require a connection to take a record offline, handle one document at a
+          time, and cannot work independently of the server — while the desktop client that did this
+          properly is being retired. This is the clearest opening in the market and the requirements
+          below are set deliberately higher than the competition.
+        </p>
+      </div>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>ID</th><th>Requirement</th><th>Pri</th></tr></thead>
+          <tbody>
+            <tr><td class="id">OFF-1</td><td><span class="req">A selection of records is taken offline in one action</span><span class="crit">a folder or a search result is taken offline together, not document by document</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">OFF-2</td><td><span class="req">Offline records are readable with no connection at all</span><span class="crit">reading works on a flight or during an outage, with no server contact</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">OFF-3</td><td><span class="req">Work done offline is queued and applied on reconnection</span><span class="crit">nothing is lost and nothing is applied twice</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">OFF-4</td><td><span class="req">Conflicting offline edits are surfaced, never silently resolved</span><span class="crit">a person is shown both versions and chooses</span></td><td class="pri"><span class="pill pill--p2">P2</span></td></tr>
+            <tr><td class="id">OFF-5</td><td><span class="req">Cached records stay encrypted and obey classification</span><span class="crit">the most sensitive class is never cached on any device, and a time limit applies to the class below it</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">OFF-6</td><td><span class="req">Revoking a device wipes what it holds</span><span class="crit">cached records become unreadable at the next opportunity, without the holder's cooperation</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">OFF-7</td><td><span class="req">Full function on a phone, including capture and approval</span><span class="crit">a manager approves and a field officer files, from a phone, without a desktop</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">OFF-8</td><td><span class="req">Usable on an intermittent connection</span><span class="crit">the interface degrades rather than failing, and states plainly what is unavailable</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="adm">
+      <p class="eyebrow">Requirements · L</p>
+      <h2>Administration</h2>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>ID</th><th>Requirement</th><th>Pri</th></tr></thead>
+          <tbody>
+            <tr><td class="id">ADM-1</td><td><span class="req">Every administrative task is performed in a browser</span><span class="crit">nothing requires software installed on a desktop, ever — including document types, retention, security and connections</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">ADM-2</td><td><span class="req">People are invited, suspended and removed by an administrator</span><span class="crit">suspension preserves history and immediately ends sessions and shares the person created</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">ADM-3</td><td><span class="req">An administrator sees a person's effective access and why</span><span class="crit">the resolved answer and the rules producing it are both shown</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">ADM-4</td><td><span class="req">A tenancy can be branded</span><span class="crit">logo, colour and sign-in appearance are set by the customer without our involvement</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">ADM-5</td><td><span class="req">Administrators can work across several tenancies at once where entitled</span><span class="crit">switching does not require signing out, and each tenancy's data stays separate</span></td><td class="pri"><span class="pill pill--p2">P2</span></td></tr>
+            <tr><td class="id">ADM-6</td><td><span class="req">A dashboard shows what needs attention on arrival</span><span class="crit">tasks, recent records and items awaiting review, scoped to the person</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">ADM-7</td><td><span class="req">Storage location is configurable per tenancy</span><span class="crit">a customer's records can be placed on infrastructure they nominate</span></td><td class="pri"><span class="pill pill--p2">P2</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="lic">
+      <p class="eyebrow">Requirements · M</p>
+      <h2>Platform operation and licensing</h2>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>ID</th><th>Requirement</th><th>Pri</th></tr></thead>
+          <tbody>
+            <tr><td class="id">PLT-1</td><td><span class="req">A tenancy is provisioned without engineering involvement</span><span class="crit">an operator creates a customer, its first administrator and its address, in minutes</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">PLT-2</td><td><span class="req">Operating the platform confers no sight of customer records</span><span class="crit">the operator realm cannot read, search or export any tenancy's documents, and cannot hold documents itself</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">PLT-3</td><td><span class="req">Suspending or closing a tenancy requires a recorded reason</span><span class="crit">the reason is written to both the operator's and the customer's trail and cannot be edited afterwards</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">PLT-4</td><td><span class="req">Entitlement is enforced without contacting a server</span><span class="crit">a self-hosted deployment with no outbound connectivity still honours its limits</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">PLT-5</td><td><span class="req">Entitlement cannot be raised by editing the database</span><span class="crit">changing a seat count directly has no effect</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">PLT-6</td><td><span class="req">Seats can be sold as reserved or as a shared pool</span><span class="crit">a reserved seat is always available to its holder; a pooled seat is released when its holder becomes inactive</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">PLT-7</td><td><span class="req">A pooled seat is never refused without a way forward</span><span class="crit">a person turned away is told when one is expected, or can request release — being told only to come back later is not acceptable</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">PLT-8</td><td><span class="req">External recipients never consume a seat</span><span class="crit">a customer sharing with a thousand counterparties pays nothing further</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">PLT-9</td><td><span class="req">Usage is metered for billing</span><span class="crit">storage, seats and activity are reportable per tenancy per period</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">PLT-10</td><td><span class="req">A customer can leave with their records</span><span class="crit">a complete export of documents and metadata in an open format, obtainable without our assistance</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="nfr">
+      <p class="eyebrow">Beyond features</p>
+      <h2>Non-functional requirements</h2>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>ID</th><th>Requirement</th><th>Pri</th></tr></thead>
+          <tbody>
+            <tr><td class="id">NFR-1</td><td><span class="req">Runs on any modern browser, on any operating system</span><span class="crit">no Windows requirement anywhere in the product, server or client</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">NFR-2</td><td><span class="req">A folder of a thousand records opens in under two seconds</span><span class="crit">measured at the 95th percentile on a typical Nigerian broadband connection, not on a developer's machine</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">NFR-3</td><td><span class="req">Usable on a slow or intermittent connection</span><span class="crit">the first screen is usable within five seconds on a 3G connection</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">NFR-4</td><td><span class="req">Records are encrypted in transit and at rest</span><span class="crit">stored bytes are unreadable without the platform's keys, and keys are not held beside the data</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">NFR-5</td><td><span class="req">Nigerian data residency available on request</span><span class="crit">a customer's records and backups remain in-country, contractually and technically</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">NFR-6</td><td><span class="req">Compliant with the Nigeria Data Protection Act</span><span class="crit">lawful basis, subject rights, breach notification and retention are all supported by the product, not only by policy</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">NFR-7</td><td><span class="req">SOC 2 Type II certified</span><span class="crit">an unqualified report covering security and availability, held and renewed</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">NFR-8</td><td><span class="req">99.5% monthly availability for the managed service</span><span class="crit">measured and published, with credits defined in the contract</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">NFR-9</td><td><span class="req">Recoverable within four hours, losing no more than one hour of work</span><span class="crit">demonstrated by a restore rehearsal, not by a backup existing</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">NFR-10</td><td><span class="req">Accessible to WCAG 2.1 AA</span><span class="crit">operable by keyboard throughout and usable with a screen reader — required for public-sector procurement</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+            <tr><td class="id">NFR-11</td><td><span class="req">Interface language is British English, with dates and currency in local convention</span><span class="crit">no American spelling in customer-facing text; naira and day-month-year throughout</span></td><td class="pri"><span class="pill pill--p0">P0</span></td></tr>
+            <tr><td class="id">NFR-12</td><td><span class="req">Everything the interface does is available through a documented interface</span><span class="crit">a customer can integrate without asking us for an undocumented route</span></td><td class="pri"><span class="pill pill--p1">P1</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="scope">
+      <p class="eyebrow">Boundaries</p>
+      <h2>Out of scope</h2>
+      <p>Recorded so these are not revisited without a decision.</p>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Not building</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td>A collaborative document editor</td><td>Embedded from an existing product. Building one is not justifiable at any realistic budget.</td></tr>
+            <tr><td>A desktop client</td><td>The entire strategic position is that one is unnecessary. Building one concedes it.</td></tr>
+            <tr><td>Our own text-recognition engine</td><td>A solved problem with good components available.</td></tr>
+            <tr><td>Accounting, ERP or case management</td><td>Dossiro holds records and integrates. It does not become the system of record for a business process.</td></tr>
+            <tr><td>Physical records tracking</td><td>Barcode tracking of paper in a warehouse is a different product.</td></tr>
+            <tr><td>Per-module pricing</td><td>A deliberate rejection of the incumbent model, not an omission.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="phases">
+      <p class="eyebrow">Sequence</p>
+      <h2>Release phases</h2>
+      <p>
+        Phases follow dependency, not preference. Document types come first because a quarter of the
+        product keys off them, and text extraction second because capture, search and automatic
+        indexing all wait on it.
+      </p>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Phase</th><th>Contains</th><th>Ready when</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>1 · Sellable</strong></td>
+              <td>All P0 requirements. Tenancy, filing, access, document types, capture with text extraction, search, sharing, the audit trail, retention and legal hold, browser administration, provisioning and licensing.</td>
+              <td>A customer can be provisioned, file their records, control access, share safely, and satisfy an auditor — with nothing installed.</td>
+            </tr>
+            <tr>
+              <td><strong>2 · Competitive</strong></td>
+              <td>P1. Workflow and notifications, signatures, annotation and redaction, offline and mobile, automatic indexing, reports, seat pooling, SOC 2.</td>
+              <td>Dossiro wins a head-to-head evaluation against an incumbent on capability, not only on price and delivery.</td>
+            </tr>
+            <tr>
+              <td><strong>3 · Extending</strong></td>
+              <td>P2. Forms, co-editing, semantic search, public portal, external lookups, configuration portability, certificate signing.</td>
+              <td>The remaining gaps against the category are closed and the product leads on the areas the incumbents have abandoned.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="open">
+      <p class="eyebrow">Unresolved</p>
+      <h2>Open questions</h2>
+      <p>These need answers from the business, not from engineering.</p>
+      <ol>
+        <li><strong>Pricing shape.</strong> Per seat, per tenancy, or per volume of records? PLT-6 and PLT-9 cannot be specified precisely until this is settled.</li>
+        <li><strong>Reserved and pooled seats — is the complexity worth it?</strong> It matches what buyers know, and pooling is the mechanism that makes an occasional user affordable. It is also the incumbent's most disliked behaviour. Offering only one simple model may be the stronger position.</li>
+        <li><strong>Which regulated sector is targeted first?</strong> Banking, health and public sector each add requirements — health in particular adds a standard we have not scoped.</li>
+        <li><strong>Hosting location.</strong> NFR-5 requires Nigerian residency on request. Whether that is the default for all customers is a cost and latency decision.</li>
+        <li><strong>Is self-hosting offered at launch or withheld?</strong> It widens the addressable market and multiplies the support burden.</li>
+        <li><strong>Migration from what?</strong> Most buyers hold records in shared drives and in an incumbent system. Whether import tooling is a product feature or a service offering changes Phase 1.</li>
+      </ol>
+    </section>
+
+  </main>
+
+  <footer>
+    Dossiro · Calm Global · Lagos and Abuja. Requirements v1.0, 19 September 2026. Each requirement is
+    written to be judged true or false; where one cannot yet be, it is an open question above rather
+    than a requirement here.
+  </footer>
+
+</div>
