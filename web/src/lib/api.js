@@ -199,6 +199,13 @@ export const api = {
     versions: (id) => request(`/documents/${id}/versions`),
   },
 
+  access: {
+    /** The caller's own resolved level on one object. */
+    effective: (type, id) => request(`/access/effective?type=${type}&id=${id}`),
+    /** Who else has been granted what. Requires MANAGE on the object. */
+    grants: (params) => request(`/access/grants?${qs(params)}`),
+  },
+
   shares: {
     listFor: (documentId) => request(`/shares?documentId=${documentId}`),
     create: (documentId, options) => request('/shares', { method: 'POST', body: { documentId, ...options } }),

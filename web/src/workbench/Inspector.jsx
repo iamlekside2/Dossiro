@@ -1,5 +1,10 @@
 ﻿import { BranchPane, BranchStaffPane, HostnamePane } from './panes/Branch.jsx';
 import Preview from './panes/Preview.jsx';
+import {
+  DocumentAccessPane,
+  DocumentSummaryPane,
+  DocumentVersionsPane,
+} from './panes/Document.jsx';
 import { AccessPane, DetailsPane, EditPane, SummaryPane, VersionsPane } from './panes/Core.jsx';
 import {
   CapabilitiesPane,
@@ -51,7 +56,21 @@ export default function Inspector({
   showBack,
   onBack,
 }) {
-  const Body = BODIES[active] ?? DetailsPane;
+  // A real document answers three of its panes for itself. The rest — the
+  // preview and the editing tools — are still the design's, so they keep the
+  // sample bodies and the note below says which is which.
+  const isLiveDocument = area === 'repo' && Boolean(record?.record);
+  const LIVE_DOCUMENT_BODIES = {
+    summary: DocumentSummaryPane,
+    history: DocumentVersionsPane,
+    access: DocumentAccessPane,
+  };
+
+  const Body =
+    (isLiveDocument ? LIVE_DOCUMENT_BODIES[active] : null) ?? BODIES[active] ?? DetailsPane;
+
+  /** Panes still showing the handoff's illustration for a live document. */
+  const illustrated = isLiveDocument && !LIVE_DOCUMENT_BODIES[active];
 
   return (
     <div className="inspector">
@@ -79,15 +98,15 @@ export default function Inspector({
         </div>
       </div>
 
-      {/* The list can be live while the panes beside it are still the handoff's
-          illustration. That pairing is the most misleading state in the app —
-          a real filename above an invented contract — so it is labelled. */}
-      {record?.record && (
+      {/* Shown only on the panes that are still the handoff's. A real filename
+          above an invented contract is the most misleading state in the app,
+          and the note disappears pane by pane as each one is wired. */}
+      {illustrated && (
         <div className="inspector__sampleNote">
           <span className="chip chip--ochre">Illustration</span>
           <span>
-            The row is real; this preview is from the design. Summary, Edit, Versions and
-            Access are not wired yet.
+            The row is real; this pane is from the design. Summary, Versions and Access show the
+            actual document.
           </span>
         </div>
       )}
