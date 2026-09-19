@@ -101,13 +101,28 @@ function Credentials({ onSignedIn }) {
    * somebody else's.
    */
   const [tenantName, setTenantName] = useState(null);
+  /**
+   * The tenant this hostname belongs to, when it belongs to one.
+   *
+   * On acme.dossiro.com the organisation is already settled before anyone
+   * types anything, so asking which organisation they meant is asking a
+   * question the address bar has answered. It also avoids an odder state: a
+   * consultant who belongs to two tenants being offered the other one from
+   * inside this tenant's branded sign-in page.
+   *
+   * The picker survives for hosts that identify no tenant — the shared
+   * dossiro.com sign-in, and every development machine.
+   */
+  const [hostOrgId, setHostOrgId] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
     api.organization
       .byHost()
       .then((res) => {
-        if (!cancelled && res?.name) setTenantName(res.name);
+        if (cancelled) return;
+        if (res?.name) setTenantName(res.name);
+        if (res?.organizationId) setHostOrgId(res.organizationId);
       })
       .catch(() => undefined); // Branding is a nicety; never block sign-in for it.
     return () => {
@@ -117,9 +132,10 @@ function Credentials({ onSignedIn }) {
 
   const heading = tenantName ? `Sign in to ${tenantName}` : 'Sign in to Dossiro';
 
-  /** Email is unique per organisation, so ask which one before signing in. */
+  /** Email is unique per organisation, so ask which one — unless the host said. */
   async function checkTenants() {
     if (!email.includes('@')) return;
+    if (hostOrgId) return; // Already known; nothing to ask.
     try {
       const res = await api.auth.resolve(email);
       if (res.organizations.length > 1) {
@@ -139,7 +155,10 @@ function Credentials({ onSignedIn }) {
     setBusy(true);
     setError(null);
     try {
-      await signIn(email.trim(), password, organizationId || undefined);
+      // The hostname wins when it names a tenant: on a tenant's own address,
+      // this is the organisation being signed into, whatever else the account
+      // belongs to.
+      await signIn(email.trim(), password, hostOrgId || organizationId || undefined);
       onSignedIn();
     } catch (err) {
       if (err.body?.code === 'TENANT_AMBIGUOUS') {
@@ -180,7 +199,9 @@ function Credentials({ onSignedIn }) {
           />
         </label>
 
-        {tenants.length > 1 && (
+        {/* Only where the host settles nothing. On a tenant's own address the
+            organisation is not a question the person should be asked. */}
+        {!hostOrgId && tenants.length > 1 && (
           <label className="field">
             <span className="field__label">Organisation</span>
             <select

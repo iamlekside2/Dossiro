@@ -159,6 +159,10 @@ async function main(): Promise<void> {
   });
   console.log(`  corpus: ${corpus.created} filed, ${corpus.skipped} already present`);
 
+  // Each tenant answers on its own address, which is what settles the
+  // organisation at sign-in without asking anyone.
+  await upsertHostname(org.id, 'acme.localhost');
+
   // ---- The platform realm ---------------------------------------------------
   // Operating the platform and using the product are different jobs, so the
   // operator lives in an organisation that holds no records at all.
@@ -175,6 +179,10 @@ async function main(): Promise<void> {
   await upsertUser(calm.id, 'ootitolaye@calmglobal.com', 'Olamide Otitolaye', 'ORG_ADMIN', platformHash, calmRoles.org_admin);
   await upsertUser(calm.id, 'henry@calmglobal.com', 'Henry Umeh', 'MANAGER', platformHash, calmRoles.manager);
   await upsertDomain(calm.id, 'calmglobal.com');
+  // Calm Global's own records tenancy gets an address of its own, which is what
+  // removes the picker for the operator: on this host they are signing into the
+  // records tenancy, and the operator console lives somewhere else entirely.
+  await upsertHostname(calm.id, 'records.localhost');
 
   // ---- A second customer ----------------------------------------------------
   // Tenant isolation cannot be demonstrated with one tenant. Harbor Freight has
@@ -187,6 +195,7 @@ async function main(): Promise<void> {
   await upsertUser(harbor.id, 'obi@harborfreight.test', 'Obi Nwosu', 'MANAGER', harborHash, harborRoles.manager, UserStatus.SUSPENDED);
   await upsertUser(harbor.id, 'third@harborfreight.test', 'Third Person', 'CONTRIBUTOR', harborHash, harborRoles.contributor, UserStatus.INVITED);
   await upsertDomain(harbor.id, 'harborfreight.test');
+  await upsertHostname(harbor.id, 'harbor.localhost');
 
   console.log(`
 Seed complete.
@@ -452,6 +461,25 @@ async function addToGroup(groupId: string, userId: string, isLead = false) {
           VALUES ($1, $2, $3, $4, now())
      ON CONFLICT ("groupId", "userId") DO UPDATE SET "isLead" = EXCLUDED."isLead"`,
     [newId(), groupId, userId, isLead],
+  );
+}
+
+/**
+ * A verified hostname for a tenant.
+ *
+ * Without one, `GET /tenant/by-host` answers "no tenant" on every development
+ * machine, so hostname-based tenant resolution — how a real deployment knows
+ * which organisation a visitor is signing into — is never exercised at all.
+ * `.localhost` names are used because browsers resolve any of them to the
+ * loopback address without touching the hosts file.
+ */
+async function upsertHostname(organizationId: string, hostname: string, isPrimary = true) {
+  await db.query(
+    `INSERT INTO tenant_hostnames (id, "organizationId", hostname, "verifiedAt", "isPrimary",
+                                   "createdAt")
+          VALUES ($1, $2, $3, now(), $4, now())
+     ON CONFLICT (hostname) DO NOTHING`,
+    [newId(), organizationId, hostname, isPrimary],
   );
 }
 
