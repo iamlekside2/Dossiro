@@ -36,8 +36,13 @@ export class AuthService {
     const normalised = email.trim().toLowerCase();
     const domain = normalised.split('@')[1] ?? '';
 
-    const live = await this.db.query<{ id: string; name: string; slug: string }>(
-      `SELECT o.id, o.name, o.slug
+    // isPlatform comes back so the picker can say which realm each choice is.
+    // Operating the platform and using the product are different jobs with very
+    // different powers, and "Calm Global Platform" beside "Calm Global" is not
+    // a distinction anyone should have to infer from a name. It reveals nothing
+    // the organisation's own name does not already say.
+    const live = await this.db.query<{ id: string; name: string; slug: string; isPlatform: boolean }>(
+      `SELECT o.id, o.name, o.slug, o."isPlatform"
          FROM users u
          JOIN organizations o ON o.id = u."organizationId"
         WHERE u.email = $1

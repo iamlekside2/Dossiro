@@ -190,10 +190,18 @@ function Credentials({ onSignedIn }) {
             >
               {tenants.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.name}
+                  {/* The operator console and an ordinary tenancy can have
+                      almost the same name — "Calm Global Platform" beside
+                      "Calm Global" — and they are entirely different places.
+                      Which one you are entering is said, not implied. */}
+                  {t.isPlatform ? `${t.name} — operator console` : `${t.name} — records`}
                 </option>
               ))}
             </select>
+            <span className="field__hint">
+              This address exists in more than one organisation. The operator console administers
+              tenants and holds no documents of its own.
+            </span>
           </label>
         )}
 
