@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api.js';
 import { useSession } from '../session/SessionContext.jsx';
@@ -87,6 +87,36 @@ function Credentials({ onSignedIn }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
+  /**
+   * Whose sign-in page is this?
+   *
+   * One deployment serves every customer, so the shared address belongs to
+   * nobody in particular and the product name is the honest heading. Naming any
+   * one tenant there is wrong for everyone else who signs in — an Acme clerk
+   * should never be asked to sign in to another company's records.
+   *
+   * A tenant that has verified its own hostname does get its name, which is
+   * what `GET /api/tenant/by-host` exists for. Unverified hostnames resolve to
+   * nothing, so no one can point a domain at us and dress the page up as
+   * somebody else's.
+   */
+  const [tenantName, setTenantName] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.organization
+      .byHost()
+      .then((res) => {
+        if (!cancelled && res?.name) setTenantName(res.name);
+      })
+      .catch(() => undefined); // Branding is a nicety; never block sign-in for it.
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const heading = tenantName ? `Sign in to ${tenantName}` : 'Sign in to Dossiro';
+
   /** Email is unique per organisation, so ask which one before signing in. */
   async function checkTenants() {
     if (!email.includes('@')) return;
@@ -133,7 +163,7 @@ function Credentials({ onSignedIn }) {
   return (
     <div className="card card--sso">
       <BrandLock />
-      <h1 className="screen__h1">Sign in to Calm Global records</h1>
+      <h1 className="screen__h1">{heading}</h1>
       <p className="screen__lede">Use your work account.</p>
 
       <form onSubmit={submit}>

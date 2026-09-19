@@ -138,6 +138,14 @@ export const api = {
   },
 
   organization: {
+    /**
+     * Which tenant does the address bar belong to? Public, and called before
+     * anyone has signed in, so the entry page can brand itself. Returns
+     * `{ organizationId: null }` on the shared address, which is the signal to
+     * show the product name instead of any one customer's.
+     */
+    byHost: () => request('/tenant/by-host'),
+
     current: () => request('/organization'),
     hostnames: () => request('/organization/hostnames'),
     addHostname: (hostname) => request('/organization/hostnames', { method: 'POST', body: { hostname } }),

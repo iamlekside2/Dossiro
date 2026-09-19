@@ -134,9 +134,12 @@ export default function AcceptInvite() {
         </button>
       </form>
 
+      {/* Operator-neutral, and it was also overclaiming: the people who run the
+          platform cannot read a tenant's documents either, so singling them out
+          as a party who merely cannot read passwords understated it. */}
       <p className="screen__foot">
-        This invitation works once. Your password is stored only as a hash — nobody at
-        {' '}{invite.organizationName} or Calm Global can read it.
+        This invitation works once. Your password is stored only as a hash — nobody can
+        read it, not your administrator and not the people who run this service.
       </p>
     </Frame>
   );

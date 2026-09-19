@@ -144,7 +144,10 @@ function BrandLock() {
   return (
     <div className="brandlock">
       <img className="brandlock__logo" src="/brand/dossiro-logo.svg" alt="Dossiro" />
-      <span className="brandlock__by">shared by Calm Global</span>
+      {/* No organisation is named here. One deployment serves every customer,
+          so naming any of them is wrong for the rest — and the public share
+          endpoint withholds the owning organisation on purpose. */}
+      <span className="brandlock__by">secure document link</span>
     </div>
   );
 }
@@ -247,8 +250,12 @@ function Reader({ meta, token, ticket, isDemo, onSign }) {
       <div className="reader__head">
         <div>
           <div className="reader__title">{meta.name}</div>
+          {/* The sender is shown only when the API actually supplied one.
+              Inventing a name would be worse than omitting it: a recipient who
+              reads the wrong company on a confidential document has been
+              misinformed by us. */}
           <div className="reader__sub">
-            Shared by {meta.sharedBy ?? 'Calm Global'}
+            {meta.sharedBy ? `Shared by ${meta.sharedBy}` : 'Shared with you'}
             {expires ? ` · expires ${dayMonth(expires)}` : ''}
           </div>
         </div>
