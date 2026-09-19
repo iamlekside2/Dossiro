@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { DatabaseService, Params, columns, every, newId, paginate } from '../../common/db';
 import { AuditAction, ChannelType, type AuditEvent } from '../../common/db';
+import { requestContext } from '../../common/context/request-context';
 
 /**
  * Anything that survives JSON.stringify. Replaces Prisma's InputJsonValue.
@@ -54,6 +55,10 @@ export class AuditService {
   constructor(private readonly db: DatabaseService) {}
 
   async record(input: AuditInput): Promise<void> {
+    // Read outside the transaction callback: still the same async context, but
+    // it makes clear this is request state, not database state.
+    const ctx = requestContext();
+
     try {
       await this.db.transaction(async () => {
         // Serialise per organisation so two concurrent writes cannot both
@@ -97,8 +102,11 @@ export class AuditService {
           // rather than become the JSON literal `null`, which is a value.
           changes: input.changes === undefined || input.changes === null ? null : JSON.stringify(input.changes),
           metadata: input.metadata === undefined || input.metadata === null ? null : JSON.stringify(input.metadata),
-          ip: input.ip ?? null,
-          userAgent: input.userAgent ?? null,
+          // Falls back to the ambient request context so a call site cannot
+          // silently omit the origin. An explicit value still wins: a share
+          // viewer's address is not the address of whoever triggered the read.
+          ip: input.ip ?? ctx?.ip ?? null,
+          userAgent: input.userAgent ?? ctx?.userAgent ?? null,
           channel: input.channel ?? ChannelType.WEB,
           createdAt,
           hash,
@@ -156,7 +164,8 @@ export class AuditService {
     organizationId: string,
     filters: {
       actorId?: string;
-      action?: AuditAction;
+      /** One action, or several — "show me everything about sharing". */
+      action?: AuditAction | AuditAction[];
       resourceType?: string;
       resourceId?: string;
       from?: Date;
@@ -169,7 +178,15 @@ export class AuditService {
     const where = every([
       `e."organizationId" = ${p.add(organizationId)}`,
       filters.actorId ? `e."actorId" = ${p.add(filters.actorId)}` : null,
-      filters.action ? `e.action = ${p.add(filters.action)}` : null,
+      // A screen that offers "Sharing" as one filter means three actions, so
+      // the list form is answered in one query rather than three round trips.
+      Array.isArray(filters.action)
+        ? filters.action.length
+          ? `e.action = ANY(${p.add(filters.action)}::"AuditAction"[])`
+          : null
+        : filters.action
+          ? `e.action = ${p.add(filters.action)}`
+          : null,
       filters.resourceType ? `e."resourceType" = ${p.add(filters.resourceType)}` : null,
       filters.resourceId ? `e."resourceId" = ${p.add(filters.resourceId)}` : null,
       filters.from ? `e."createdAt" >= ${p.add(filters.from)}` : null,

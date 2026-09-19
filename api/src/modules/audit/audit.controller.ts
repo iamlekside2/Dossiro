@@ -17,7 +17,8 @@ export class AuditController {
   query(
     @CurrentUser() user: AuthUser,
     @Query('actorId') actorId?: string,
-    @Query('action') action?: AuditAction,
+    /** One action, or several comma-separated: `?action=SHARE_CREATE,SHARE_REVOKE`. */
+    @Query('action') action?: string,
     @Query('resourceType') resourceType?: string,
     @Query('resourceId') resourceId?: string,
     @Query('from') from?: string,
@@ -25,9 +26,13 @@ export class AuditController {
     @Query('skip') skip?: string,
     @Query('take') take?: string,
   ) {
+    const actions = action
+      ? (action.split(',').map((a) => a.trim()).filter(Boolean) as AuditAction[])
+      : undefined;
+
     return this.audit.query(user.organizationId, {
       actorId,
-      action,
+      action: actions && actions.length === 1 ? actions[0] : actions,
       resourceType,
       resourceId,
       from: from ? new Date(from) : undefined,

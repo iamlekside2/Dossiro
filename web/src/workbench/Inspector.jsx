@@ -56,21 +56,23 @@ export default function Inspector({
   showBack,
   onBack,
 }) {
-  // A real document answers three of its panes for itself. The rest — the
-  // preview and the editing tools — are still the design's, so they keep the
-  // sample bodies and the note below says which is which.
-  const isLiveDocument = area === 'repo' && Boolean(record?.record);
-  const LIVE_DOCUMENT_BODIES = {
-    summary: DocumentSummaryPane,
-    history: DocumentVersionsPane,
-    access: DocumentAccessPane,
+  // Which panes a real record can answer for itself, per area. Everything not
+  // listed here is still the design's illustration, and the note below says so.
+  const LIVE_BODIES = {
+    repo: { summary: DocumentSummaryPane, history: DocumentVersionsPane, access: DocumentAccessPane },
+    audit: { details: DetailsPane },
   };
 
-  const Body =
-    (isLiveDocument ? LIVE_DOCUMENT_BODIES[active] : null) ?? BODIES[active] ?? DetailsPane;
+  const wired = (Boolean(record?.record) && LIVE_BODIES[area]) || null;
+  const Body = (wired ? wired[active] : null) ?? BODIES[active] ?? DetailsPane;
 
-  /** Panes still showing the handoff's illustration for a live document. */
-  const illustrated = isLiveDocument && !LIVE_DOCUMENT_BODIES[active];
+  /** Panes still showing the handoff's illustration beside a live row. */
+  const illustrated = Boolean(wired) && !wired[active];
+
+  const illustrationNote =
+    area === 'audit'
+      ? 'The event is real; this pane is from the design. Event shows the actual record.'
+      : 'The row is real; this pane is from the design. Summary, Versions and Access show the actual document.';
 
   return (
     <div className="inspector">
@@ -104,10 +106,7 @@ export default function Inspector({
       {illustrated && (
         <div className="inspector__sampleNote">
           <span className="chip chip--ochre">Illustration</span>
-          <span>
-            The row is real; this pane is from the design. Summary, Versions and Access show the
-            actual document.
-          </span>
+          <span>{illustrationNote}</span>
         </div>
       )}
 

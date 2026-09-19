@@ -1,9 +1,10 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { loadConfiguration } from './common/config/configuration';
+import { RequestContextMiddleware } from './common/context/request-context';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { PlatformWriteGuard } from './common/guards/platform-write.guard';
@@ -79,4 +80,10 @@ import { LicensingModule } from './modules/licensing/licensing.module';
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    // Every route, including the public ones: a refused sign-in is exactly the
+    // event whose origin an auditor most wants, and it happens before auth.
+    consumer.apply(RequestContextMiddleware).forRoutes('*');
+  }
+}

@@ -53,10 +53,71 @@ function livePersonDetails(user) {
   ];
 }
 
+/** An audit entry, described as an auditor would read it. */
+function liveEventDetails(e) {
+  const when = e.createdAt
+    ? new Date(e.createdAt).toLocaleString('en-GB', {
+        day: 'numeric', month: 'long', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+      })
+    : '—';
+
+  return [
+    [
+      'Event',
+      [
+        ['Action', e.action.replace(/_/g, ' ').toLowerCase(), ''],
+        ['When', when, ''],
+        ['Subject', e.resourceName || '—', ''],
+        ['Kind', e.resourceType || '—', ''],
+        ['Channel', (e.channel || 'WEB').toLowerCase(), ''],
+      ],
+    ],
+    [
+      'Who',
+      [
+        ['Person', e.actor?.displayName ?? e.actorLabel ?? 'System', ''],
+        ['Email', e.actor?.email ?? '—', ''],
+        ['Address', e.ip || '—', ''],
+      ],
+    ],
+    [
+      'Integrity',
+      [
+        // The chain is the point of this record, so the fingerprints are shown
+        // rather than hidden: an auditor can compare them against an export.
+        ['Entry hash', e.hash ? `${e.hash.slice(0, 24)}…` : '—', ''],
+        ['Follows', e.prevHash ? `${e.prevHash.slice(0, 24)}…` : 'First entry in the chain', ''],
+      ],
+    ],
+  ];
+}
+
+/**
+ * Which describer fits this record.
+ *
+ * Deliberately keyed on the record's own shape rather than on the active area:
+ * switching tabs leaves the previous selection in place for a render, so the
+ * area says "audit" while the record is still a document. Reading the record
+ * itself is the only test that cannot be out of step with it.
+ */
+function describerFor(live) {
+  if (!live) return null;
+  if (live.email && live.tier) return livePersonDetails;
+  if (live.action && live.hash) return liveEventDetails;
+  return null;
+}
+
 export function DetailsPane({ details, detailNote, record }) {
   const live = record?.record;
-  const groups = live ? livePersonDetails(live) : details;
-  const note = live
+  const describe = describerFor(live);
+  const groups = describe ? describe(live) : details;
+
+  // The sample note is advice about a fictional row ("this actor has two
+  // blocked attempts…"), so it must not appear under a real one. Only the
+  // person notes below are derived from the record in front of us.
+  const isPerson = describe === livePersonDetails;
+  const note = describe && !isPerson ? null : isPerson
     ? live.status === 'INVITED'
       ? 'This person has been invited but has not accepted yet. Resending replaces their previous invitation link.'
       : live.status === 'SUSPENDED'

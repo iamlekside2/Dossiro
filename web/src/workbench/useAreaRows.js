@@ -94,12 +94,122 @@ function fileSize(bytes) {
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+/**
+ * Audit scopes, in the order SCOPES.audit lists them. Each is a set of real
+ * actions rather than a text match on a rendered row, so the filtering happens
+ * in the database and the total means something.
+ */
+const AUDIT_SCOPES = [
+  null, // All events
+  ['LOGIN'],
+  ['LOGIN_FAILED'],
+  ['DOCUMENT_CREATE', 'DOCUMENT_VIEW', 'DOCUMENT_DOWNLOAD', 'DOCUMENT_UPDATE',
+   'DOCUMENT_DELETE', 'DOCUMENT_RESTORE', 'DOCUMENT_PURGE', 'DOCUMENT_MOVE',
+   'VERSION_CREATE', 'VERSION_RESTORE'],
+  ['SHARE_CREATE', 'SHARE_ACCESS', 'SHARE_REVOKE'],
+  ['ACCESS_GRANT', 'ACCESS_REVOKE'],
+  ['USER_CREATE', 'USER_UPDATE', 'ROLE_CHANGE', 'SETTINGS_CHANGE'],
+];
+
+/** The action, as a person would say it. */
+const ACTION_WORDS = {
+  LOGIN: 'Signed in',
+  LOGOUT: 'Signed out',
+  LOGIN_FAILED: 'Sign-in refused',
+  DOCUMENT_CREATE: 'Filed a document',
+  DOCUMENT_VIEW: 'Opened a document',
+  DOCUMENT_DOWNLOAD: 'Downloaded a document',
+  DOCUMENT_UPDATE: 'Changed a document',
+  DOCUMENT_DELETE: 'Deleted a document',
+  DOCUMENT_RESTORE: 'Restored a document',
+  DOCUMENT_PURGE: 'Purged a document',
+  DOCUMENT_MOVE: 'Moved a document',
+  VERSION_CREATE: 'Filed a new version',
+  VERSION_RESTORE: 'Restored a version',
+  FOLDER_CREATE: 'Created a folder',
+  FOLDER_UPDATE: 'Changed a folder',
+  FOLDER_DELETE: 'Deleted a folder',
+  ACCESS_GRANT: 'Granted access',
+  ACCESS_REVOKE: 'Revoked access',
+  SHARE_CREATE: 'Created a share link',
+  SHARE_ACCESS: 'Opened a share link',
+  SHARE_REVOKE: 'Revoked a share link',
+  SIGNATURE_REQUEST: 'Requested a signature',
+  SIGNATURE_APPLY: 'Signed',
+  USER_CREATE: 'Invited someone',
+  USER_UPDATE: 'Changed an account',
+  ROLE_CHANGE: 'Changed a role',
+  SETTINGS_CHANGE: 'Changed settings',
+  EXPORT: 'Exported',
+  CHANNEL_INBOUND: 'Received on a channel',
+  CHANNEL_OUTBOUND: 'Sent on a channel',
+};
+
+/** Refusals and destructive acts are the rows an auditor is looking for. */
+function auditFlag(action) {
+  if (action === 'LOGIN_FAILED') return 'Refused';
+  if (/DELETE|PURGE|REVOKE/.test(action)) return 'Removed';
+  if (/GRANT|SETTINGS_CHANGE|ROLE_CHANGE/.test(action)) return 'Changed';
+  return '';
+}
+
 /* -- Loaders, keyed by area then scope index ----------------------------- */
 /* A '*' loader serves every scope in its area. Repository needs this: each
    scope is a folder, so the same loader runs with a different folder id
    rather than there being one loader per index. */
 
 const LIVE = {
+  audit: {
+    '*': {
+      label: 'events',
+      async load({ scopeIndex = 0 } = {}) {
+        const actions = AUDIT_SCOPES[scopeIndex] ?? null;
+        const res = await api.audit.query({
+          take: 200,
+          ...(actions ? { action: actions.join(',') } : {}),
+        });
+
+        // The chain is checked alongside the page, because a trail nobody
+        // verifies is only a log. A failure here is reported, not swallowed:
+        // silence would be indistinguishable from a passing check.
+        let integrity = null;
+        try {
+          integrity = await api.audit.integrity();
+        } catch {
+          integrity = null;
+        }
+
+        return {
+          rows: res.items.map((e) =>
+            withRecord(
+              [
+                'LOG',
+                ACTION_WORDS[e.action] ?? e.action.replace(/_/g, ' ').toLowerCase(),
+                [e.resourceName, e.resourceType].filter(Boolean).join(' · ') || e.resourceType,
+                auditFlag(e.action),
+                e.action.replace(/_/g, ' ').toLowerCase(),
+                e.actor?.displayName ?? e.actorLabel ?? 'System',
+                since(e.createdAt),
+              ],
+              e,
+            ),
+          ),
+          total: res.total,
+          status: [
+            plural(res.total, 'event'),
+            `${res.items.filter((e) => e.action === 'LOGIN_FAILED').length} refused sign-ins`,
+            integrity
+              ? integrity.valid
+                ? `Chain verified across ${integrity.checked} events`
+                : `CHAIN BROKEN at ${integrity.brokenAt}`
+              : 'Chain not checked',
+            'Write-once storage',
+          ],
+        };
+      },
+    },
+  },
+
   repo: {
     '*': {
       label: 'documents',

@@ -169,13 +169,18 @@ export const SCOPES = {
   audit: [
     'Filters',
     'Records are write-once. No role, including owner, can alter them.',
+    // These mirror AUDIT_SCOPES in useAreaRows: each one is a set of real
+    // actions the API can filter on. The handoff also offered "Classification
+    // changes", which corresponds to no action the system records, so it is
+    // gone rather than present and permanently empty.
     [
       ['All events', 0, ''],
-      ['Access denied', 0, '2'],
-      ['Downloads', 0, '11'],
-      ['Signatures', 0, '4'],
-      ['Classification changes', 0, '1'],
-      ['System actions', 0, '6'],
+      ['Sign-ins', 0, ''],
+      ['Refused sign-ins', 0, ''],
+      ['Documents', 0, ''],
+      ['Sharing', 0, ''],
+      ['Permissions', 0, ''],
+      ['Administration', 0, ''],
     ],
     0,
   ],
@@ -469,13 +474,9 @@ export const SCOPE_FILTERS = {
     3: (r) => /Broker|Ade/.test(r[2]),
     4: (r) => r[3] === 'Revoked',
   },
-  audit: {
-    1: (r) => /Blocked|Denied/.test(r[4]),
-    2: (r) => /download/i.test(r[2]),
-    3: (r) => /signature/i.test(r[2]),
-    4: (r) => /classification/i.test(r[2]),
-    5: (r) => r[4] === 'System',
-  },
+  // Audit has no client-side predicates: the API filters by action in the
+  // database. Matching again on the rendered text would filter twice and throw
+  // away rows the server had already selected correctly.
   hr: {
     1: (r) => /started 1 August|3 August|starts 1 September/.test(r[2]),
     2: (r) => r[3] === 'Incomplete',

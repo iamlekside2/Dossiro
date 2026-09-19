@@ -149,7 +149,7 @@ export default function Workbench() {
     tab,
     scopeIndex,
     true,
-    tab === 'repo' ? { folderId } : null,
+    tab === 'repo' ? { folderId } : tab === 'audit' ? { scopeIndex } : null,
   );
 
   const visible = useMemo(() => {

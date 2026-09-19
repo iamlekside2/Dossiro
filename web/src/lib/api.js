@@ -199,6 +199,13 @@ export const api = {
     versions: (id) => request(`/documents/${id}/versions`),
   },
 
+  audit: {
+    /** `action` may be one action or a comma-separated list. */
+    query: (params = {}) => request(`/audit?${qs(params)}`),
+    /** Recomputes the hash chain and reports the first entry that disagrees. */
+    integrity: () => request('/audit/integrity'),
+  },
+
   access: {
     /** The caller's own resolved level on one object. */
     effective: (type, id) => request(`/access/effective?type=${type}&id=${id}`),
@@ -211,8 +218,6 @@ export const api = {
     create: (documentId, options) => request('/shares', { method: 'POST', body: { documentId, ...options } }),
     revoke: (id) => request(`/shares/${id}`, { method: 'DELETE' }),
   },
-
-  audit: (params = {}) => request(`/audit?${qs(params)}`),
 
   search: (params) => request(`/search?${qs(params)}`),
 

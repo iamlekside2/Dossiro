@@ -71,9 +71,9 @@ export const AREA_STATE = {
     note: 'Share links work fully — expiry, access codes, download caps, revocation and reading analytics are all verified.',
   },
   audit: {
-    state: READY,
-    endpoint: 'GET /api/audit',
-    note: 'The hash-chained trail works and the database refuses to alter it. The screen is not wired.',
+    state: LIVE,
+    endpoint: 'GET /api/audit · GET /api/audit/integrity',
+    note: 'Real events, filtered in the database, with the hash chain verified alongside each page.',
   },
   admin: {
     state: LIVE,
