@@ -14,7 +14,8 @@
     "db:migrate": "tsx db/migrate.ts",
     "db:deploy": "tsx db/migrate.ts",
     "db:types": "tsx db/generate-types.ts",
-    "db:seed": "tsx db/seed.ts"
+    "db:seed": "tsx db/seed.ts",
+    "db:reset": "tsx db/reset.ts"
   },
   "dependencies": {
     "@nestjs/bullmq": "^11.0.2",
