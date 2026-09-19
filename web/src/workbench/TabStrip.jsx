@@ -22,7 +22,7 @@ function present(user, organization) {
   };
 }
 
-export default function TabStrip({ tabs, active, onSelect }) {
+export default function TabStrip({ tabs, active, onSelect, counts }) {
   // Optionally drop unbuilt areas entirely, for a client demo.
   const shown = HIDE_UNBUILT ? tabs.filter(([id]) => AREA_STATE[id]?.state !== UNBUILT) : tabs;
 
@@ -71,6 +71,10 @@ export default function TabStrip({ tabs, active, onSelect }) {
               <span className="tab__marker">Sample</span>
             ) : AREA_STATE[id]?.state === READY ? (
               <span className="tab__marker tab__marker--ready">Not wired</span>
+            ) : counts?.[id] != null ? (
+              // A live area reports what it actually holds. The handoff's
+              // figure stays only where nothing real has replaced it.
+              <span className="tab__count">{counts[id].toLocaleString('en-GB')}</span>
             ) : count ? (
               <span className="tab__count">{count}</span>
             ) : null}

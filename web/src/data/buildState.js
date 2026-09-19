@@ -26,9 +26,9 @@ export const HIDE_UNBUILT = false;
 
 export const AREA_STATE = {
   repo: {
-    state: READY,
+    state: LIVE,
     endpoint: 'GET /api/documents · GET /api/folders/tree',
-    note: 'Documents, folders, versions, upload and the recycle bin all work and are verified. The screen still renders sample rows.',
+    note: 'Cabinets come from the real folder tree and the list shows real documents, filtered to the selected folder.',
   },
   search: {
     state: READY,
@@ -92,7 +92,12 @@ export function areaState(area) {
 }
 
 export function isScopeLive(area, scopeIndex) {
-  return (LIVE_SCOPES[area] ?? []).includes(scopeIndex);
+  const only = LIVE_SCOPES[area];
+  // No entry means the area has no part-live split: if the area is live, every
+  // scope in it is. Repository needs this — its scopes are folders, so there is
+  // no fixed list of indices to enumerate.
+  if (!only) return areaState(area).state === LIVE;
+  return only.includes(scopeIndex);
 }
 
 /** Short marker shown against a tab. Null when the area is fully live. */

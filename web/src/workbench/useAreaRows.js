@@ -73,9 +73,82 @@ function withRecord(row, record) {
   return row;
 }
 
+/** Three letters for the row badge, from the file extension. */
+function kindBadge(name, mimeType) {
+  const ext = (name.split('.').pop() || '').toUpperCase();
+  if (ext && ext.length <= 4 && ext !== name.toUpperCase()) {
+    return ext === 'JPEG' ? 'JPG' : ext;
+  }
+  if (mimeType?.startsWith('image/')) return 'IMG';
+  if (mimeType?.startsWith('video/')) return 'VID';
+  if (mimeType?.startsWith('audio/')) return 'AUD';
+  return 'DOC';
+}
+
+/** Bytes as something a person reads, not a number they decode. */
+function fileSize(bytes) {
+  const n = Number(bytes);
+  if (!n) return null;
+  if (n < 1024) return `${n} bytes`;
+  if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 /* -- Loaders, keyed by area then scope index ----------------------------- */
+/* A '*' loader serves every scope in its area. Repository needs this: each
+   scope is a folder, so the same loader runs with a different folder id
+   rather than there being one loader per index. */
 
 const LIVE = {
+  repo: {
+    '*': {
+      label: 'documents',
+      async load({ folderId } = {}) {
+        // folderId undefined means "everything the caller may see"; the API
+        // treats an explicit null as "unfiled", so it is only sent when set.
+        const res = await api.documents.list({
+          take: 200,
+          ...(folderId ? { folderId } : {}),
+        });
+
+        return {
+          rows: res.items.map((d) => {
+            const v = d.currentVersion ?? {};
+            const meta = [
+              d.versionCount > 1 ? `Version ${d.versionCount}` : 'Version 1',
+              fileSize(v.sizeBytes),
+              v.pageCount ? `${v.pageCount} pages` : null,
+            ]
+              .filter(Boolean)
+              .join(' · ');
+
+            return withRecord(
+              [
+                kindBadge(d.name, d.mimeType),
+                d.name,
+                meta,
+                d.checkedOutById ? 'Checked out' : '',
+                // Classification is the single most important thing on the row,
+                // so it takes the column the eye reaches first after the name.
+                d.classification.charAt(0) + d.classification.slice(1).toLowerCase(),
+                since(d.updatedAt),
+                d.owner?.displayName ?? '—',
+              ],
+              d,
+            );
+          }),
+          total: res.total,
+          status: [
+            plural(res.total, 'document'),
+            `${res.items.filter((d) => d.checkedOutById).length} checked out`,
+            `${res.items.filter((d) => d.classification === 'CONFIDENTIAL' || d.classification === 'RESTRICTED').length} confidential or above`,
+            '90-day recovery window',
+          ],
+        };
+      },
+    },
+  },
+
   admin: {
     0: {
       label: 'people',
@@ -197,15 +270,22 @@ const LIVE = {
 };
 
 function loaderFor(area, scopeIndex) {
-  return LIVE[area]?.[scopeIndex] ?? null;
+  // An exact scope match wins; '*' covers every scope in the area.
+  return LIVE[area]?.[scopeIndex] ?? LIVE[area]?.['*'] ?? null;
 }
 
 export function isLiveArea(area, scopeIndex = 0) {
   return Boolean(loaderFor(area, scopeIndex));
 }
 
-export function useAreaRows(area, scopeIndex = 0, enabled = true) {
+/**
+ * @param context extra input the loader needs — currently the selected
+ *   folder id for Repository. Serialised into the effect's dependency list so
+ *   changing folder refetches, without making the object identity the trigger.
+ */
+export function useAreaRows(area, scopeIndex = 0, enabled = true, context = null) {
   const live = loaderFor(area, scopeIndex);
+  const contextKey = context ? JSON.stringify(context) : '';
 
   const [state, setState] = useState(() =>
     live
@@ -221,7 +301,7 @@ export function useAreaRows(area, scopeIndex = 0, enabled = true) {
       }
       setState((s) => ({ ...s, loading: true, error: null }));
       try {
-        const { rows, total, status } = await live.load();
+        const { rows, total, status } = await live.load(contextKey ? JSON.parse(contextKey) : {});
         if (signal?.aborted) return;
         setState({ rows, total, status, loading: false, error: null });
       } catch (err) {
@@ -229,7 +309,7 @@ export function useAreaRows(area, scopeIndex = 0, enabled = true) {
         setState({ rows: [], loading: false, error: err });
       }
     },
-    [area, live],
+    [area, live, contextKey],
   );
 
   useEffect(() => {

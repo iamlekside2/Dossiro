@@ -79,6 +79,19 @@ export default function Inspector({
         </div>
       </div>
 
+      {/* The list can be live while the panes beside it are still the handoff's
+          illustration. That pairing is the most misleading state in the app —
+          a real filename above an invented contract — so it is labelled. */}
+      {record?.record && (
+        <div className="inspector__sampleNote">
+          <span className="chip chip--ochre">Illustration</span>
+          <span>
+            The row is real; this preview is from the design. Summary, Edit, Versions and
+            Access are not wired yet.
+          </span>
+        </div>
+      )}
+
       <div className="inspector__body">
         {/* Only one body mounts at a time, so each keeps its own local state
             (signature mode, passcode toggle) scoped to a single visit. */}

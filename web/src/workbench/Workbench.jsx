@@ -3,6 +3,7 @@ import { useIsNarrow, useIsPhone } from '../hooks/useMediaQuery.js';
 import LockedDrawerPrompt from '../screens/LockedDrawerPrompt.jsx';
 import { LOCKED_DRAWERS, useSession } from '../session/SessionContext.jsx';
 import { useAreaRows } from './useAreaRows.js';
+import { useFolderScopes } from './useFolderScopes.js';
 import {
   ACCESS,
   BULK,
@@ -66,9 +67,23 @@ export default function Workbench() {
   /** Which "New …" dialog is open, if any. */
   const [dialog, setDialog] = useState(null);
 
+  // Repository's cabinets are real folders; every other area still lists the
+  // handoff's sample scopes. Loaded once and kept, so switching areas and back
+  // does not refetch the tree.
+  const folders = useFolderScopes(true);
+
   const scopeDef = SCOPES[tab];
-  const scopeItems = scopeDef[2];
-  const scopeIndex = scope == null ? scopeDef[3] : Math.min(scope, scopeItems.length - 1);
+  const scopeItems = tab === 'repo' ? folders.items : scopeDef[2];
+  // The handoff's default lands on a deep sample cabinet. A real tree is a
+  // different shape and usually shorter, so live folders open at the first one
+  // rather than at whatever index the sample happened to use.
+  const defaultScope = tab === 'repo' && folders.isLive ? 0 : scopeDef[3];
+  const scopeIndex = scope == null
+    ? Math.min(defaultScope, scopeItems.length - 1)
+    : Math.min(scope, scopeItems.length - 1);
+
+  /** The folder whose documents the list should show, when one is known. */
+  const folderId = tab === 'repo' && folders.isLive ? folders.ids[scopeIndex] : undefined;
 
   // Scopes that list a different kind of record describe it differently too:
   // a branch has Branch and Staff, not Capabilities and Recovery.
@@ -130,7 +145,12 @@ export default function Workbench() {
   }
 
   // Live areas fetch; the rest fall back to the handoff's sample rows.
-  const source = useAreaRows(tab, scopeIndex);
+  const source = useAreaRows(
+    tab,
+    scopeIndex,
+    true,
+    tab === 'repo' ? { folderId } : null,
+  );
 
   const visible = useMemo(() => {
     const all = source.rows ?? ROWS[tab] ?? [];
@@ -156,7 +176,10 @@ export default function Workbench() {
     return out;
   }, [tab, scopeIndex, sortCol, sortDir, COLS, COLS_BY_SCOPE, source.rows]);
 
-  const isDenied = tab === 'repo' && scopeIndex === 7;
+  // The scripted "Litigation is closed to your role" state belongs to the
+  // handoff's sample cabinets. Real folders the caller may not read are simply
+  // absent from the tree, so with a live tree there is nothing to deny.
+  const isDenied = tab === 'repo' && !folders.isLive && scopeIndex === 7;
   // Either the scripted demo state, or a live area genuinely still fetching.
   const isLoading = (tab === 'capture' && scopeIndex === 1) || source.loading;
   const isEmpty = !isDenied && !isLoading && !source.error && visible.length === 0;
@@ -169,15 +192,30 @@ export default function Workbench() {
   /* Repository rewrites the breadcrumb's last segment; every other area
      appends the scope, so a search query or batch identity is never lost. */
   const crumbs = useMemo(() => {
+    const label = scopeItems[scopeIndex]?.[0] ?? '';
+
+    // With a real tree the handoff's path — Legal / Contracts / 2026 / Vendor —
+    // is fiction, and a fabricated breadcrumb above real rows is worse than a
+    // short one. Build it from where the folder actually sits instead.
+    if (tab === 'repo' && folders.isLive) {
+      const depth = scopeItems[scopeIndex]?.[1] ?? 0;
+      const trail = [];
+      for (let i = scopeIndex - 1; i >= 0 && trail.length < depth; i--) {
+        if (scopeItems[i][1] < (trail[0] ? scopeItems[i + 1][1] : depth)) {
+          trail.unshift(scopeItems[i][0]);
+        }
+      }
+      return ['Cabinets', ...trail, label];
+    }
+
     const base = CRUMBS[tab].slice();
-    const label = scopeItems[scopeIndex][0];
     if (scope == null) return base;
     if (tab === 'repo') {
       base[base.length - 1] = label;
       return base;
     }
     return [...base, label];
-  }, [tab, scope, scopeIndex, scopeItems]);
+  }, [tab, scope, scopeIndex, scopeItems, folders.isLive]);
 
   const statusCells = useMemo(() => {
     // A live area reports what it actually loaded, not the handoff's figures.
@@ -225,7 +263,15 @@ export default function Workbench() {
   return (
     <div className="wb__scroll">
       <div className={shellClass}>
-        <TabStrip tabs={TABS} active={tab} onSelect={goTab} />
+        <TabStrip
+          tabs={TABS}
+          active={tab}
+          onSelect={goTab}
+          // Only the area currently open can report a real total, so that is
+          // the only figure overridden. The rest keep the handoff's until they
+          // are wired and can speak for themselves.
+          counts={source.isLive && source.total != null ? { [tab]: source.total } : undefined}
+        />
 
         <Toolbar
           crumbs={crumbs}

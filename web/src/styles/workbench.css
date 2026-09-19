@@ -912,3 +912,22 @@
   border-radius: 50%;
   background: var(--green);
 }
+
+/* -- Inspector: the row is live, the panes beside it are not ------------- */
+/* Shown only when the selected row carries a real record, so it disappears
+   by itself the moment the panes are wired to the API. */
+.inspector__sampleNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--ochre-border);
+  background: var(--ochre-bg);
+  color: var(--ochre);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.inspector__sampleNote .chip {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}

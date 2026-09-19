@@ -247,7 +247,10 @@ export const FIND_PLACEHOLDER = {
 
 /* [label, width] where width 1 means minmax(0, 1fr) */
 export const COLS = {
-  repo: [['Document', 1], ['Class', 124], ['Last edited', 144], ['Access', 96]],
+  // 'Owner' rather than 'Access': the document list does not carry the
+  // caller's effective level, and computing it per row would be one request
+  // each. The inspector's Access tab answers it properly for the selected row.
+  repo: [['Document', 1], ['Class', 124], ['Last edited', 144], ['Owner', 110]],
   search: [['Result', 1], ['Class', 124], ['Where', 180], ['Edited', 110]],
   capture: [['Captured item', 1], ['Pages', 86], ['Quality', 150], ['Status', 110]],
   ingest: [['Incoming file', 1], ['Proposed name', 210], ['Destination', 150], ['Status', 96]],
