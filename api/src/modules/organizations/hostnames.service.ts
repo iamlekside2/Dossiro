@@ -205,7 +205,18 @@ export class HostnamesService {
    */
   async resolveByHost(rawHost: string | undefined) {
     if (!rawHost) return null;
-    const hostname = this.normalise(rawHost);
+
+    // Resolving is a question, not a submission. `normalise` refuses anything
+    // that would be invalid to REGISTER — including single-label hosts like
+    // `localhost` or an internal LAN name — and throwing there turned "which
+    // tenant is this?" into a 400 on every development machine. An
+    // unrecognisable host simply belongs to no tenant.
+    let hostname: string;
+    try {
+      hostname = this.normalise(rawHost);
+    } catch {
+      return null;
+    }
 
     const match = await this.db.maybeOne<{
       id: string;
