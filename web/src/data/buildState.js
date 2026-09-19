@@ -31,9 +31,9 @@ export const AREA_STATE = {
     note: 'Cabinets come from the real folder tree and the list shows real documents, filtered to the selected folder.',
   },
   search: {
-    state: READY,
+    state: LIVE,
     endpoint: 'GET /api/search',
-    note: 'Full-text and metadata search work, permission-scoped. Content search needs the OCR pipeline before scans are searchable.',
+    note: 'Real results, ranked, with the matched phrase quoted from the document body. Scans stay unsearchable until the OCR pipeline runs.',
   },
   capture: {
     state: UNBUILT,

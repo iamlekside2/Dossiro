@@ -164,4 +164,15 @@ Invoke-Api DELETE "/shares/$($r.body.share.id)" $adminTok | Out-Null
 $r2 = Invoke-Api GET "/public/shares/$other"
 Show "revoking kills the link at once" ($r2.code -eq 410) "HTTP $($r2.code) Gone"
 
+# Revoking is not removing: both links are still rows, and leaving them behind
+# added two to the Sharing area's count on every run. The audit entries they
+# produced stay, as they must — it is the links themselves that go.
+foreach ($t in @($token, $other)) {
+  $id = Get-SqlValue "SELECT id FROM share_links WHERE token = '$t';"
+  if ($id) {
+    Invoke-Sql "DELETE FROM share_accesses WHERE ""shareLinkId"" = '$id';"
+    Invoke-Sql "DELETE FROM share_links WHERE id = '$id';"
+  }
+}
+
 Summary

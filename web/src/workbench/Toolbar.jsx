@@ -1,6 +1,15 @@
 ﻿import { SearchIcon } from './icons.jsx';
 
-export default function Toolbar({ crumbs, verbs, findPlaceholder, onOpenScope, scopeLabel, onVerb }) {
+export default function Toolbar({
+  crumbs,
+  verbs,
+  findPlaceholder,
+  onOpenScope,
+  scopeLabel,
+  onVerb,
+  find,
+  onFind,
+}) {
   return (
     <div className="toolbar">
       {/* Only rendered below 1180px, where the scope pane becomes a drawer. */}
@@ -32,7 +41,13 @@ export default function Toolbar({ crumbs, verbs, findPlaceholder, onOpenScope, s
 
       <label className="find">
         <SearchIcon />
-        <input type="search" placeholder={findPlaceholder} aria-label={findPlaceholder} />
+        <input
+          type="search"
+          placeholder={findPlaceholder}
+          aria-label={findPlaceholder}
+          value={find ?? ''}
+          onChange={(e) => onFind?.(e.target.value)}
+        />
       </label>
     </div>
   );

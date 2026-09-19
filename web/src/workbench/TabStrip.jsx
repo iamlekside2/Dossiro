@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CURRENT_USER } from '../data/areas.js';
-import { AREA_STATE, HIDE_UNBUILT, READY, UNBUILT } from '../data/buildState.js';
+import { AREA_STATE, HIDE_UNBUILT, LIVE, READY, UNBUILT } from '../data/buildState.js';
 import { useSession } from '../session/SessionContext.jsx';
 
 /** The API speaks displayName/tier; the chrome wants name/role/initials. */
@@ -72,9 +72,14 @@ export default function TabStrip({ tabs, active, onSelect, counts }) {
             ) : AREA_STATE[id]?.state === READY ? (
               <span className="tab__marker tab__marker--ready">Not wired</span>
             ) : counts?.[id] != null ? (
-              // A live area reports what it actually holds. The handoff's
-              // figure stays only where nothing real has replaced it.
+              // A live area reports what it actually holds.
               <span className="tab__count">{counts[id].toLocaleString('en-GB')}</span>
+            ) : AREA_STATE[id]?.state === LIVE ? (
+              // Live, but its real count is not known yet — only the area you
+              // are in has fetched. Nothing is shown rather than the handoff's
+              // figure, which is how Repository came to advertise 1,204
+              // documents over a repository holding two.
+              null
             ) : count ? (
               <span className="tab__count">{count}</span>
             ) : null}

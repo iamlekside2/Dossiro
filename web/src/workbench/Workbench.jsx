@@ -24,6 +24,7 @@ import {
   TOOLBAR,
   TOOLBAR_BY_SCOPE,
 } from '../data/areas.js';
+import { LIVE, areaState } from '../data/buildState.js';
 import CreateDialog, { dialogForVerb } from './CreateDialog.jsx';
 import Inspector from './Inspector.jsx';
 import ListPane from './ListPane.jsx';
@@ -46,6 +47,8 @@ export default function Workbench() {
   const [row, setRow] = useState(0);
   const [pane, setPane] = useState('preview');
   const [sel, setSel] = useState({});
+  /** What is typed in the toolbar's find box, per area. */
+  const [find, setFind] = useState('');
 
   const { isUnlocked, unlockDrawer } = useSession();
   /** Scope index awaiting a drawer passcode, or null. */
@@ -72,18 +75,32 @@ export default function Workbench() {
   // does not refetch the tree.
   const folders = useFolderScopes(true);
 
+  // Search browses the same cabinets, but needs an "everywhere" option the
+  // Repository does not: you search across the estate and then narrow, where
+  // you file into one place. It is the same tree with one entry in front, so
+  // the indices shift by one and searchFolderId accounts for that.
+  const searchScopes = useMemo(
+    () => [['All cabinets', 0, ''], ...folders.items.map(([l, d, c]) => [l, d + 1, c])],
+    [folders.items],
+  );
+
   const scopeDef = SCOPES[tab];
-  const scopeItems = tab === 'repo' ? folders.items : scopeDef[2];
+  const scopeItems =
+    tab === 'repo' ? folders.items : tab === 'search' && folders.isLive ? searchScopes : scopeDef[2];
   // The handoff's default lands on a deep sample cabinet. A real tree is a
   // different shape and usually shorter, so live folders open at the first one
   // rather than at whatever index the sample happened to use.
-  const defaultScope = tab === 'repo' && folders.isLive ? 0 : scopeDef[3];
+  const defaultScope = (tab === 'repo' || tab === 'search') && folders.isLive ? 0 : scopeDef[3];
   const scopeIndex = scope == null
     ? Math.min(defaultScope, scopeItems.length - 1)
     : Math.min(scope, scopeItems.length - 1);
 
   /** The folder whose documents the list should show, when one is known. */
   const folderId = tab === 'repo' && folders.isLive ? folders.ids[scopeIndex] : undefined;
+
+  /** Index 0 is "All cabinets", so the real folders start one along. */
+  const searchFolderId =
+    tab === 'search' && folders.isLive && scopeIndex > 0 ? folders.ids[scopeIndex - 1] : undefined;
 
   // Scopes that list a different kind of record describe it differently too:
   // a branch has Branch and Staff, not Capabilities and Recovery.
@@ -104,6 +121,10 @@ export default function Workbench() {
     setSel({});
     setMobilePane('list');
     setScopeOpen(false);
+    // A query typed in one area means nothing in the next, and carrying it
+    // across would silently hide rows in a view the user has just opened.
+    setFind('');
+    setQuery('');
   }
 
   function goScope(index) {
@@ -144,11 +165,25 @@ export default function Workbench() {
     setRow(0);
   }
 
+  // Search asks the server, so it waits for a pause in typing. Everywhere else
+  // the find box narrows rows already on screen and can react immediately.
+  const [query, setQuery] = useState('');
+  useEffect(() => {
+    const id = setTimeout(() => setQuery(find.trim()), 250);
+    return () => clearTimeout(id);
+  }, [find]);
+
   // Live areas fetch; the rest fall back to the handoff's sample rows. What
   // each loader needs from the current view, since a scope means a folder in
   // one area and a filter in another.
   const loaderContext =
-    tab === 'repo' ? { folderId } : tab === 'audit' || tab === 'sharing' ? { scopeIndex } : null;
+    tab === 'repo'
+      ? { folderId }
+      : tab === 'search'
+        ? { query, folderId: searchFolderId }
+        : tab === 'audit' || tab === 'sharing'
+          ? { scopeIndex }
+          : null;
 
   const source = useAreaRows(tab, scopeIndex, true, loaderContext);
 
@@ -156,6 +191,17 @@ export default function Workbench() {
     const all = source.rows ?? ROWS[tab] ?? [];
     const pred = (SCOPE_FILTERS[tab] || {})[scopeIndex];
     let out = pred ? all.filter(pred) : all.slice();
+
+    // "Find in this view" means exactly that: it narrows what is already on
+    // screen. Search is the exception — there the box is the query itself and
+    // the server has already applied it, so narrowing again would hide results
+    // whose match is in the document body rather than in the rendered row.
+    const needle = find.trim().toLowerCase();
+    if (needle && tab !== 'search') {
+      out = out.filter((r) =>
+        r.some((cell) => typeof cell === 'string' && cell.toLowerCase().includes(needle)),
+      );
+    }
 
     if (sortCol != null) {
       const isDate = DATE_COL.test(cols[sortCol][0]);
@@ -174,7 +220,7 @@ export default function Workbench() {
       });
     }
     return out;
-  }, [tab, scopeIndex, sortCol, sortDir, COLS, COLS_BY_SCOPE, source.rows]);
+  }, [tab, scopeIndex, sortCol, sortDir, COLS, COLS_BY_SCOPE, source.rows, find]);
 
   // The scripted "Litigation is closed to your role" state belongs to the
   // handoff's sample cabinets. Real folders the caller may not read are simply
@@ -185,7 +231,12 @@ export default function Workbench() {
   const isEmpty = !isDenied && !isLoading && !source.error && visible.length === 0;
   const rows = isDenied || isLoading || source.error ? [] : visible;
 
-  const selectedRow = rows[row] || rows[0] || ROWS[tab][0];
+  // With nothing listed there is nothing to inspect. Falling through to the
+  // handoff's first row put a fabricated document beside "0 results" — a search
+  // for a word that appears nowhere still described an 18-page contract.
+  // Sample areas keep the fallback: their whole screen is the illustration.
+  const areaIsLive = areaState(tab).state === LIVE;
+  const selectedRow = rows[row] || rows[0] || (areaIsLive ? null : ROWS[tab][0]);
   const activePane = paneSet.some((p) => p[0] === pane) ? pane : paneSet[0][0];
   const selCount = Object.values(sel).filter(Boolean).length;
 
@@ -287,6 +338,13 @@ export default function Workbench() {
           }
           onOpenScope={() => setScopeOpen(true)}
           scopeLabel={scopeItems[scopeIndex][0]}
+          find={find}
+          onFind={(v) => {
+            setFind(v);
+            // A new query means a new result set; staying on row 7 would leave
+            // the inspector describing whatever happens to land there.
+            setRow(0);
+          }}
         />
 
         <div className="wb__body">

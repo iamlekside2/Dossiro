@@ -85,6 +85,47 @@ function kindBadge(name, mimeType) {
   return 'DOC';
 }
 
+/**
+ * The search snippet as plain text.
+ *
+ * Postgres returns it with <b> around the matched words. The row renders as
+ * text, so the tags come out and the entities they arrived with go back to
+ * being characters — otherwise a document named "Smith & Co" reads as
+ * "Smith &amp; Co".
+ */
+function snippetText(html) {
+  if (!html) return null;
+  const stripped = html.replace(/<\/?b>/g, '');
+  const el = document.createElement('textarea');
+  el.innerHTML = stripped;
+  return el.value;
+}
+
+/**
+ * id → "Finance / Invoices 2026", from the folder tree.
+ *
+ * The API's `folder.path` is a materialised path of ids, which is the right
+ * thing for a subtree query and the wrong thing to show a person.
+ */
+function folderTrails(tree) {
+  const map = new Map();
+  const walk = (nodes, trail) => {
+    for (const f of nodes ?? []) {
+      const here = [...trail, f.name];
+      map.set(f.id, here.join(' / '));
+      if (f.children?.length) walk(f.children, here);
+    }
+  };
+  walk(tree, []);
+  return map;
+}
+
+/** Where a document sits, named rather than identified. */
+function whereIs(doc, trails) {
+  if (!doc.folder) return 'Unfiled';
+  return trails.get(doc.folder.id) ?? doc.folder.name ?? 'Unfiled';
+}
+
 /** Bytes as something a person reads, not a number they decode. */
 function fileSize(bytes) {
   const n = Number(bytes);
@@ -295,6 +336,63 @@ const LIVE = {
             `${res.items.filter((d) => d.checkedOutById).length} checked out`,
             `${res.items.filter((d) => d.classification === 'CONFIDENTIAL' || d.classification === 'RESTRICTED').length} confidential or above`,
             '90-day recovery window',
+          ],
+        };
+      },
+    },
+  },
+
+  search: {
+    '*': {
+      label: 'results',
+      async load({ query = '', folderId } = {}) {
+        // Content search reaches inside the document body and returns a ranked,
+        // highlighted snippet; metadata search does not. With no query at all
+        // there is nothing to rank, so it lists what the scope contains and
+        // says so in the status bar rather than showing an empty screen.
+        const inContent = Boolean(query);
+
+        // The tree comes along because a result carries `folder.path`, and that
+        // path is built from ids — "/cmsxpfa76…/cmsxpfa7u…/" tells a reader
+        // nothing about where the document lives.
+        const [res, tree] = await Promise.all([
+          api.search({
+            take: 200,
+            ...(query ? { q: query, inContent: true, sort: 'relevance' } : {}),
+            ...(folderId ? { folderId } : {}),
+          }),
+          api.folders.tree().catch(() => null),
+        ]);
+
+        const trails = folderTrails(tree);
+
+        return {
+          rows: res.items.map((d) =>
+            withRecord(
+              [
+                kindBadge(d.name, d.mimeType),
+                d.name,
+                // The snippet arrives with <b> around the match. Tags are
+                // stripped rather than rendered: this cell is plain text
+                // elsewhere, and injecting markup here to bold a word is not
+                // worth an HTML sink on server-derived content.
+                snippetText(d.snippet) ?? whereIs(d, trails),
+                d.rank ? d.rank.toFixed(2) : '',
+                d.classification.charAt(0) + d.classification.slice(1).toLowerCase(),
+                whereIs(d, trails),
+                since(d.updatedAt),
+              ],
+              d,
+            ),
+          ),
+          total: res.total,
+          status: [
+            query ? plural(res.total, 'result') : `${plural(res.total, 'document')} in scope`,
+            query ? 'Ranked by relevance' : 'No query — listing the scope',
+            // Said plainly, because a search that silently skips scans reads as
+            // a search that found nothing.
+            inContent ? 'Text and metadata' : 'Metadata only',
+            'Scans are not searchable until OCR runs',
           ],
         };
       },

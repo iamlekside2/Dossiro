@@ -7,6 +7,7 @@ import {
 } from './panes/Document.jsx';
 import { AccessPane, DetailsPane, EditPane, SummaryPane, VersionsPane } from './panes/Core.jsx';
 import { ShareLinkPane } from './panes/Share.jsx';
+import { SearchMatchPane } from './panes/Search.jsx';
 import {
   CapabilitiesPane,
   CompliancePane,
@@ -63,6 +64,9 @@ export default function Inspector({
     repo: { summary: DocumentSummaryPane, history: DocumentVersionsPane, access: DocumentAccessPane },
     audit: { details: DetailsPane },
     sharing: { access: ShareLinkPane },
+    // A search result is a document, so the Repository's Summary pane answers
+    // for it unchanged; only the match itself needs its own describer.
+    search: { summary: DocumentSummaryPane, details: SearchMatchPane },
   };
 
   const wired = (Boolean(record?.record) && LIVE_BODIES[area]) || null;
@@ -74,6 +78,7 @@ export default function Inspector({
   const ILLUSTRATION_NOTE = {
     audit: 'The event is real; this pane is from the design. Event shows the actual record.',
     sharing: 'The link is real; this pane is from the design. Link shows the actual settings.',
+    search: 'The result is real; this pane is from the design. Summary and Match show the actual document.',
     repo: 'The row is real; this pane is from the design. Summary, Versions and Access show the actual document.',
   };
   const illustrationNote = ILLUSTRATION_NOTE[area] ?? ILLUSTRATION_NOTE.repo;
@@ -117,15 +122,19 @@ export default function Inspector({
       <div className="inspector__body">
         {/* Only one body mounts at a time, so each keeps its own local state
             (signature mode, passcode toggle) scoped to a single visit. */}
-        <Body
-          key={active}
-          area={area}
-          record={record}
-          details={details}
-          detailNote={detailNote}
-          access={access}
-          onChanged={onChanged}
-        />
+        {record ? (
+          <Body
+            key={active}
+            area={area}
+            record={record}
+            details={details}
+            detailNote={detailNote}
+            access={access}
+            onChanged={onChanged}
+          />
+        ) : (
+          <div className="ins__section ins__note">Select a row to see its details.</div>
+        )}
       </div>
     </div>
   );
