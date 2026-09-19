@@ -189,7 +189,15 @@ export default function Workbench() {
 
   const visible = useMemo(() => {
     const all = source.rows ?? ROWS[tab] ?? [];
-    const pred = (SCOPE_FILTERS[tab] || {})[scopeIndex];
+
+    // Scope predicates exist to carve the handoff's one static row list into
+    // per-scope subsets by matching its invented text. They must never touch
+    // rows that came from the server, which is already scoped — and they are
+    // keyed by position, so a real folder tree silently inherits whichever
+    // sample predicate happens to sit at that index. Employee records landed on
+    // index 5, whose predicate looks for "Coastal", and reported 34 documents
+    // above an empty list.
+    const pred = source.rows ? null : (SCOPE_FILTERS[tab] || {})[scopeIndex];
     let out = pred ? all.filter(pred) : all.slice();
 
     // "Find in this view" means exactly that: it narrows what is already on

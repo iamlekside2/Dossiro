@@ -127,7 +127,11 @@ Show "a deeper DENY beats the inherited allow" ($onInvoices -eq 'NONE') "Invoice
 # =====================================================================
 Head "3. EXTERNAL RECIPIENT - no account, only a link"
 # =====================================================================
-$docId = Get-SqlValue "SELECT d.id FROM documents d JOIN organizations o ON o.id = d.""organizationId"" WHERE o.slug = 'acme' AND d.""deletedAt"" IS NULL LIMIT 1;"
+# Named, not "LIMIT 1". This section is about what a link does, so it needs a
+# document a link may legitimately be made for: an open share of a CONFIDENTIAL
+# record is refused on purpose, and once the seed grew past a single document
+# the arbitrary pick started landing on one and failing nine assertions.
+$docId = Get-SqlValue "SELECT d.id FROM documents d JOIN organizations o ON o.id = d.""organizationId"" WHERE o.slug = 'acme' AND d.name = 'dossiro-test.txt' AND d.""deletedAt"" IS NULL;"
 $r = Invoke-Api POST '/shares' $adminTok @{ documentId = $docId; expiresInHours = 24; password = '778899'; allowDownload = $false }
 $token = $r.body.share.token
 Show "a tenant user issues them a link" ([bool]$token) "view-only, access code, expires in 24h"

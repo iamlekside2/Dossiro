@@ -29,6 +29,7 @@ import {
   UserStatus,
 } from '../src/common/db/enums';
 import { SYSTEM_ROLES } from '../src/common/rbac/permissions';
+import { seedCorpus } from './corpus';
 
 config();
 
@@ -132,6 +133,31 @@ async function main(): Promise<void> {
   ]);
   // A second version, so version history has something to show.
   await addVersion(invoice, manager.id, ['Invoice 0001 — consultancy, March (revised).']);
+
+  // ---- A repository worth looking at ----------------------------------------
+  // Everything above is the fixture set the verification suites assert against,
+  // and it is deliberately small. This fills the same tenant out to something
+  // that behaves like a real estate: several hundred records across a deeper
+  // tree, so ranking, scoping and paging can be judged at all.
+  const corpus = await seedCorpus({
+    db,
+    organizationId: org.id,
+    storageRoot: STORAGE_ROOT,
+    adminId: admin.id,
+    // Weighted rather than even: in a real repository most records belong to
+    // the people who file for a living, not to the administrator.
+    owners: [
+      { id: clerk.id, weight: 5 },
+      { id: manager.id, weight: 3 },
+      { id: admin.id, weight: 2 },
+    ],
+    rootFolders: new Map([
+      ['Finance', financeFolder],
+      ['Human Resources', hrFolder],
+      ['Shared', shared],
+    ]),
+  });
+  console.log(`  corpus: ${corpus.created} filed, ${corpus.skipped} already present`);
 
   // ---- The platform realm ---------------------------------------------------
   // Operating the platform and using the product are different jobs, so the

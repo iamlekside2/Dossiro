@@ -599,7 +599,18 @@ export function useAreaRows(area, scopeIndex = 0, enabled = true, context = null
       try {
         const { rows, total, status } = await live.load(contextKey ? JSON.parse(contextKey) : {});
         if (signal?.aborted) return;
-        setState({ rows, total, status, loading: false, error: null });
+
+        // Every endpoint caps its page — search at 100, the rest at 200 — and
+        // the list has no paging control yet, so a capped result looks exactly
+        // like a complete one. Said here rather than in each loader, so an area
+        // wired later cannot forget it: a truncated list that does not say so
+        // is a wrong answer, not a partial one.
+        const capped = total != null && rows.length < total;
+        const cells = capped
+          ? [`Showing the first ${rows.length} of ${total.toLocaleString('en-GB')}`, ...(status ?? [])]
+          : status;
+
+        setState({ rows, total, status: cells, loading: false, error: null });
       } catch (err) {
         if (signal?.aborted) return;
         setState({ rows: [], loading: false, error: err });
