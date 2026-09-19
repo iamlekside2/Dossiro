@@ -155,14 +155,17 @@ export const SCOPES = {
     0,
   ],
   sharing: [
-    'Recipients',
-    'Every open, page turn and dwell time is written to the audit trail.',
+    'Links',
+    'Every open is written to the audit trail. Revoking takes effect immediately.',
     [
-      ['External counsel', 0, '2'],
-      ['Procurement', 0, '1'],
-      ['Auditors', 0, '1'],
-      ['Brokers', 0, '1'],
-      ['Revoked', 0, '1'],
+      // The states a link can be in, which is what you act on. Grouping by
+      // recipient type was the design's idea; nothing records who holds a link,
+      // only which document it opens and who created it.
+      ['All links', 0, ''],
+      ['Active', 0, ''],
+      ['Expired', 0, ''],
+      ['Download cap reached', 0, ''],
+      ['Revoked', 0, ''],
     ],
     0,
   ],
@@ -467,16 +470,12 @@ export const SCOPE_FILTERS = {
     3: (r) => r[3] === 'Overdue',
     4: () => false,
   },
-  sharing: {
-    0: (r) => /Kowalski|auditor/i.test(r[2]),
-    1: (r) => /Procurement/.test(r[2]),
-    2: (r) => /auditor/.test(r[2]),
-    3: (r) => /Broker|Ade/.test(r[2]),
-    4: (r) => r[3] === 'Revoked',
-  },
-  // Audit has no client-side predicates: the API filters by action in the
-  // database. Matching again on the rendered text would filter twice and throw
-  // away rows the server had already selected correctly.
+  // Sharing and Audit have no client-side predicates: the API filters both in
+  // the database, by link state and by action. Matching again on the rendered
+  // text would filter twice and throw away rows the server had already
+  // selected correctly — which is precisely what the old sample predicates
+  // here did, since they looked for names like "Kowalski" that exist only in
+  // the handoff's rows.
   hr: {
     1: (r) => /started 1 August|3 August|starts 1 September/.test(r[2]),
     2: (r) => r[3] === 'Incomplete',

@@ -1,10 +1,10 @@
-import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequirePermissions } from '../../common/decorators';
 import { PERMISSIONS } from '../../common/rbac/permissions';
 import type { AuthUser } from '../../common/types/auth.types';
 import { CreateShareDto } from './dto/share.dto';
-import { SharesService } from './shares.service';
+import { SHARE_STATUSES, SharesService, type ShareStatus } from './shares.service';
 
 @ApiTags('shares')
 @Controller('shares')
@@ -22,11 +22,22 @@ export class SharesController {
     @Query('documentId') documentId?: string,
     @Query('skip') skip?: string,
     @Query('take') take?: string,
+    @Query('status') status?: string,
   ) {
     if (documentId) return this.shares.listForDocument(user, documentId);
+
+    // An unrecognised status is rejected rather than ignored: silently
+    // returning everything would look like "no links are revoked".
+    if (status && !SHARE_STATUSES.includes(status as ShareStatus)) {
+      throw new BadRequestException(
+        `status must be one of ${SHARE_STATUSES.join(', ')}`,
+      );
+    }
+
     return this.shares.listForOrganization(user, {
       skip: skip ? Number(skip) : undefined,
       take: take ? Number(take) : undefined,
+      status: status as ShareStatus | undefined,
     });
   }
 

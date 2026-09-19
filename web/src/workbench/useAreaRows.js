@@ -95,6 +95,48 @@ function fileSize(bytes) {
 }
 
 /**
+ * Share scopes, in the order SCOPES.sharing lists them.
+ *
+ * The design grouped links by recipient type (external counsel, brokers,
+ * auditors), which nothing in the data supports — a link records the document
+ * and who made it, not what kind of party holds it. These are the states the
+ * server already computes, and they are the states that need acting on.
+ */
+const SHARE_SCOPES = [null, 'ACTIVE', 'EXPIRED', 'EXHAUSTED', 'REVOKED'];
+
+/** What a link permits, in the words the column header promises. */
+function shareRights(s) {
+  if (s.allowDownload === false) return 'View only';
+  if (s.maxDownloads !== null && s.maxDownloads !== undefined) {
+    return `Download, ${s.maxDownloads} max`;
+  }
+  return 'Download';
+}
+
+/** When it stops working — a date ahead, a reason behind. */
+function shareExpiry(s) {
+  if (s.status === 'REVOKED') return 'Revoked';
+  if (s.status === 'EXHAUSTED') return 'Cap reached';
+  if (!s.expiresAt) return 'No expiry';
+
+  const at = new Date(s.expiresAt);
+  const days = Math.round((at.getTime() - Date.now()) / 86400000);
+  if (days < 0) return 'Expired';
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Tomorrow';
+  if (days <= 30) return `In ${days} days`;
+  return at.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+}
+
+/** Only states that need attention are flagged; a working link is not news. */
+function shareFlag(status) {
+  if (status === 'REVOKED') return 'Revoked';
+  if (status === 'EXPIRED') return 'Expired';
+  if (status === 'EXHAUSTED') return 'Cap reached';
+  return '';
+}
+
+/**
  * Audit scopes, in the order SCOPES.audit lists them. Each is a set of real
  * actions rather than a text match on a rendered row, so the filtering happens
  * in the database and the total means something.
@@ -253,6 +295,52 @@ const LIVE = {
             `${res.items.filter((d) => d.checkedOutById).length} checked out`,
             `${res.items.filter((d) => d.classification === 'CONFIDENTIAL' || d.classification === 'RESTRICTED').length} confidential or above`,
             '90-day recovery window',
+          ],
+        };
+      },
+    },
+  },
+
+  sharing: {
+    '*': {
+      label: 'links',
+      async load({ scopeIndex = 0 } = {}) {
+        const status = SHARE_SCOPES[scopeIndex];
+        const res = await api.shares.list({ take: 200, ...(status ? { status } : {}) });
+
+        return {
+          rows: res.items.map((s) => {
+            const d = s.document ?? {};
+            const opens = s._count?.accesses ?? 0;
+            const who = s.createdBy?.displayName;
+            const meta = [
+              // The address is what someone actually holds, so it leads.
+              s.url,
+              who ? `by ${who}` : null,
+              s.hasPassword ? 'access code required' : null,
+            ]
+              .filter(Boolean)
+              .join(' · ');
+
+            return withRecord(
+              [
+                kindBadge(d.name ?? '', d.mimeType),
+                d.name ?? 'Deleted document',
+                meta,
+                shareFlag(s.status),
+                shareRights(s),
+                shareExpiry(s),
+                String(opens),
+              ],
+              s,
+            );
+          }),
+          total: res.total,
+          status: [
+            plural(res.total, 'link'),
+            `${res.items.reduce((n, s) => n + (s._count?.accesses ?? 0), 0)} opens recorded`,
+            `${res.items.filter((s) => s.document?.classification === 'CONFIDENTIAL' || s.document?.classification === 'RESTRICTED').length} on confidential records`,
+            'Every open is audited',
           ],
         };
       },

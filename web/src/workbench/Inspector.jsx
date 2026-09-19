@@ -6,6 +6,7 @@ import {
   DocumentVersionsPane,
 } from './panes/Document.jsx';
 import { AccessPane, DetailsPane, EditPane, SummaryPane, VersionsPane } from './panes/Core.jsx';
+import { ShareLinkPane } from './panes/Share.jsx';
 import {
   CapabilitiesPane,
   CompliancePane,
@@ -61,6 +62,7 @@ export default function Inspector({
   const LIVE_BODIES = {
     repo: { summary: DocumentSummaryPane, history: DocumentVersionsPane, access: DocumentAccessPane },
     audit: { details: DetailsPane },
+    sharing: { access: ShareLinkPane },
   };
 
   const wired = (Boolean(record?.record) && LIVE_BODIES[area]) || null;
@@ -69,10 +71,12 @@ export default function Inspector({
   /** Panes still showing the handoff's illustration beside a live row. */
   const illustrated = Boolean(wired) && !wired[active];
 
-  const illustrationNote =
-    area === 'audit'
-      ? 'The event is real; this pane is from the design. Event shows the actual record.'
-      : 'The row is real; this pane is from the design. Summary, Versions and Access show the actual document.';
+  const ILLUSTRATION_NOTE = {
+    audit: 'The event is real; this pane is from the design. Event shows the actual record.',
+    sharing: 'The link is real; this pane is from the design. Link shows the actual settings.',
+    repo: 'The row is real; this pane is from the design. Summary, Versions and Access show the actual document.',
+  };
+  const illustrationNote = ILLUSTRATION_NOTE[area] ?? ILLUSTRATION_NOTE.repo;
 
   return (
     <div className="inspector">

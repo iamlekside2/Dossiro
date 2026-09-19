@@ -66,9 +66,9 @@ export const AREA_STATE = {
     note: 'Workflow tables exist; nothing drives them.',
   },
   sharing: {
-    state: READY,
+    state: LIVE,
     endpoint: 'GET /api/shares',
-    note: 'Share links work fully — expiry, access codes, download caps, revocation and reading analytics are all verified.',
+    note: 'Real links, filtered by state in the database. Expiry, access codes, download caps and revocation are all enforced server-side.',
   },
   audit: {
     state: LIVE,

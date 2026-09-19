@@ -214,6 +214,8 @@ export const api = {
   },
 
   shares: {
+    /** Every link in the organisation, scoped to documents you can read. */
+    list: (params = {}) => request(`/shares?${qs(params)}`),
     listFor: (documentId) => request(`/shares?documentId=${documentId}`),
     create: (documentId, options) => request('/shares', { method: 'POST', body: { documentId, ...options } }),
     revoke: (id) => request(`/shares/${id}`, { method: 'DELETE' }),

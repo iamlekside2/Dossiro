@@ -1,6 +1,6 @@
 # Verification suites
 
-Four suites, 82 assertions, run against a **live PostgreSQL database and a
+Five suites, 93 assertions, run against a **live PostgreSQL database and a
 running API** rather than mocks. They exist to prove the guarantees the product
 is sold on, not to chase coverage.
 
@@ -22,6 +22,7 @@ powershell -File test/three-populations.ps1
 | `three-populations.ps1` | 30 | The walls between the platform operator, a tenant user, and an external link recipient. Half the checks are refusals — what each population **cannot** do matters more than what it can. |
 | `suspend-reason.ps1` | 11 | Suspending a tenant requires a reason, the reason reaches both audit trails, and nobody can edit it afterwards. |
 | `single-session.ps1` | 14 | Single-session sign-in is off by default, refuses with 409 and names the other device, and a takeover genuinely kills the first session. |
+| `share-status.ps1` | 11 | A link's state is written twice — as SQL that filters and as a function that labels — so this holds the two against each other, including the expired and cap-reached states the seed never reaches. Also that the access-code hash never leaves the server. |
 | `endpoints.ps1` | 27 | Token rotation, the reads the workbench depends on, and the guarantees the **database** enforces — the append-only trigger, foreign keys, and the platform organisation's inability to hold a document. |
 
 ## Why they are here and not in a scratch directory

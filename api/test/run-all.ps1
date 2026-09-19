@@ -12,6 +12,7 @@ $suites = @(
   'three-populations.ps1',
   'suspend-reason.ps1',
   'single-session.ps1',
+  'share-status.ps1',
   'endpoints.ps1'
 )
 

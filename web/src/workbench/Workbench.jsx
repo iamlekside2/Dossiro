@@ -144,13 +144,13 @@ export default function Workbench() {
     setRow(0);
   }
 
-  // Live areas fetch; the rest fall back to the handoff's sample rows.
-  const source = useAreaRows(
-    tab,
-    scopeIndex,
-    true,
-    tab === 'repo' ? { folderId } : tab === 'audit' ? { scopeIndex } : null,
-  );
+  // Live areas fetch; the rest fall back to the handoff's sample rows. What
+  // each loader needs from the current view, since a scope means a folder in
+  // one area and a filter in another.
+  const loaderContext =
+    tab === 'repo' ? { folderId } : tab === 'audit' || tab === 'sharing' ? { scopeIndex } : null;
+
+  const source = useAreaRows(tab, scopeIndex, true, loaderContext);
 
   const visible = useMemo(() => {
     const all = source.rows ?? ROWS[tab] ?? [];

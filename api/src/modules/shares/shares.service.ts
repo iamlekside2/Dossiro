@@ -25,6 +25,36 @@ import { AccessService } from '../access/access.service';
 import { AuditService } from '../audit/audit.service';
 import { StorageService } from '../storage/storage.service';
 
+export const SHARE_STATUSES = ['ALL', 'ACTIVE', 'EXPIRED', 'EXHAUSTED', 'REVOKED'] as const;
+export type ShareStatus = (typeof SHARE_STATUSES)[number];
+
+/**
+ * statusOf(), as SQL.
+ *
+ * Kept adjacent to its TypeScript twin below because the pair has to agree:
+ * a row the filter calls EXPIRED must come back labelled EXPIRED. The clauses
+ * are mutually exclusive and cover every row, in the same order the function
+ * tests them — revoked first, so a revoked-and-expired link reads as revoked.
+ */
+const NOT_REVOKED = `s."revokedAt" IS NULL`;
+const NOT_EXPIRED = `(s."expiresAt" IS NULL OR s."expiresAt" > now())`;
+const NOT_EXHAUSTED = `(s."maxDownloads" IS NULL OR s."downloadCount" < s."maxDownloads")`;
+
+const STATUS_SQL: Record<ShareStatus, string | null> = {
+  ALL: null,
+  REVOKED: `s."revokedAt" IS NOT NULL`,
+  EXPIRED: `${NOT_REVOKED} AND s."expiresAt" <= now()`,
+  EXHAUSTED: `${NOT_REVOKED} AND ${NOT_EXPIRED} AND s."maxDownloads" IS NOT NULL AND s."downloadCount" >= s."maxDownloads"`,
+  ACTIVE: `${NOT_REVOKED} AND ${NOT_EXPIRED} AND ${NOT_EXHAUSTED}`,
+};
+
+/** A share link with the hash removed and the derived fields added. */
+export type PresentedShare = Omit<ShareLink, 'passwordHash'> & {
+  hasPassword: boolean;
+  url: string;
+  status: Exclude<ShareStatus, 'ALL'>;
+};
+
 export interface CreateShareInput {
   documentId: string;
   /** Explicit expiry. Omit to fall back to DEFAULT_SHARE_TTL_HOURS. */
@@ -74,7 +104,10 @@ export class SharesService {
   // Creation (authenticated)
   // ---------------------------------------------------------------------------
 
-  async create(user: AuthUser, input: CreateShareInput): Promise<{ share: ShareLink; url: string; warnings: string[] }> {
+  async create(
+    user: AuthUser,
+    input: CreateShareInput,
+  ): Promise<{ share: PresentedShare; url: string; warnings: string[] }> {
     // Creating a link that permits download requires the ability to download.
     // Otherwise a READ-only user could mint themselves a download route.
     const required = input.allowDownload === false ? AccessLevel.READ : AccessLevel.DOWNLOAD;
@@ -154,7 +187,7 @@ export class SharesService {
       },
     });
 
-    return { share, url: this.buildUrl(share.token), warnings: verdict.warnings };
+    return { share: this.present(share), url: this.buildUrl(share.token), warnings: verdict.warnings };
   }
 
   /**
@@ -164,7 +197,10 @@ export class SharesService {
    * record, so listing one for a document you cannot open would leak both the
    * document's name and the fact that it is in circulation.
    */
-  async listForOrganization(user: AuthUser, params: { skip?: number; take?: number } = {}) {
+  async listForOrganization(
+    user: AuthUser,
+    params: { skip?: number; take?: number; status?: ShareStatus } = {},
+  ) {
     const readable = await this.access.readableFolderIds(user);
 
     const clause = (p: Params) =>
@@ -174,6 +210,12 @@ export class SharesService {
         readable === null
           ? null
           : `(d."folderId" = ANY(${p.add(readable)}::text[]) OR d."ownerId" = ${p.add(user.id)})`,
+        // Status is derived rather than stored, so it is expressed here as the
+        // SQL equivalent of statusOf(). Filtering a page in the caller instead
+        // would make every count a lie about the page rather than the estate.
+        // The two must be changed together; the verification suite compares
+        // them against each other.
+        STATUS_SQL[params.status ?? 'ALL'],
       ]);
 
     const p = new Params();
@@ -206,7 +248,7 @@ export class SharesService {
     );
 
     return {
-      items: items.map((s) => ({ ...s, url: this.buildUrl(s.token), status: this.statusOf(s) })),
+      items: items.map((s) => this.present(s)),
       total,
     };
   }
@@ -228,7 +270,7 @@ export class SharesService {
       [documentId],
     );
 
-    return shares.map((s) => ({ ...s, url: this.buildUrl(s.token), status: this.statusOf(s) }));
+    return shares.map((s) => this.present(s));
   }
 
   async revoke(user: AuthUser, id: string): Promise<void> {
@@ -504,6 +546,25 @@ export class SharesService {
   }
 
   // ---------------------------------------------------------------------------
+
+  /**
+   * A share link as the caller is allowed to see it.
+   *
+   * `SELECT s.*` is convenient but it also selects `passwordHash`, and that is
+   * an argon2 hash of an access code the recipient was told over the phone.
+   * Access codes are short and human-chosen, so a hash that reaches a browser
+   * — or a proxy log, or an error report — is a crackable one. The caller only
+   * ever needs to know whether a code is set.
+   */
+  private present<T extends ShareLink>(share: T) {
+    const { passwordHash, ...rest } = share;
+    return {
+      ...rest,
+      hasPassword: Boolean(passwordHash),
+      url: this.buildUrl(share.token),
+      status: this.statusOf(share),
+    };
+  }
 
   private statusOf(share: Pick<ShareLink, 'revokedAt' | 'expiresAt' | 'maxDownloads' | 'downloadCount'>) {
     if (share.revokedAt) return 'REVOKED' as const;
