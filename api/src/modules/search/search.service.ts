@@ -22,10 +22,45 @@ export interface SearchParams {
   createdTo?: Date;
   sizeMin?: number;
   sizeMax?: number;
+  /** Only documents filed as this type (SRC-4). */
+  documentTypeId?: string;
+  /** Criteria against that type's index fields. Combined with AND (SRC-4). */
+  fields?: FieldCriterion[];
   sort?: 'relevance' | 'modified' | 'created' | 'name' | 'size';
   skip?: number;
   take?: number;
 }
+
+/**
+ * One condition on one index field.
+ *
+ * `between` uses both values; `set` and `unset` use neither. Everything else
+ * uses `value` alone.
+ */
+export interface FieldCriterion {
+  fieldId: string;
+  op: 'eq' | 'ne' | 'lt' | 'lte' | 'gt' | 'gte' | 'contains' | 'between' | 'set' | 'unset';
+  value?: string | number | boolean;
+  value2?: string | number | boolean;
+}
+
+const OPERATOR: Record<string, string> = {
+  eq: '=',
+  ne: '<>',
+  lt: '<',
+  lte: '<=',
+  gt: '>',
+  gte: '>=',
+};
+
+/** Which column of document_field_values holds a value of each kind. */
+const VALUE_COLUMN: Record<string, string> = {
+  TEXT: 'valueText',
+  SELECT: 'valueText',
+  DATE: 'valueDate',
+  NUMBER: 'valueNumber',
+  BOOLEAN: 'valueBool',
+};
 
 /** Everything the two statements need to agree on. */
 interface Scope {
@@ -33,6 +68,8 @@ interface Scope {
   params: SearchParams;
   folderIds: string[] | null;
   useContent: boolean;
+  /** Kind per referenced index field, so a criterion knows which column to read. */
+  fieldKinds: Map<string, string>;
 }
 
 /**
@@ -87,7 +124,28 @@ export class SearchService {
       folderIds = readable === null ? ids : ids.filter((id) => readable.includes(id));
     }
 
-    const scope: Scope = { user, params, folderIds, useContent: Boolean(params.inContent && params.q) };
+    // A criterion names a field by id, but the column it compares depends on
+    // the field's kind — so the kinds are read once, here, rather than being
+    // trusted from the caller. Scoping the lookup to the organisation is also
+    // what stops a criterion naming another tenant's field id.
+    const fieldKinds = new Map<string, string>();
+    const wanted = (params.fields ?? []).map((f) => f.fieldId);
+    if (wanted.length) {
+      const known = await this.db.query<{ id: string; kind: string }>(
+        `SELECT id, kind FROM document_type_fields
+          WHERE "organizationId" = $1 AND id = ANY($2::text[])`,
+        [user.organizationId, wanted],
+      );
+      for (const f of known) fieldKinds.set(f.id, f.kind);
+    }
+
+    const scope: Scope = {
+      user,
+      params,
+      folderIds,
+      useContent: Boolean(params.inContent && params.q),
+      fieldKinds,
+    };
     const join = scope.useContent ? `JOIN document_index di ON di."documentId" = d.id` : '';
 
     // Each statement gets its own Params. Postgres rejects a statement supplied
@@ -150,7 +208,7 @@ export class SearchService {
    * Tenant scope is the first condition and is never optional — every other
    * filter narrows within one organisation.
    */
-  private whereClause({ user, params, folderIds, useContent }: Scope, p: Params): string {
+  private whereClause({ user, params, folderIds, useContent, fieldKinds }: Scope, p: Params): string {
     return every([
       `d."organizationId" = ${p.add(user.organizationId)}`,
       `d."deletedAt" IS NULL`,
@@ -171,6 +229,12 @@ export class SearchService {
       params.createdTo ? `d."createdAt" <= ${p.add(params.createdTo)}` : null,
       params.sizeMin != null ? `v."sizeBytes" >= ${p.add(params.sizeMin)}` : null,
       params.sizeMax != null ? `v."sizeBytes" <= ${p.add(params.sizeMax)}` : null,
+      params.documentTypeId ? `d."documentTypeId" = ${p.add(params.documentTypeId)}` : null,
+      // SRC-4. One EXISTS per criterion, so several conditions on the same type
+      // mean "all of these" rather than "any of them" — "contracts expiring in
+      // 2027 whose value is above four hundred million" is two conditions on
+      // two fields, and both must hold of the same document.
+      ...(params.fields ?? []).map((c) => this.fieldPredicate(c, fieldKinds, p)),
       // Content mode matches the indexed body; otherwise the name only.
       useContent
         ? `di.tsv @@ websearch_to_tsquery('english', ${p.add(params.q)})`
@@ -178,6 +242,75 @@ export class SearchService {
           ? `d.name ILIKE ${p.add(contains(params.q))} ESCAPE '\\'`
           : null,
     ]);
+  }
+
+  /**
+   * One condition on one index field, as an EXISTS against its value row.
+   *
+   * The column is chosen from the field's kind rather than from anything the
+   * caller sent, and the operator comes from a fixed map — so neither reaches
+   * the statement as text. `unset` is the one case that inverts to NOT EXISTS,
+   * which also covers a document of the right type that was never filled in.
+   *
+   * An unknown field id yields `null`, dropping the criterion rather than
+   * matching everything: a filter naming a field that does not exist in this
+   * tenant should narrow nothing, not silently widen the result.
+   */
+  private fieldPredicate(c: FieldCriterion, kinds: Map<string, string>, p: Params): string | null {
+    const kind = kinds.get(c.fieldId);
+    if (!kind) return 'FALSE';
+
+    const col = VALUE_COLUMN[kind];
+
+    // Every reason to drop this criterion is decided before a single parameter
+    // is bound. Adding one and then returning null leaves the statement
+    // supplied with a parameter it never references, which Postgres rejects
+    // outright — the whole search fails rather than the criterion being
+    // ignored.
+    const usable =
+      c.op === 'set' ||
+      c.op === 'unset' ||
+      (c.op === 'between' && c.value !== undefined && c.value2 !== undefined) ||
+      (c.op === 'contains' && col === 'valueText' && c.value !== undefined) ||
+      (OPERATOR[c.op] !== undefined && c.value !== undefined);
+    if (!usable) return null;
+
+    const base = `SELECT 1 FROM document_field_values fv
+                   WHERE fv."documentId" = d.id AND fv."fieldId" = ${p.add(c.fieldId)}`;
+
+    // `unset` also requires the document to be of a type that HAS this field.
+    // Without that it matches every delivery note and every untyped scan,
+    // which is true but not the question anybody asked.
+    if (c.op === 'set') return `EXISTS (${base})`;
+    if (c.op === 'unset') {
+      return `(NOT EXISTS (${base})
+               AND EXISTS (SELECT 1 FROM document_type_fields tf
+                            WHERE tf.id = ${p.add(c.fieldId)}
+                              AND tf."documentTypeId" = d."documentTypeId"))`;
+    }
+
+    if (c.op === 'between') {
+      return `EXISTS (${base}
+                AND fv."${col}" >= ${p.add(this.coerce(kind, c.value!))}
+                AND fv."${col}" <= ${p.add(this.coerce(kind, c.value2!))})`;
+    }
+
+    // `contains` is text only. On a date or a number it has no meaning, and
+    // silently treating it as equality would answer a different question than
+    // the one asked — so it was dropped above rather than reinterpreted.
+    if (c.op === 'contains') {
+      return `EXISTS (${base} AND fv."valueText" ILIKE ${p.add(contains(String(c.value)))} ESCAPE '\\')`;
+    }
+
+    return `EXISTS (${base} AND fv."${col}" ${OPERATOR[c.op]} ${p.add(this.coerce(kind, c.value!))})`;
+  }
+
+  /** A criterion arrives as text from a query string; the column is typed. */
+  private coerce(kind: string, value: string | number | boolean) {
+    if (kind === 'NUMBER') return Number(value);
+    if (kind === 'DATE') return new Date(String(value));
+    if (kind === 'BOOLEAN') return value === true || value === 'true' || value === 'yes';
+    return String(value);
   }
 
   /** Whitelisted sort expressions — an ORDER BY cannot be a bound parameter. */
