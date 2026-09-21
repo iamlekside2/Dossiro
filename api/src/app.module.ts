@@ -19,6 +19,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ChannelsModule } from './modules/channels/channels.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { BranchesModule } from './modules/branches/branches.module';
+import { DocumentTypesModule } from './modules/document-types/document-types.module';
 import { FoldersModule } from './modules/folders/folders.module';
 import { HealthModule } from './modules/health/health.module';
 import { MaintenanceModule } from './modules/maintenance/maintenance.module';
@@ -53,6 +54,7 @@ import { LicensingModule } from './modules/licensing/licensing.module';
     OrganizationsModule,
     LicensingModule,
     BranchesModule,
+    DocumentTypesModule,
     FoldersModule,
     DocumentsModule,
     SharesModule,

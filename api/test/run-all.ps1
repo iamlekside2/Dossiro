@@ -14,6 +14,7 @@ $suites = @(
   'single-session.ps1',
   'share-status.ps1',
   'document-types.ps1',
+  'document-types-api.ps1',
   'endpoints.ps1'
 )
 
