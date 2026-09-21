@@ -89,6 +89,13 @@ export const ContentKind = {
 } as const;
 export type ContentKind = (typeof ContentKind)[keyof typeof ContentKind];
 
+export const DispositionDecision = {
+  KEEP: 'KEEP',
+  DESTROY: 'DESTROY',
+  TRANSFER: 'TRANSFER',
+} as const;
+export type DispositionDecision = (typeof DispositionDecision)[keyof typeof DispositionDecision];
+
 export const DocumentStatus = {
   DRAFT: 'DRAFT',
   PROCESSING: 'PROCESSING',

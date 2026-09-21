@@ -14,6 +14,7 @@ import type {
   ChannelType,
   Classification,
   ContentKind,
+  DispositionDecision,
   DocumentStatus,
   DocumentTypeStatus,
   FieldKind,
@@ -36,7 +37,7 @@ import type {
   WorkflowStatus,
 } from './enums';
 
-export type { AccessLevel, AuditAction, ChangeOp, ChannelType, Classification, ContentKind, DocumentStatus, DocumentTypeStatus, FieldKind, IntegrationProvider, JobStatus, JobType, MessageDirection, MessageStatus, OrgStatus, ResourceType, ShareAccessAction, SignatureRequestStatus, SignatureType, StorageDriver, SubjectType, TaskAction, TaskStatus, UserStatus, UserTier, WorkflowStatus };
+export type { AccessLevel, AuditAction, ChangeOp, ChannelType, Classification, ContentKind, DispositionDecision, DocumentStatus, DocumentTypeStatus, FieldKind, IntegrationProvider, JobStatus, JobType, MessageDirection, MessageStatus, OrgStatus, ResourceType, ShareAccessAction, SignatureRequestStatus, SignatureType, StorageDriver, SubjectType, TaskAction, TaskStatus, UserStatus, UserTier, WorkflowStatus };
 
 /** `access_grants` */
 export interface AccessGrant {
@@ -521,6 +522,19 @@ export interface ProcessingJob {
   createdAt: Date;
 }
 
+/** `retention_decisions` */
+export interface RetentionDecision {
+  id: string;
+  organizationId: string;
+  documentId: string;
+  decision: DispositionDecision;
+  reason: string;
+  policyName: string | null;
+  dueAt: Date;
+  decidedById: string | null;
+  decidedAt: Date;
+}
+
 /** `retention_policies` */
 export interface RetentionPolicy {
   id: string;
@@ -530,6 +544,7 @@ export interface RetentionPolicy {
   anchor: string;
   action: string;
   createdAt: Date;
+  useTypeAnchor: boolean;
 }
 
 /** `roles` */
