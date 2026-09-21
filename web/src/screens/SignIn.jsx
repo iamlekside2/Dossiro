@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api.js';
 import { useSession } from '../session/SessionContext.jsx';
+import {
+  BrandLock, Button, Callout, Card, Facts, Field, Foot, H1, Label, Lede, Rail, Select, TextInput,
+} from './parts.jsx';
 
 /**
  * Getting in.
@@ -42,8 +45,8 @@ export default function SignIn() {
   const [step, setStep] = useState('credentials');
 
   return (
-    <div className="signin">
-      <div className="signin__main">
+    <div className="flex min-h-screen bg-surface-3">
+      <div className="flex min-w-0 flex-1 items-center justify-center px-6 py-12">
         {step === 'credentials' ? (
           <Credentials onSignedIn={() => setStep('device')} />
         ) : (
@@ -51,26 +54,11 @@ export default function SignIn() {
         )}
       </div>
 
-      <aside className="signin__rail">
-        <div className="ins__label">What this protects</div>
-        {NOTES.map((n) => (
-          <div className="railnote" key={n.title}>
-            <div className="railnote__title">{n.title}</div>
-            <div className="railnote__text">{n.text}</div>
-          </div>
-        ))}
-        <p className="screen__foot">
-          Every sign-in, refusal and device change is written to the audit trail.
-        </p>
-      </aside>
-    </div>
-  );
-}
-
-function BrandLock() {
-  return (
-    <div className="brandlock">
-      <img className="brandlock__logo" src="/brand/dossiro-logo.svg" alt="Dossiro" />
+      <Rail
+        title="What this protects"
+        notes={NOTES}
+        foot="Every sign-in, refusal and device change is written to the audit trail."
+      />
     </div>
   );
 }
@@ -180,16 +168,14 @@ function Credentials({ onSignedIn }) {
   }
 
   return (
-    <div className="card card--sso">
+    <Card width="sso">
       <BrandLock />
-      <h1 className="screen__h1">{heading}</h1>
-      <p className="screen__lede">Use your work account.</p>
+      <H1>{heading}</H1>
+      <Lede>Use your work account.</Lede>
 
       <form onSubmit={submit}>
-        <label className="field">
-          <span className="field__label">Work email</span>
-          <input
-            className="mfield"
+        <Field label="Work email">
+          <TextInput
             type="email"
             autoComplete="username"
             value={email}
@@ -197,15 +183,16 @@ function Credentials({ onSignedIn }) {
             onBlur={checkTenants}
             required
           />
-        </label>
+        </Field>
 
         {/* Only where the host settles nothing. On a tenant's own address the
             organisation is not a question the person should be asked. */}
         {!hostOrgId && tenants.length > 1 && (
-          <label className="field">
-            <span className="field__label">Organisation</span>
-            <select
-              className="mfield"
+          <Field
+            label="Organisation"
+            hint="This address exists in more than one organisation. The operator console administers tenants and holds no documents of its own."
+          >
+            <Select
               value={organizationId}
               onChange={(e) => setOrganizationId(e.target.value)}
             >
@@ -218,63 +205,51 @@ function Credentials({ onSignedIn }) {
                   {t.isPlatform ? `${t.name} — operator console` : `${t.name} — records`}
                 </option>
               ))}
-            </select>
-            <span className="field__hint">
-              This address exists in more than one organisation. The operator console administers
-              tenants and holds no documents of its own.
-            </span>
-          </label>
+            </Select>
+          </Field>
         )}
 
-        <label className="field">
-          <span className="field__label">Password</span>
-          <input
-            className="mfield"
+        <Field label="Password">
+          <TextInput
             type="password"
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-        </label>
+        </Field>
 
-        {error && (
-          <div className="callout callout--red" style={{ margin: '0 0 14px' }}>
-            {error}
-          </div>
-        )}
+        {error && <Callout tone="red" className="mb-[14px]">{error}</Callout>}
 
-        <button type="submit" className="btn btn--primary btn--block" disabled={busy}>
+        <Button type="submit" tone="primary" block disabled={busy}>
           {busy ? 'Signing in…' : 'Sign in'}
-        </button>
+        </Button>
       </form>
 
-      <div className="signin__divider">
+      {/* Rules either side of the word, drawn with flex rather than a
+          pseudo-element so there is nothing hidden in a stylesheet. */}
+      <div className="my-[22px] mb-[14px] flex items-center gap-2.5 text-label font-bold uppercase tracking-[0.07em] text-faint">
+        <span className="h-px flex-1 bg-line-soft" />
         <span>Single sign-on</span>
+        <span className="h-px flex-1 bg-line-soft" />
       </div>
 
-      <button type="button" className="btn btn--block" disabled title="No identity provider is connected yet">
+      <Button block disabled title="No identity provider is connected yet">
         Continue with Microsoft
-      </button>
-      <button
-        type="button"
-        className="btn btn--block"
-        style={{ marginTop: 8 }}
-        disabled
-        title="No identity provider is connected yet"
-      >
+      </Button>
+      <Button block disabled className="mt-2" title="No identity provider is connected yet">
         Continue with Okta
-      </button>
-      <p className="screen__foot" style={{ marginTop: 10 }}>
+      </Button>
+      <Foot className="mt-2.5">
         Single sign-on is not connected yet. Once Entra or Okta is configured it becomes the
         default and passwords are retired.
-      </p>
+      </Foot>
 
-      <p className="screen__foot" style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--border-soft)' }}>
+      <Foot className="mt-[18px] border-t border-line-soft pt-4">
         External party with a share link? You do not need an account — open the link you were sent
         and enter its passcode.
-      </p>
-    </div>
+      </Foot>
+    </Card>
   );
 }
 
@@ -294,46 +269,32 @@ function DeviceTrust() {
   }
 
   return (
-    <div className="card card--sso" style={{ maxWidth: 452 }}>
+    <Card width="sso" className="max-w-[452px]">
       <BrandLock />
 
-      <div className="ins__label">Step 2 of 2</div>
-      <h1 className="screen__h1">Trust this device?</h1>
-      <p className="screen__lede">
+      <Label>Step 2 of 2</Label>
+      <H1>Trust this device?</H1>
+      <Lede>
         Signed in as <strong>{user?.email}</strong>, {user?.tier?.replace('_', ' ').toLowerCase()}
         {user?.organizationName ? ` at ${user.organizationName}` : organization ? ` at ${organization.name}` : ''}.
-      </p>
+      </Lede>
       {user?.isPlatform && (
-        <div className="callout callout--blue" style={{ marginBottom: 14 }}>
+        <Callout tone="blue" className="mb-[14px]">
           This is the platform organisation. You will land in the operator console, not a
           repository — it holds no documents.
-        </div>
+        </Callout>
       )}
 
-      <div style={{ borderTop: '1px solid var(--border-soft)' }}>
-        {DEVICE_FACTS.map(([k, v]) => (
-          <div className="kvrow" key={k} style={{ borderBottom: '1px solid var(--border-faint)' }}>
-            <span className="kv__k">{k}</span>
-            <span style={{ fontSize: 13 }}>{v}</span>
-          </div>
-        ))}
-      </div>
+      <Facts rows={DEVICE_FACTS} />
 
-      <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', margin: '20px 0 0', cursor: 'pointer' }}>
+      {/* The real checkbox is visually hidden rather than removed, so the
+          label, keyboard and screen readers all still work; the square beside
+          it is what gets drawn. */}
+      <label className="mt-5 flex cursor-pointer items-start gap-2.5">
         <span
-          style={{
-            width: 20,
-            height: 20,
-            flex: '0 0 20px',
-            marginTop: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 12,
-            background: trust ? 'var(--blue)' : 'var(--surface)',
-            border: `1px solid ${trust ? 'var(--blue)' : 'var(--border-strong)'}`,
-            color: '#fff',
-          }}
+          className={`mt-px flex h-5 w-5 shrink-0 items-center justify-center border text-meta text-white ${
+            trust ? 'border-blue bg-blue' : 'border-line-strong bg-surface'
+          }`}
         >
           {trust ? '✓' : ''}
         </span>
@@ -341,30 +302,30 @@ function DeviceTrust() {
           type="checkbox"
           checked={trust}
           onChange={(e) => setTrust(e.target.checked)}
-          style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+          className="sr-only"
         />
-        <span style={{ fontSize: 13.5, lineHeight: 1.55 }}>
+        <span className="text-row leading-[1.55]">
           Keep records on this device for offline work. Cached files stay encrypted and are wiped if
           the device is revoked.
         </span>
       </label>
 
       {trust && (
-        <div className="callout callout--ochre" style={{ marginTop: 12 }}>
+        <Callout tone="ochre" className="mt-3">
           Confidential records will be limited to 30 days offline. Restricted records are never
           cached, on any device.
-        </div>
+        </Callout>
       )}
 
-      <div style={{ display: 'flex', gap: 8, marginTop: 22 }}>
-        <button type="button" className="btn btn--primary" onClick={enter}>
+      <div className="mt-[22px] flex gap-2">
+        <Button tone="primary" onClick={enter}>
           Open the repository
-        </button>
+        </Button>
       </div>
 
-      <p className="screen__foot">
+      <Foot>
         This sign-in, the device fingerprint and your offline choice are written to the audit trail.
-      </p>
-    </div>
+      </Foot>
+    </Card>
   );
 }

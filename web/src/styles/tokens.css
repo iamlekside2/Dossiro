@@ -92,6 +92,22 @@
   --font: var(--font-sans);
 }
 
+/* -- Text input ----------------------------------------------------------
+
+   Named `mfield` because it started life on the mobile screens and was then
+   reused on desktop. Moved here from screens.css when the genuinely
+   mobile-only styles around it were deleted; it goes when CreateDialog and
+   the branch pane are converted, which are the last two users.
+   ------------------------------------------------------------------------- */
+.mfield {
+  height: 48px;
+  width: 100%;
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
+  font-size: 16px;
+  background: var(--surface);
+}
+
 /* -- Chips --------------------------------------------------------------- */
 .chip {
   display: inline-flex;
