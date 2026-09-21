@@ -5,6 +5,7 @@ import AcceptInvite from './screens/AcceptInvite.jsx';
 import PlatformConsole from './screens/PlatformConsole.jsx';
 import ShareLink from './screens/ShareLink.jsx';
 import SignIn from './screens/SignIn.jsx';
+import TenantSetup from './screens/TenantSetup.jsx';
 import { SessionProvider, useSession } from './session/SessionContext.jsx';
 
 /**
@@ -31,8 +32,14 @@ function useScrollMode() {
  * Navigation only — the API is what actually enforces access.
  */
 function RequireSession({ children }) {
-  const { signedIn } = useSession();
+  const { signedIn, restoring } = useSession();
   const location = useLocation();
+
+  // A refresh token is being exchanged. Redirecting now would bounce somebody
+  // who is signed in to the sign-in screen and lose where they were going —
+  // which is what happens on any hard load of a protected URL, not just an
+  // unusual one. Wait for the answer rather than guessing at it.
+  if (restoring) return null;
 
   if (!signedIn) {
     return <Navigate to="/signin" replace state={{ from: location.pathname }} />;
@@ -98,6 +105,19 @@ function Shell() {
             <RequireTenant>
               <Workbench />
             </RequireTenant>
+          </RequireSession>
+        }
+      />
+
+      {/* First-run setup. Inside the session gate but outside RequireTenant:
+          the point of this screen is that the tenancy is not yet configured,
+          so a guard asserting it is would lock out the only person who can
+          fix that. */}
+      <Route
+        path="/setup"
+        element={
+          <RequireSession>
+            <TenantSetup />
           </RequireSession>
         }
       />
