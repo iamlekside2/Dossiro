@@ -1,138 +1,98 @@
 /* =============================================================================
-   Dossiro design tokens
-   Transcribed from the design handoff. Values are exact and intentional.
+   Legacy token aliases — TEMPORARY, delete when the last CSS file goes.
 
-   Two rules from the handoff that are easy to undo by accident:
-     - Radius is 0 everywhere except true circles.
-     - No shadows in application chrome. Depth comes from 1px borders.
+   The tokens now live in `theme.css` as the Tailwind theme, where they are
+   emitted as `--color-ink`, `--spacing-tabstrip` and so on. The CSS files
+   still awaiting conversion reference the older `--ink` / `--h-tabstrip`
+   spellings.
+
+   Rather than duplicate the hex values in two places and let them drift
+   during the migration, this aliases the old names onto the new ones. There
+   is still exactly one definition of every value, in theme.css.
+
+   As each stylesheet is converted its aliases fall out of use; when the last
+   one is gone, so is this file.
+
+   Everything below the aliases is unchanged from before the migration and is
+   shared by the CSS that has not been converted yet.
    ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap');
 
 :root {
   /* -- Ink and text ------------------------------------------------------ */
-  --ink: #1a1d21;
-  --ink-2: #31363d;
-  --text-muted: #4b5158;
-  --text-soft: #5a6068;
-  --text-dim: #7b8189;
-  --text-faint: #8b9199;
-  --text-ghost: #9aa0a8;
+  --ink: var(--color-ink);
+  --ink-2: var(--color-ink-2);
+  --text-muted: var(--color-muted);
+  --text-soft: var(--color-soft);
+  --text-dim: var(--color-dim);
+  --text-faint: var(--color-faint);
+  --text-ghost: var(--color-ghost);
 
   /* -- Borders ----------------------------------------------------------- */
-  --border-strong: #c6c9ce;
-  --border: #d5d7db;
-  --border-soft: #e3e5e8;
-  --border-faint: #eff1f3;
+  --border-strong: var(--color-line-strong);
+  --border: var(--color-line);
+  --border-soft: var(--color-line-soft);
+  --border-faint: var(--color-line-faint);
 
   /* -- Surfaces ---------------------------------------------------------- */
-  --surface: #ffffff;
-  --surface-2: #fbfbfc;
-  --surface-3: #f6f7f8;
-  --chrome: #edeef0;
-  --desk: #e9eaec;
+  --surface: var(--color-surface);
+  --surface-2: var(--color-surface-2);
+  --surface-3: var(--color-surface-3);
+  --chrome: var(--color-chrome);
+  --desk: var(--color-desk);
 
-  /* -- The single interaction colour ------------------------------------- */
-  --blue: #25508c;
-  --blue-hover: #1c3d6c;
-  --blue-tint: #dce6f8;
-  --blue-bg: #f4f6fa;
-  --blue-border: #cbd8ea;
-  --blue-text-on-dark: #b8cbea;
+  /* -- Interaction ------------------------------------------------------- */
+  --blue: var(--color-blue);
+  --blue-hover: var(--color-blue-hover);
+  --blue-tint: var(--color-blue-tint);
+  --blue-bg: var(--color-blue-bg);
+  --blue-border: var(--color-blue-border);
+  --blue-text-on-dark: var(--color-blue-on-dark);
 
-  /* -- Semantic: green allowed, ochre attention, red blocked ------------- */
-  --green: #2f7d4f;
-  --green-bg: #eff6f1;
-  --green-border: #c9e2d3;
+  /* -- Semantic ---------------------------------------------------------- */
+  --green: var(--color-green);
+  --green-bg: var(--color-green-bg);
+  --green-border: var(--color-green-border);
 
-  --ochre: #8a5a15;
-  --ochre-bg: #fdf8ef;
-  --ochre-border: #ebd9bb;
-  --ochre-dash: #c39a5e;
+  --ochre: var(--color-ochre);
+  --ochre-bg: var(--color-ochre-bg);
+  --ochre-border: var(--color-ochre-border);
+  --ochre-dash: var(--color-ochre-dash);
 
-  --red: #8c2f22;
-  --red-bg: #fbf0ee;
-  --red-border: #e8c9c3;
+  --red: var(--color-red);
+  --red-bg: var(--color-red-bg);
+  --red-border: var(--color-red-border);
 
   /* -- Neutral chip ------------------------------------------------------ */
-  --neutral-bg: #f4f5f7;
-  --neutral-border: #dfe2e6;
+  --neutral-bg: var(--color-neutral-bg);
+  --neutral-border: var(--color-neutral-border);
 
   /* -- Incidental -------------------------------------------------------- */
-  --highlight: #fbefd6;
-  --diff-remove-text: #8c5a52;
-  --skeleton: #e3e5e8;
-  --skeleton-2: #eff1f3;
-  --row-hover: #f4f5f7;
-  --crumb-sep: #b6bbc1;
+  --highlight: var(--color-highlight);
+  --diff-remove-text: var(--color-diff-remove);
+  --skeleton: var(--color-skeleton);
+  --skeleton-2: var(--color-skeleton-2);
+  --row-hover: var(--color-row-hover);
+  --crumb-sep: var(--color-crumb-sep);
 
   /* -- Fixed chrome heights --------------------------------------------- */
-  --h-tabstrip: 38px;
-  --h-toolbar: 42px;
-  --h-listhead: 30px;
-  --h-inspector-tabs: 30px;
-  --h-bulkbar: 38px;
-  --h-statusbar: 26px;
+  --h-tabstrip: var(--spacing-tabstrip);
+  --h-toolbar: var(--spacing-toolbar);
+  --h-listhead: var(--spacing-listhead);
+  --h-inspector-tabs: var(--spacing-instabs);
+  --h-bulkbar: var(--spacing-bulkbar);
+  --h-statusbar: var(--spacing-statusbar);
 
   /* -- Pane widths ------------------------------------------------------- */
-  --w-scope: 238px;
-  --w-inspector: 430px;
-  --w-min-shell: 1180px;
+  --w-scope: var(--spacing-scope);
+  --w-inspector: var(--spacing-inspector);
+  --w-min-shell: var(--breakpoint-wide);
 
-  --font: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', sans-serif;
-}
-
-* {
-  box-sizing: border-box;
+  --font: var(--font-sans);
 }
 
-html,
-body {
-  margin: 0;
-  /* The shell manages its own scrolling; each pane scrolls internally. */
-  overflow: hidden;
-  height: 100%;
-}
-
-body {
-  font-family: var(--font);
-  font-variant-numeric: tabular-nums; /* dates, amounts and counts sit in columns */
-  -webkit-font-smoothing: antialiased;
-  color: var(--ink);
-  background: var(--desk);
-}
-
-#root {
-  height: 100%;
-}
-
-button {
-  font-family: inherit;
-  font-variant-numeric: inherit;
-  border-radius: 0;
-}
-
-input {
-  font-family: inherit;
-  font-variant-numeric: inherit;
-  border-radius: 0;
-}
-
-/* Styled scrollbars, per the handoff. */
-::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border: 4px solid var(--surface);
-  border-radius: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-/* -- Chip: one component, many colours ----------------------------------- */
+/* -- Chips --------------------------------------------------------------- */
 .chip {
   display: inline-flex;
   align-items: center;
