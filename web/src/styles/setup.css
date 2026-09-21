@@ -79,23 +79,24 @@
   margin-top: 2px;
 }
 
-/* The delivery model. A button because it opens a panel, but styled as a
-   statement of fact rather than an action — it is mostly there to be read. */
+/* The delivery model. In ink so it reads as the frame around setup rather than
+   the first task in it — it decides which steps exist, so it cannot sit in the
+   list as a peer of the things it determines. */
 .setup__model {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 11px 16px;
-  background: var(--surface);
+  padding: 12px 16px;
+  background: var(--ink);
+  color: #fff;
   border: 0;
-  border-bottom: 1px solid var(--border-soft);
   cursor: pointer;
   font: inherit;
 }
 
 .setup__model:hover,
 .setup__model--open {
-  background: var(--blue-bg);
+  background: var(--ink-2);
 }
 
 .setup__modeltag {
@@ -104,21 +105,30 @@
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--blue);
+  color: var(--blue-text-on-dark);
 }
 
 .setup__modelname {
   display: block;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   margin-top: 2px;
+}
+
+.setup__modeladdr {
+  display: block;
+  font-size: 11.5px;
+  color: #a8afb8;
+  margin-top: 2px;
+  line-height: 1.4;
 }
 
 .setup__modelmore {
   display: block;
   font-size: 11.5px;
-  color: var(--text-dim);
-  margin-top: 3px;
+  font-weight: 600;
+  color: var(--blue-text-on-dark);
+  margin-top: 5px;
 }
 
 .setup__progress {
@@ -425,6 +435,70 @@
   font-size: 12.5px;
   line-height: 1.55;
   color: var(--text-muted);
+}
+
+.modelcard__steps {
+  display: block;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-soft);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+/* -- Sign-in preview (branding step) -------------------------------------- */
+
+.preview {
+  margin-top: 16px;
+  border: 1px solid var(--border);
+  background: var(--desk);
+}
+
+/* Chrome bar, so the address reads as an address rather than a caption. */
+.preview__bar {
+  padding: 7px 12px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+  font-size: 11.5px;
+  color: var(--text-soft);
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+.preview__body {
+  margin: 22px auto;
+  padding: 22px;
+  max-width: 300px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.preview__logo {
+  width: 30px;
+  height: 30px;
+  margin-bottom: 14px;
+}
+
+.preview__title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.preview__sub {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  margin: 3px 0 16px;
+}
+
+.preview__btn {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
 }
 
 /* -- Shared step furniture ------------------------------------------------ */

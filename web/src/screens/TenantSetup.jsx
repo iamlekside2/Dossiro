@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
-  LATER, MODELS, STEPS, findModel, inviteLocked, railFor, stepsFor,
+  LATER, LEDE, MODELS, RAIL, TITLES, addressFor, findModel, inviteLocked, stepsFor,
 } from '../setup/plan.js';
 import { useSession } from '../session/SessionContext.jsx';
 
@@ -23,7 +23,7 @@ import { useSession } from '../session/SessionContext.jsx';
 export default function TenantSetup() {
   const { organization } = useSession();
 
-  const [modelId, setModelId] = useState('managed-custom');
+  const [modelId, setModelId] = useState('managed');
   const [showModels, setShowModels] = useState(false);
 
   const org = useMemo(
@@ -63,9 +63,11 @@ export default function TenantSetup() {
 
   function selectModel(id) {
     setModelId(id);
-    // A step that existed under the old model may not exist under the new one.
+    // Keep where they were if that step still exists under the new model;
+    // otherwise go to the first thing still outstanding rather than back to the
+    // top, which would hide the work already done behind two finished steps.
     const kept = stepsFor(id);
-    if (!kept.includes(step)) setStep(kept[0]);
+    if (!kept.includes(step)) setStep(kept.find((s) => !done[s]) ?? kept[0]);
   }
 
   return (
@@ -82,9 +84,10 @@ export default function TenantSetup() {
           <div className="setup__orgmeta">Setting up · {org.domain}</div>
         </div>
 
-        {/* The delivery model is pinned above the list because it determines
-            the list. Presenting it as step one would imply it can be revisited
-            as freely as the others, and it cannot once records exist. */}
+        {/* Pinned above the list because it determines the list, and in ink so
+            it reads as the frame around setup rather than the first task in it.
+            Presenting it as step one would imply it can be revisited as freely
+            as the others, and it cannot once records exist. */}
         <button
           type="button"
           className={`setup__model${showModels ? ' setup__model--open' : ''}`}
@@ -92,6 +95,7 @@ export default function TenantSetup() {
         >
           <span className="setup__modeltag">{model.tag}</span>
           <span className="setup__modelname">{model.name}</span>
+          <span className="setup__modeladdr">{model.address}</span>
           <span className="setup__modelmore">{showModels ? 'Close' : 'Review'}</span>
         </button>
 
@@ -123,7 +127,7 @@ export default function TenantSetup() {
                     {isDone ? '✓' : isLocked ? '·' : i + 1}
                   </span>
                   <span className="setupstep__text">
-                    <span className="setupstep__title">{STEPS[id].title}</span>
+                    <span className="setupstep__title">{TITLES[id]}</span>
                     <span className="setupstep__note">{summary(id, modelId, org, done)}</span>
                   </span>
                 </button>
@@ -174,7 +178,7 @@ export default function TenantSetup() {
       {/* ---- explanation rail ---- */}
       <aside className="setup__why">
         <div className="setup__whyhead">Worth knowing</div>
-        {railFor(showModels ? 'address' : current, modelId).map(([title, text]) => (
+        {RAIL[showModels ? 'model' : current].map(([title, text]) => (
           <div className="railnote" key={title}>
             <div className="railnote__title">{title}</div>
             <div className="railnote__text">{text}</div>
@@ -201,6 +205,10 @@ function ModelPanel({ current, onPick, onClose }) {
         setup asks you. It is shown here so you can see which one you are on — and, until your first
         record arrives, change it.
       </p>
+      <p className="panel__lede">
+        Whether you use your own domain is <em>not</em> one of these. That is a question inside
+        setup, at step two, and both addresses can be live at once.
+      </p>
 
       <div className="modelgrid">
         {MODELS.map((m) => (
@@ -217,6 +225,7 @@ function ModelPanel({ current, onPick, onClose }) {
             <span className="modelcard__name">{m.name}</span>
             <span className="modelcard__addr">{m.address}</span>
             <span className="modelcard__blurb">{m.blurb}</span>
+            <span className="modelcard__steps">{m.steps}</span>
           </button>
         ))}
       </div>
@@ -239,9 +248,6 @@ function ModelPanel({ current, onPick, onClose }) {
 /* -- step panels ---------------------------------------------------------- */
 
 function StepPanel({ id, modelId, org, index, total, finished, onComplete }) {
-  const step = STEPS[id];
-  const lede = typeof step.lede === 'function' ? step.lede(modelId, org) : step.lede;
-
   const Body = BODIES[id];
 
   return (
@@ -250,8 +256,8 @@ function StepPanel({ id, modelId, org, index, total, finished, onComplete }) {
         Step {index} of {total}
         {finished ? ' · done' : ''}
       </div>
-      <h1 className="panel__title">{step.title}</h1>
-      <p className="panel__lede">{lede}</p>
+      <h1 className="panel__title">{TITLES[id]}</h1>
+      <p className="panel__lede">{LEDE[id](modelId, org)}</p>
 
       {Body ? <Body modelId={modelId} org={org} finished={finished} /> : null}
 
@@ -308,32 +314,52 @@ function DomainBody({ org, finished }) {
 }
 
 function AddressBody({ modelId, org, finished }) {
-  if (modelId === 'self-hosted' || modelId === 'air-gapped') {
-    const internal = modelId === 'air-gapped';
+  if (modelId === 'self-hosted') {
     return (
       <>
-        <Field
-          label={internal ? 'Internal hostname' : 'Hostname'}
-          hint={
-            internal
-              ? 'Resolved by your own DNS. Nothing about it is published.'
-              : 'Where your people reach your installation.'
-          }
-        >
-          <input className="mfield" defaultValue={internal ? 'dossiro.internal' : `records.${org.domain}`} />
+        <Field label="Hostname" hint="Where your people reach your installation.">
+          <input className="mfield" defaultValue={`records.${org.domain}`} />
         </Field>
         <Facts
           rows={[
-            ['Certificate', 'Yours — including an internal authority'],
-            ['DNS', internal ? 'Your internal resolver only' : 'Your own DNS'],
-            ['Held by us', internal ? 'Nothing' : 'Only to address invitation emails'],
+            ['Kind', 'Yours entirely'],
+            ['DNS', 'Your record, pointing at your server'],
+            ['Certificate', 'Yours to issue and renew'],
+            ['Reachable from', 'Wherever you allow'],
+            ['Our visibility', 'None'],
           ]}
-          note={
-            internal
-              ? 'Because nothing resolves outside your network, external share links cannot work here by design. Sharing is internal only.'
-              : 'We store this only so invitation emails and share links point somewhere that works. We never connect to it.'
-          }
         />
+        <Callout tone="ochre" title="The expiry is yours too">
+          Because the certificate is yours, its expiry is yours. An expired certificate locks your
+          own people out and we will not know it happened. Put the renewal date somewhere it will
+          be seen.
+        </Callout>
+      </>
+    );
+  }
+
+  if (modelId === 'air-gapped') {
+    return (
+      <>
+        <Field
+          label="Internal hostname"
+          hint="Resolved by your own DNS. Nothing about it is published."
+        >
+          <input className="mfield" defaultValue="dossiro.internal" />
+        </Field>
+        <Facts
+          rows={[
+            ['Kind', 'Internal only'],
+            ['DNS', 'Your internal resolver'],
+            ['Certificate', 'Yours, including an internal authority'],
+            ['Reachable from', 'Inside your network only'],
+            ['Our visibility', 'None'],
+          ]}
+        />
+        <Callout tone="red" title="Nothing about this deployment is reachable by us">
+          No support session, no monitoring, no automatic update. Everything travels physically,
+          and the diagnostic route in your runbook is the only way we can help.
+        </Callout>
       </>
     );
   }
@@ -346,10 +372,10 @@ function AddressBody({ modelId, org, finished }) {
           ['Kind', 'Your own domain'],
           ['DNS record', 'CNAME → tenants.dossiro.com, seen 4 September'],
           ['Certificate', 'Issued and renewing automatically'],
-          ['Shared alternative', `${org.slug}.dossiro.com, still works`],
+          ['Also live', `${org.slug}.dossiro.com, always works`],
           ['Shown before sign-in', `${org.name} name and logo`],
         ]}
-        note="Your address is live. Anyone visiting it sees your organisation before they see a password field, which is what stops people signing in to the wrong place."
+        note="Your address is live. Anyone visiting it sees your organisation before they see a password field, which is what stops people signing in to the wrong place — and the shared address keeps working, so no bookmark breaks."
       />
     );
   }
@@ -380,19 +406,19 @@ function LicenceBody({ modelId }) {
       <Facts
         rows={[
           ['Signature', 'Ed25519, verified at every start'],
-          ['Seats', 'Read from the signed file, not from the database'],
+          ['Seats', '400, refused locally at 401'],
+          ['Expires', '31 October 2026'],
           ['Connectivity', 'None required, ever'],
           ['On expiry', 'Read-only for 14 days, then sign-in refused'],
           ['Your records', 'Never touched by any licence state'],
+          ...(modelId === 'air-gapped' ? [['Delivery', 'Carried in by hand']] : []),
         ]}
-        note="Entitlement comes from the signature. Raising a seat count directly in the database changes what is stored and not what is allowed."
       />
-      {modelId === 'air-gapped' ? (
-        <Callout tone="ochre" title="This licence has to travel physically">
-          There is no route from this deployment to us, so renewals arrive on media or by hand.
-          Begin a month before expiry rather than a week.
-        </Callout>
-      ) : null}
+      <Callout tone="blue" title="It cannot be raised by editing data">
+        Seat counts are read from the signed licence, not from a database column. Raising the
+        number in Postgres changes nothing — the deployment verifies the signature before it will
+        start.
+      </Callout>
     </>
   );
 }
@@ -535,7 +561,7 @@ function CabinetsBody() {
   );
 }
 
-function BrandingBody() {
+function BrandingBody({ modelId, org }) {
   const [accent, setAccent] = useState(0);
   const accents = [
     ['Dossiro blue', '#25508C', 'The default. Chosen for legibility against white text at small sizes.'],
@@ -565,6 +591,21 @@ function BrandingBody() {
         ))}
       </div>
       <p className="panel__foot">{accents[accent][2]}</p>
+
+      {/* The preview carries the model's real address, because that is the part
+          people check. A preview showing a generic one would be the only thing
+          on this screen that is not true of their tenancy. */}
+      <div className="preview">
+        <div className="preview__bar">{addressFor(modelId, org)}</div>
+        <div className="preview__body">
+          <div className="preview__logo" style={{ background: accents[accent][1] }} />
+          <div className="preview__title">Sign in to {org.name}</div>
+          <div className="preview__sub">Use your work account.</div>
+          <div className="preview__btn" style={{ background: accents[accent][1] }}>
+            Continue with Microsoft
+          </div>
+        </div>
+      </div>
 
       <Callout tone="blue" title="Branding is cosmetic by design">
         Logo, accent and the sign-in page only — never layout or terminology. A screenshot from any
@@ -724,7 +765,7 @@ function summary(id, modelId, org, done) {
       if (modelId === 'self-hosted') return finished ? `records.${org.domain}` : 'Hostname not set';
       return finished ? `records.${org.domain} · certificate issued` : 'Not chosen';
     case 'licence':
-      return finished ? 'Installed · 300 seats' : 'No licence installed';
+      return finished ? 'Installed · 400 seats to 31 October' : 'No licence installed';
     case 'identity':
       return finished ? 'Microsoft Entra ID · 248 accounts found' : 'Not connected';
     case 'region':
