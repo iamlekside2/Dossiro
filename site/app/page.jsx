@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import PageStack from '@/components/PageStack';
-import './page.css';
+import {
+  Arrow, BandDark, Button, H2, Hero, Section, SectionHead, TextLink, Wrap,
+} from '@/components/ui';
 
 const FEATURES = [
   {
@@ -63,206 +65,229 @@ export default function Home() {
   return (
     <>
       {/* -- Hero ---------------------------------------------------------- */}
-      <section className="hero">
-        <div className="wrap hero__grid">
+      <div className="relative overflow-hidden border-b border-line">
+        <Wrap className="grid grid-cols-[1.05fr_0.95fr] items-center gap-[clamp(2rem,5vw,4rem)] py-[clamp(3rem,7vw,6rem)] max-[900px]:grid-cols-1">
           <div>
-            <p className="eyebrow hero__eyebrow">Enterprise document management</p>
-            <h1 className="h-hero hero__title">
-              The document system that keeps its own record.
-            </h1>
-            <p className="lede hero__lede">
+            <p className="eyebrow">Enterprise document management</p>
+            <Hero className="mb-6">The document system that keeps its own record.</Hero>
+            <p className="lede mb-8 text-[clamp(1.125rem,1.7vw,1.35rem)]">
               Dossiro is where a growing organisation’s documents live — and stay
               accountable. Control who sees what, prove who did what, and share
               beyond your walls without ever losing the thread.
             </p>
-            <div className="hero__actions">
-              <Link href="/contact" className="btn btn--primary">
-                Request a demo <span className="arrow" aria-hidden="true">→</span>
-              </Link>
-              <Link href="/product" className="btn btn--ghost">
+            <div className="flex flex-wrap items-center gap-[0.85rem]">
+              <Button as={Link} href="/contact" variant="primary">
+                Request a demo <Arrow />
+              </Button>
+              <Button as={Link} href="/product" variant="ghost">
                 See what it does
-              </Link>
+              </Button>
             </div>
-            <p className="hero__note">
+            <p className="mt-6 text-sm text-faint">
               Hosted, dedicated, or fully on-premise · sales-led onboarding, no credit card
             </p>
           </div>
 
-          <div className="hero__art">
+          {/* Above the copy on a narrow window: the graphic is what says what
+              this is before anybody reads a word. */}
+          <div className="flex justify-center max-[900px]:order-first max-[900px]:mx-auto max-[900px]:max-w-[360px] [&_svg]:h-auto [&_svg]:w-full [&_svg]:max-w-[460px]">
             <PageStack />
           </div>
-        </div>
-      </section>
+        </Wrap>
+      </div>
 
       {/* -- Trust strip: what it is, not fake logos ---------------------- */}
-      <section className="trust">
-        <div className="wrap trust__row">
-          <span className="trust__label">Made for</span>
-          <span className="trust__item">Growing teams</span>
-          <span className="trust__dot" aria-hidden="true">·</span>
-          <span className="trust__item">Multi-branch organisations</span>
-          <span className="trust__dot" aria-hidden="true">·</span>
-          <span className="trust__item">Regulated industries</span>
-          <span className="trust__dot" aria-hidden="true">·</span>
-          <span className="trust__item">Public sector</span>
-        </div>
-      </section>
+      <div className="border-b border-line bg-surface">
+        <Wrap className="flex flex-wrap items-center gap-x-10 gap-y-3 py-5">
+          <span className="text-xs font-bold uppercase tracking-[0.12em] text-faint">Made for</span>
+          {['Growing teams', 'Multi-branch organisations', 'Regulated industries', 'Public sector'].map(
+            (t, i) => (
+              <span key={t} className="contents">
+                {i > 0 ? <span className="text-blue" aria-hidden="true">·</span> : null}
+                <span className="text-[0.9375rem] font-semibold text-ink-2">{t}</span>
+              </span>
+            ),
+          )}
+        </Wrap>
+      </div>
 
       {/* -- The problem -------------------------------------------------- */}
-      <section className="section">
-        <div className="wrap problem__grid">
-          <div className="problem__body">
+      <Section>
+        <Wrap className="grid grid-cols-2 items-start gap-[clamp(2rem,5vw,4rem)] max-[900px]:grid-cols-1">
+          <div>
             <p className="eyebrow">The shared-drive problem</p>
-            <h2 className="h-section shead__title">
-              A folder on a server answers the wrong question.
-            </h2>
-            <p className="lede" style={{ marginBottom: '1rem' }}>
+            <H2 className="mb-4">A folder on a server answers the wrong question.</H2>
+            <p className="lede mb-4">
               Most organisations keep their documents in a shared drive. It tells
               you where a file is. It cannot tell you who is allowed to open it,
               who already did, or whether that record can be trusted six months
               from now.
             </p>
-            <p style={{ color: 'var(--muted)' }}>
+            <p className="text-muted">
               As a team grows — more people, more offices, more outside parties —
               that gap turns into risk. Dossiro is built around the question a
               shared drive can’t answer.
             </p>
           </div>
-          <aside className="problem__aside">
-            <p className="problem__quote">
+          <aside className="border-l-2 border-blue pl-6">
+            <p className="font-serif text-[clamp(1.25rem,2vw,1.6rem)] leading-[1.35] text-ink">
               “Where is the file” is easy. “Who may open this file, who already
               has, and can we prove it” is the question that actually matters.
             </p>
           </aside>
-        </div>
-      </section>
+        </Wrap>
+      </Section>
 
       {/* -- Differentiators --------------------------------------------- */}
-      <section className="section band-tint">
-        <div className="wrap">
-          <div className="shead">
-            <p className="eyebrow">What sets it apart</p>
-            <h2 className="h-section shead__title">
-              Six things a shared drive will never do.
-            </h2>
-            <p className="lede">
-              Everything else is a feature. These are the reasons a serious team
-              chooses Dossiro.
-            </p>
-          </div>
+      <div className="bg-surface-2">
+        <Section>
+          <Wrap>
+            <SectionHead
+              className="mb-[clamp(2rem,4vw,3rem)] max-w-[46rem]"
+              eyebrow="What sets it apart"
+              title="Six things a shared drive will never do."
+              lede="Everything else is a feature. These are the reasons a serious team chooses Dossiro."
+            />
 
-          <div className="feat">
-            {FEATURES.map((f, i) => (
-              <article key={f.title} className="feat__cell">
-                <div className="feat__n tnum">{String(i + 1).padStart(2, '0')}</div>
-                <h3 className="feat__title">{f.title}</h3>
-                <p className="feat__body">{f.body}</p>
-                <p className="feat__say">{f.say}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
+            {/* Border on the container's top and left, then on each cell's
+                right and bottom, so the outer edge is drawn once rather than
+                doubled where cells meet. */}
+            <div className="grid grid-cols-3 border-l border-t border-line max-[900px]:grid-cols-2 max-[560px]:grid-cols-1">
+              {FEATURES.map((f, i) => (
+                <article
+                  key={f.title}
+                  className="border-b border-r border-line bg-surface p-[clamp(1.5rem,2.5vw,2.25rem)]"
+                >
+                  <div className="mb-4 font-sans text-[0.8125rem] font-bold tracking-[0.08em] tabular-nums text-blue">
+                    {String(i + 1).padStart(2, '0')}
+                  </div>
+                  <h3 className="mb-[0.6rem] text-xl">{f.title}</h3>
+                  <p className="text-[0.9375rem] leading-[1.55] text-muted">{f.body}</p>
+                  <p className="mt-4 border-t border-dashed border-line pt-4 text-[0.9rem] italic text-ink-2">
+                    {f.say}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </Wrap>
+        </Section>
+      </div>
 
       {/* -- Security teaser --------------------------------------------- */}
-      <section className="section">
-        <div className="wrap sec__grid">
+      <Section>
+        <Wrap className="grid grid-cols-[0.9fr_1.1fr] items-center gap-[clamp(2rem,5vw,4rem)] max-[900px]:grid-cols-1">
           <div>
             <p className="eyebrow">Security &amp; accountability</p>
-            <h2 className="h-section shead__title">
-              A trail that cannot be rewritten.
-            </h2>
+            <H2 className="mb-4">A trail that cannot be rewritten.</H2>
             <p className="lede">
               Every action leaves a mark, and each mark is sealed to the one
               before it. Change any entry and the chain breaks — visibly.
             </p>
-            <div className="sec__list">
-              <div className="sec__item">
-                <span className="sec__tick" aria-hidden="true">✓</span>
-                <div>
-                  <div className="sec__itemTitle">Tamper-evident by design</div>
-                  <div className="sec__itemBody">The database itself refuses to edit or delete the record — not the app, the database.</div>
-                </div>
-              </div>
-              <div className="sec__item">
-                <span className="sec__tick" aria-hidden="true">✓</span>
-                <div>
-                  <div className="sec__itemTitle">Single sign-on ready</div>
-                  <div className="sec__itemBody">Authenticate through Microsoft or Okta; passwords retire once SSO is connected.</div>
-                </div>
-              </div>
+            <div className="mt-6 flex flex-col gap-[1.1rem]">
+              <Tick title="Tamper-evident by design">
+                The database itself refuses to edit or delete the record — not the app, the database.
+              </Tick>
+              <Tick title="Single sign-on ready">
+                Authenticate through Microsoft or Okta; passwords retire once SSO is connected.
+              </Tick>
             </div>
-            <p style={{ marginTop: '1.75rem' }}>
-              <Link href="/security" className="txtlink">
-                How the security model works <span className="arrow" aria-hidden="true">→</span>
-              </Link>
+            <p className="mt-7">
+              <TextLink as={Link} href="/security">
+                How the security model works <Arrow />
+              </TextLink>
             </p>
           </div>
 
-          <div className="sec__card" aria-hidden="true">
-            <div className="sec__cardHead">
+          {/* A picture of the audit trail, not a real one. */}
+          <div className="border border-line bg-surface" aria-hidden="true">
+            <div className="flex items-center justify-between border-b border-line bg-surface-2 px-[1.15rem] py-[0.85rem] text-[0.8125rem] font-bold uppercase tracking-[0.06em] text-muted">
               <span>Audit trail</span>
-              <span style={{ color: 'var(--blue)' }}>Verified ✓</span>
+              <span className="text-blue">Verified ✓</span>
             </div>
-            <div className="sec__chain">
+            <div className="py-2">
               {AUDIT.map((e) => (
-                <div key={e.hash} className="sec__event">
-                  <span className="sec__hash">{e.hash}</span>
+                <div
+                  key={e.hash}
+                  className="grid grid-cols-[auto_1fr_auto] items-center gap-[0.85rem] border-b border-line-soft px-[1.15rem] py-[0.7rem] text-sm last:border-b-0"
+                >
+                  <span className="font-mono text-xs text-blue">{e.hash}</span>
                   <span>
-                    <span className="sec__evActor">{e.actor}</span>{' '}
-                    <span className="sec__evWhat">{e.what}</span>
+                    <span className="font-semibold">{e.actor}</span>{' '}
+                    <span className="text-muted">{e.what}</span>
                   </span>
-                  <span className="sec__evTime tnum">{e.time}</span>
+                  <span className="text-[0.8rem] tabular-nums text-faint">{e.time}</span>
                 </div>
               ))}
             </div>
           </div>
-        </div>
-      </section>
+        </Wrap>
+      </Section>
 
       {/* -- Deployment (navy band) -------------------------------------- */}
-      <section className="section band-dark">
-        <div className="wrap">
-          <div className="shead">
-            <p className="eyebrow">Deployment</p>
-            <h2 className="h-section shead__title">Run it your way.</h2>
-            <p className="lede">
-              The same product, three ways — because where your records are
-              allowed to live is not our decision to make.
-            </p>
-          </div>
-          <div className="deploy__grid">
-            {DEPLOY.map((d) => (
-              <div key={d.k} className="deploy__cell">
-                <div className="deploy__k">{d.k}</div>
-                <h3 className="deploy__title">{d.title}</h3>
-                <p className="deploy__body">{d.body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <BandDark>
+        <Section>
+          <Wrap>
+            <SectionHead
+              className="mb-[clamp(2rem,4vw,3rem)] max-w-[46rem]"
+              eyebrow="Deployment"
+              title="Run it where your records are allowed to live."
+              lede="The same product, three ways. Nothing phones home in any of them."
+            />
+            <div className="mt-10 grid grid-cols-3 gap-px border border-on-dark-line bg-on-dark-line max-[900px]:grid-cols-1">
+              {DEPLOY.map((d) => (
+                <div key={d.k} className="bg-blue-ink p-[clamp(1.5rem,2.5vw,2rem)]">
+                  <div className="mb-3 text-xs font-bold uppercase tracking-[0.1em] text-g-teal">
+                    {d.k}
+                  </div>
+                  <h3 className="mb-2 text-xl text-white">{d.title}</h3>
+                  <p className="text-[0.9375rem] leading-[1.55] text-on-dark-muted">{d.body}</p>
+                </div>
+              ))}
+            </div>
+          </Wrap>
+        </Section>
+      </BandDark>
 
-      {/* -- Closing CTA ------------------------------------------------- */}
-      <section className="section band-tint">
-        <div className="wrap cta">
-          <h2 className="cta__title" style={{ color: 'var(--ink)' }}>
-            See Dossiro on your own documents.
-          </h2>
-          <p className="lede cta__lede">
-            A short, guided walkthrough with your real folder structure in mind.
-            No obligation, no sales script.
-          </p>
-          <div className="cta__actions">
-            <Link href="/contact" className="btn btn--primary">
-              Request a demo <span className="arrow" aria-hidden="true">→</span>
-            </Link>
-            <Link href="/product" className="btn btn--ghost">
-              Explore the product
-            </Link>
-          </div>
-        </div>
-      </section>
+      {/* -- Close -------------------------------------------------------- */}
+      <div className="bg-surface-2">
+        <Section>
+          <Wrap className="text-center">
+            <h2 className="mb-4 text-[clamp(1.875rem,4vw,3rem)]">
+              See it on your own folder structure.
+            </h2>
+            <p className="lede mx-auto mb-8 text-center">
+              Onboarding is sales-led. We set your organisation up ourselves, so
+              the first conversation is about your documents, not a sandbox.
+            </p>
+            <div className="flex flex-wrap justify-center gap-[0.85rem]">
+              <Button as={Link} href="/contact" variant="primary">
+                Request a demo <Arrow />
+              </Button>
+              <Button as={Link} href="/deployment" variant="ghost">
+                Where it can run
+              </Button>
+            </div>
+          </Wrap>
+        </Section>
+      </div>
     </>
+  );
+}
+
+/** A ticked point beside the audit-trail illustration. */
+function Tick({ title, children }) {
+  return (
+    <div className="flex items-start gap-[0.85rem]">
+      <span
+        className="mt-0.5 grid h-[22px] w-[22px] flex-none place-items-center bg-blue-tint text-[0.8rem] font-bold text-blue"
+        aria-hidden="true"
+      >
+        ✓
+      </span>
+      <div>
+        <div className="font-semibold">{title}</div>
+        <div className="text-[0.9375rem] text-muted">{children}</div>
+      </div>
+    </div>
   );
 }

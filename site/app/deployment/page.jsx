@@ -1,5 +1,8 @@
 import Link from 'next/link';
-import '../inner.css';
+import {
+  Arrow, BestFor, Button, CallToAction, Capabilities, Capability, CompareWrap, PageHero,
+  Section, Td, Th, Wrap,
+} from '@/components/ui';
 
 export const metadata = {
   title: 'Deployment',
@@ -19,114 +22,79 @@ const ROWS = [
 export default function Deployment() {
   return (
     <>
-      <section className="phero">
-        <div className="wrap phero__inner">
-          <p className="eyebrow">Deployment</p>
-          <h1 className="phero__title">Run it your way.</h1>
-          <p className="lede phero__lede">
-            Where your records are allowed to live is your decision, not ours. The
-            same Dossiro runs three ways — nothing phones home in any of them.
-          </p>
-        </div>
-      </section>
+      <PageHero
+        eyebrow="Deployment"
+        title="Run it your way."
+        lede="Where your records are allowed to live is your decision, not ours. The same Dossiro runs three ways — nothing phones home in any of them."
+      />
 
-      <section className="section">
-        <div className="wrap">
-          <div className="caps" style={{ borderTop: 0 }}>
-            <article className="cap" style={{ borderTop: '1px solid var(--line)' }}>
-              <div>
-                <div className="cap__k">Hosted</div>
-                <h2 className="cap__title">We run it for you</h2>
-              </div>
-              <div className="cap__body">
-                <p>
-                  The fastest way to begin. Your organisation gets its own sealed
-                  and secured tenancy on our managed platform — no servers for you
-                  to provision, no software to install, no maintenance to own. We
-                  keep it patched, backed up and running.
-                </p>
-                <p style={{ color: 'var(--muted)', fontSize: '0.9375rem' }}>
-                  Best for teams who want to be working this week.
-                </p>
-              </div>
-            </article>
-            <article className="cap">
-              <div>
-                <div className="cap__k">Dedicated</div>
-                <h2 className="cap__title">Your own cloud</h2>
-              </div>
-              <div className="cap__body">
-                <p>
-                  A private instance inside your own cloud account, isolated from
-                  every other customer at the infrastructure level. You hold the
-                  environment and the data residency; we keep the software healthy.
-                </p>
-                <p style={{ color: 'var(--muted)', fontSize: '0.9375rem' }}>
-                  Best for organisations with cloud and data-residency policies.
-                </p>
-              </div>
-            </article>
-            <article className="cap">
-              <div>
-                <div className="cap__k">On-premise</div>
-                <h2 className="cap__title">Inside your walls</h2>
-              </div>
-              <div className="cap__body">
-                <p>
-                  The entire system on your own servers, able to run with no
-                  internet connection at all. Subscriptions are verified from a
-                  signed licence that works offline, and if a renewal is ever late,
-                  people keep full access to everything already stored — only new
-                  records and new accounts pause.
-                </p>
-                <p style={{ color: 'var(--muted)', fontSize: '0.9375rem' }}>
-                  Best for records that are not permitted to leave the building.
-                </p>
-              </div>
-            </article>
-          </div>
+      <Section>
+        <Wrap>
+          <Capabilities>
+            <Capability label="Hosted" title="We run it for you">
+              <p>
+                The fastest way to begin. Your organisation gets its own sealed
+                and secured tenancy on our managed platform — no servers for you
+                to provision, no software to install, no maintenance to own. We
+                keep it patched, backed up and running.
+              </p>
+              <BestFor>Best for teams who want to be working this week.</BestFor>
+            </Capability>
 
-          <div className="cmp__wrap">
-            <table className="cmp">
-              <thead>
-                <tr>
-                  <th scope="col">&nbsp;</th>
-                  <th scope="col">Hosted</th>
-                  <th scope="col">Dedicated</th>
-                  <th scope="col">On-premise</th>
+            <Capability label="Dedicated" title="Your own cloud">
+              <p>
+                A private instance inside your own cloud account, isolated from
+                every other customer at the infrastructure level. You hold the
+                environment and the data residency; we keep the software healthy.
+              </p>
+              <BestFor>Best for organisations with cloud and data-residency policies.</BestFor>
+            </Capability>
+
+            <Capability label="On-premise" title="Inside your walls">
+              <p>
+                The entire system on your own servers, able to run with no
+                internet connection at all. Subscriptions are verified from a
+                signed licence that works offline, and if a renewal is ever late,
+                people keep full access to everything already stored — only new
+                records and new accounts pause.
+              </p>
+              <BestFor>Best for records that are not permitted to leave the building.</BestFor>
+            </Capability>
+          </Capabilities>
+
+          <CompareWrap>
+            <thead>
+              <tr>
+                <Th>&nbsp;</Th>
+                <Th>Hosted</Th>
+                <Th>Dedicated</Th>
+                <Th>On-premise</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {ROWS.map((r) => (
+                <tr key={r[0]}>
+                  {r.map((cell, i) => {
+                    if (i === 0) return <Td key={i} first>{cell}</Td>;
+                    if (cell === 'yes') return <Td key={i} tone="yes">Yes</Td>;
+                    if (cell === 'no') return <Td key={i} tone="no">—</Td>;
+                    return <Td key={i}>{cell}</Td>;
+                  })}
                 </tr>
-              </thead>
-              <tbody>
-                {ROWS.map((r) => (
-                  <tr key={r[0]}>
-                    {r.map((cell, i) => {
-                      if (i === 0) return <td key={i}>{cell}</td>;
-                      if (cell === 'yes') return <td key={i} className="yes">Yes</td>;
-                      if (cell === 'no') return <td key={i} className="no">—</td>;
-                      return <td key={i}>{cell}</td>;
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+              ))}
+            </tbody>
+          </CompareWrap>
+        </Wrap>
+      </Section>
 
-      <section className="section band-dark">
-        <div className="wrap cta">
-          <h2 className="cta__title">Not sure which fits?</h2>
-          <p className="lede cta__lede" style={{ color: 'var(--on-dark-muted)' }}>
-            Tell us your constraints — regulator, cloud policy, connectivity — and
-            we’ll recommend the model that suits, not the one that suits us.
-          </p>
-          <div className="cta__actions">
-            <Link href="/contact" className="btn btn--on-dark">
-              Talk to us <span className="arrow" aria-hidden="true">→</span>
-            </Link>
-          </div>
-        </div>
-      </section>
+      <CallToAction
+        title="Not sure which fits?"
+        lede="Tell us your constraints — regulator, cloud policy, connectivity — and we’ll recommend the model that suits, not the one that suits us."
+      >
+        <Button as={Link} href="/contact" variant="onDark">
+          Talk to us <Arrow />
+        </Button>
+      </CallToAction>
     </>
   );
 }

@@ -1,5 +1,7 @@
 import Link from 'next/link';
-import '../inner.css';
+import {
+  Arrow, Button, CallToAction, Capabilities, Capability, PageHero, Section, StatusNote, Ticks, Wrap,
+} from '@/components/ui';
 
 export const metadata = {
   title: 'Product',
@@ -85,67 +87,48 @@ const CAPS = [
 export default function Product() {
   return (
     <>
-      <section className="phero">
-        <div className="wrap phero__inner">
-          <p className="eyebrow">Product</p>
-          <h1 className="phero__title">Everything a growing team needs from its documents.</h1>
-          <p className="lede phero__lede">
-            Dossiro brings the repository, its permissions, its history and its
-            audit trail into one place — reachable from a browser, on any device,
-            with no desktop software to install.
-          </p>
-        </div>
-      </section>
+      <PageHero
+        eyebrow="Product"
+        title="Everything a growing team needs from its documents."
+        lede="Dossiro brings the repository, its permissions, its history and its audit trail into one place — reachable from a browser, on any device, with no desktop software to install."
+      />
 
-      <section className="section">
-        <div className="wrap">
-          <div className="caps">
+      <Section>
+        <Wrap>
+          <Capabilities>
             {CAPS.map((c) => (
-              <article key={c.k} className="cap">
-                <div>
-                  <div className="cap__k">{c.k}</div>
-                  <h2 className="cap__title">{c.title}</h2>
-                </div>
-                <div className="cap__body">
-                  {c.body.map((p, i) => (
-                    <p key={i}>{p}</p>
-                  ))}
-                  <ul className="cap__list">
-                    {c.list.map((li) => (
-                      <li key={li}>{li}</li>
-                    ))}
-                  </ul>
-                </div>
-              </article>
+              <Capability key={c.k} label={c.k} title={c.title}>
+                {c.body.map((para, i) => (
+                  <p key={i}>{para}</p>
+                ))}
+                <Ticks items={c.list} />
+              </Capability>
             ))}
-          </div>
+          </Capabilities>
 
-          <p className="statusnote" style={{ marginTop: '2.5rem' }}>
-            <strong>Straight about where we are.</strong> The repository, search,
-            sharing, versioning, audit and administration are built and tested.
-            Scanning with text recognition, invoice capture, e-forms and approval
-            routing are on the roadmap — we’ll tell you exactly what’s ready when
-            you talk to us, never the other way round.
-          </p>
-        </div>
-      </section>
-
-      <section className="section band-dark">
-        <div className="wrap cta">
-          <h2 className="cta__title">See it on your own folder structure.</h2>
-          <p className="lede cta__lede" style={{ color: 'var(--on-dark-muted)' }}>
-            The demo is built around how your organisation actually files things.
-          </p>
-          <div className="cta__actions">
-            <Link href="/contact" className="btn btn--on-dark">
-              Request a demo <span className="arrow" aria-hidden="true">→</span>
-            </Link>
-            <Link href="/security" className="btn btn--ghost-dark">
-              How security works
-            </Link>
+          <div className="mt-10">
+            <StatusNote>
+              <strong>Straight about where we are.</strong> The repository, search,
+              sharing, versioning, audit and administration are built and tested.
+              Scanning with text recognition, invoice capture, e-forms and approval
+              routing are on the roadmap — we’ll tell you exactly what’s ready when
+              you talk to us, never the other way round.
+            </StatusNote>
           </div>
-        </div>
-      </section>
+        </Wrap>
+      </Section>
+
+      <CallToAction
+        title="See it on your own folder structure."
+        lede="The demo is built around how your organisation actually files things."
+      >
+        <Button as={Link} href="/contact" variant="onDark">
+          Request a demo <Arrow />
+        </Button>
+        <Button as={Link} href="/security" variant="ghostDark">
+          How security works
+        </Button>
+      </CallToAction>
     </>
   );
 }

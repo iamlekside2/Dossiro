@@ -1,5 +1,5 @@
 import ContactForm from './ContactForm';
-import '../inner.css';
+import { PageHero, Section, Wrap } from '@/components/ui';
 
 export const metadata = {
   title: 'Request a demo',
@@ -10,22 +10,17 @@ export const metadata = {
 export default function Contact() {
   return (
     <>
-      <section className="phero">
-        <div className="wrap phero__inner">
-          <p className="eyebrow">Request a demo</p>
-          <h1 className="phero__title">See Dossiro on your own documents.</h1>
-          <p className="lede phero__lede">
-            A short, guided walkthrough — no obligation and no sales script. Tell
-            us a little about your organisation and we’ll shape the session around
-            how you actually file things.
-          </p>
-        </div>
-      </section>
+      <PageHero
+        eyebrow="Request a demo"
+        title="See Dossiro on your own documents."
+        lede="A short, guided walkthrough — no obligation and no sales script. Tell us a little about your organisation and we’ll shape the session around how you actually file things."
+      />
 
-      <section className="section">
-        <div className="wrap contact__grid">
-          <aside className="contact__aside">
-            <h3>What to expect</h3>
+      <Section>
+        <Wrap className="grid grid-cols-[0.9fr_1.1fr] items-start gap-[clamp(2rem,5vw,4rem)] max-[820px]:grid-cols-1">
+          {/* A blue rule rather than a box: the aside is context, not a card. */}
+          <aside className="border-l-2 border-blue pl-6 [&>p+p]:mt-[0.85rem] [&>p]:text-[0.9375rem] [&>p]:text-muted">
+            <h3 className="mb-[0.85rem] text-xl">What to expect</h3>
             <p>
               A real person from Calm Global, not a chatbot. We provision your
               organisation ourselves — there’s no self-serve signup — so the first
@@ -38,7 +33,10 @@ export default function Contact() {
             </p>
             <p>
               Prefer email? Reach us at{' '}
-              <a className="txtlink" href="mailto:hello@dossiro.com" style={{ display: 'inline' }}>
+              <a
+                className="font-semibold text-blue hover:text-blue-hover"
+                href="mailto:hello@dossiro.com"
+              >
                 hello@dossiro.com
               </a>
               .
@@ -48,8 +46,8 @@ export default function Contact() {
           <div>
             <ContactForm />
           </div>
-        </div>
-      </section>
+        </Wrap>
+      </Section>
     </>
   );
 }

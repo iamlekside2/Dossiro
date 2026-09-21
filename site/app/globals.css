@@ -8,183 +8,186 @@
 
    A deliberately single-look design (light, cool paper). Every colour is
    painted explicitly so the page never borrows a host ground.
+
+   Deliberately NOT sharing web/src/styles/theme.css. The app's interaction
+   blue is #25508c and its palette is warm-neutral chrome built for dense
+   rows; this is the logo's #2b6bb5 on cool paper, with a marketing type scale
+   and no chrome heights at all. The two look related because the brand is the
+   same, not because the tokens are. Flattening them into one file would make
+   every future change to either a negotiation with the other.
    ========================================================================== */
 
-:root {
+@import 'tailwindcss';
+
+@theme {
   /* -- Ground and ink (cool, blue-biased — never cream) ------------------ */
-  --paper: #f7f9fb;
-  --surface: #ffffff;
-  --surface-2: #f2f6fa;
-  --ink: #0e1a2b;
-  --ink-2: #33414f;
-  --muted: #5b6875;
-  --faint: #8a97a4;
+  --color-paper: #f7f9fb;
+  --color-surface: #ffffff;
+  --color-surface-2: #f2f6fa;
+  --color-ink: #0e1a2b;
+  --color-ink-2: #33414f;
+  --color-muted: #5b6875;
+  --color-faint: #8a97a4;
 
   /* -- Hairlines --------------------------------------------------------- */
-  --line: #dbe3ea;
-  --line-soft: #e9eef3;
-  --line-strong: #c3cdd7;
+  --color-line: #dbe3ea;
+  --color-line-soft: #e9eef3;
+  --color-line-strong: #c3cdd7;
 
   /* -- Brand ------------------------------------------------------------- */
-  --blue: #2b6bb5;          /* the one interaction colour */
-  --blue-hover: #1f5296;
-  --blue-deep: #14418c;
-  --blue-ink: #0c2a55;      /* darkest — ground for navy bands */
-  --blue-tint: #e7eff8;
-  --blue-line: #c6d8ee;
+  --color-blue: #2b6bb5; /* the one interaction colour */
+  --color-blue-hover: #1f5296;
+  --color-blue-deep: #14418c;
+  --color-blue-ink: #0c2a55; /* darkest — ground for navy bands */
+  --color-blue-tint: #e7eff8;
+  --color-blue-line: #c6d8ee;
 
   /* -- Graphic-only accents (the page fan). Never UI. -------------------- */
-  --g-teal: #66e3c4;
-  --g-sky: #41b5fe;
-  --g-blue: #2b6bb5;
-  --g-navy: #14418c;
+  --color-g-teal: #66e3c4;
+  --color-g-sky: #41b5fe;
+  --color-g-blue: #2b6bb5;
+  --color-g-navy: #14418c;
 
   /* -- On dark bands ----------------------------------------------------- */
-  --on-dark: #eaf1fa;
-  --on-dark-muted: #9fb4d0;
-  --on-dark-line: #24406a;
+  --color-on-dark: #eaf1fa;
+  --color-on-dark-muted: #9fb4d0;
+  --color-on-dark-line: #24406a;
 
   /* -- Type -------------------------------------------------------------- */
-  --serif: var(--font-serif), Georgia, "Times New Roman", serif;
-  --sans: var(--font-sans), ui-sans-serif, "Segoe UI", system-ui, sans-serif;
+  --font-serif: var(--font-serif-var), Georgia, 'Times New Roman', serif;
+  --font-sans: var(--font-sans-var), ui-sans-serif, 'Segoe UI', system-ui, sans-serif;
 
-  /* -- Scale ------------------------------------------------------------- */
-  --step--1: 0.875rem;
-  --step-0: 1.0625rem;
-  --step-1: 1.25rem;
-  --step-2: 1.5rem;
-  --step-3: 2rem;
-  --step-4: 2.75rem;
-  --step-5: 3.75rem;
+  /* A marketing scale, not the app's role-named sizes: these are steps on a
+     ladder because the page is read at arm's length rather than scanned. */
+  --text-step--1: 0.875rem;
+  --text-step-0: 1.0625rem;
+  --text-step-1: 1.25rem;
+  --text-step-2: 1.5rem;
+  --text-step-3: 2rem;
+  --text-step-4: 2.75rem;
+  --text-step-5: 3.75rem;
 
-  --measure: 40rem;
-  --wrap: 74rem;
+  /* Fluid headings, so a section title is never orphaned on a narrow window. */
+  --text-hero: clamp(2.5rem, 6vw, 3.75rem);
+  --text-section: clamp(1.875rem, 4vw, 2.75rem);
+  --text-sub: clamp(1.375rem, 2.5vw, 1.5rem);
+  --text-lede: clamp(1.125rem, 1.6vw, 1.25rem);
+
+  --container-measure: 40rem; /* a comfortable reading column */
+  --container-wrap: 74rem; /* the page's outer bound */
+
+  /* Radius 0 and no shadows, same as the app: depth comes from overlapping
+     planes and hairlines. Cleared so neither can be reached for by habit. */
+  --radius-*: initial;
+  --radius-full: 9999px;
+  --shadow-*: initial;
 }
 
-* { box-sizing: border-box; }
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
 
-html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-step-0);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
 
-body {
-  margin: 0;
-  background: var(--paper);
-  color: var(--ink);
-  font-family: var(--sans);
-  font-size: var(--step-0);
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  p {
+    margin: 0;
+    text-wrap: pretty;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  img,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+
+  ::selection {
+    background: var(--color-blue-tint);
+    color: var(--color-blue-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-blue);
+    outline-offset: 3px;
+  }
 }
 
-h1, h2, h3, h4 {
-  font-family: var(--serif);
-  font-weight: 600;
-  line-height: 1.1;
-  letter-spacing: -0.015em;
-  margin: 0;
-  text-wrap: balance;
+/* -- The two things a utility cannot express -------------------------------
+
+   Both are contextual: a band changes what its contents look like. Written as
+   CSS because the alternative is passing a `dark` prop through every heading,
+   eyebrow and lede on the page, which is worse.
+   ------------------------------------------------------------------------- */
+
+@layer components {
+  /* Navy contrast band. Depth from colour, not shadow. */
+  .band-dark {
+    background: var(--color-blue-ink);
+    color: var(--color-on-dark);
+  }
+
+  .band-dark :is(h1, h2, h3) {
+    color: #fff;
+  }
+
+  /* An eyebrow and a lede both restate themselves against navy. */
+  .band-dark .eyebrow {
+    color: var(--color-g-teal);
+  }
+
+  .band-dark .lede {
+    color: var(--color-on-dark-muted);
+  }
+
+  .eyebrow {
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-blue);
+    margin: 0 0 1rem;
+  }
+
+  .lede {
+    font-size: var(--text-lede);
+    color: var(--color-muted);
+    line-height: 1.55;
+    max-width: var(--container-measure);
+  }
 }
-
-p { margin: 0; text-wrap: pretty; }
-
-a { color: inherit; text-decoration: none; }
-
-img, svg { display: block; max-width: 100%; }
-
-::selection { background: var(--blue-tint); color: var(--blue-ink); }
-
-:focus-visible {
-  outline: 2px solid var(--blue);
-  outline-offset: 3px;
-}
-
-/* -- Layout primitives --------------------------------------------------- */
-.wrap {
-  width: 100%;
-  max-width: var(--wrap);
-  margin-inline: auto;
-  padding-inline: clamp(1.25rem, 5vw, 3rem);
-}
-
-.section { padding-block: clamp(3.5rem, 9vw, 7rem); }
-.section--tight { padding-block: clamp(2.5rem, 6vw, 4.5rem); }
-
-/* Navy contrast band. Depth from colour, not shadow. */
-.band-dark {
-  background: var(--blue-ink);
-  color: var(--on-dark);
-}
-.band-dark h1, .band-dark h2, .band-dark h3 { color: #fff; }
-.band-tint { background: var(--surface-2); }
-
-/* -- Eyebrow: a real structural label ----------------------------------- */
-.eyebrow {
-  font-family: var(--sans);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--blue);
-  margin: 0 0 1rem;
-}
-.band-dark .eyebrow { color: var(--g-teal); }
-
-/* -- Headings ------------------------------------------------------------ */
-.h-hero { font-size: clamp(2.5rem, 6vw, var(--step-5)); }
-.h-section { font-size: clamp(1.875rem, 4vw, var(--step-4)); }
-.h-sub { font-size: clamp(1.375rem, 2.5vw, var(--step-2)); }
-
-.lede {
-  font-size: clamp(1.125rem, 1.6vw, var(--step-1));
-  color: var(--muted);
-  line-height: 1.55;
-  max-width: var(--measure);
-}
-.band-dark .lede { color: var(--on-dark-muted); }
-
-/* -- Buttons: radius 0, the one blue ------------------------------------- */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-family: var(--sans);
-  font-size: 0.9375rem;
-  font-weight: 600;
-  line-height: 1;
-  padding: 0.85rem 1.35rem;
-  border: 1px solid transparent;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-  white-space: nowrap;
-}
-.btn--primary { background: var(--blue); color: #fff; }
-.btn--primary:hover { background: var(--blue-hover); }
-.btn--ghost { background: transparent; color: var(--ink); border-color: var(--line-strong); }
-.btn--ghost:hover { border-color: var(--ink); }
-.btn--on-dark { background: #fff; color: var(--blue-ink); }
-.btn--on-dark:hover { background: var(--blue-tint); }
-.btn--ghost-dark { background: transparent; color: var(--on-dark); border-color: var(--on-dark-line); }
-.btn--ghost-dark:hover { border-color: var(--on-dark); }
-
-.arrow { transition: transform 0.15s ease; }
-.btn:hover .arrow, .txtlink:hover .arrow { transform: translateX(3px); }
-
-/* Text link with arrow */
-.txtlink {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: var(--blue);
-  font-weight: 600;
-  font-size: 0.9375rem;
-}
-.txtlink:hover { color: var(--blue-hover); }
-
-/* -- Utility ------------------------------------------------------------- */
-.tnum { font-variant-numeric: tabular-nums; }
-.stack { display: flex; flex-direction: column; }
-.reduced-hidden { }
 
 @media (prefers-reduced-motion: reduce) {
-  * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
 }

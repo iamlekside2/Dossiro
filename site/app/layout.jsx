@@ -5,18 +5,22 @@ import Footer from '@/components/Footer';
 
 // The brand's own superfamily, self-hosted by next/font — no CDN, no layout
 // shift. Serif carries the headlines; sans does everything else.
+//
+// Named `--font-*-var` rather than `--font-serif` / `--font-sans` because
+// those two names belong to Tailwind's theme, where they back the font-serif
+// and font-sans utilities. The theme's definitions point at these.
 const serif = Source_Serif_4({
   subsets: ['latin'],
   weight: ['400', '500', '600'],
   style: ['normal', 'italic'],
-  variable: '--font-serif',
+  variable: '--font-serif-var',
   display: 'swap',
 });
 
 const sans = Source_Sans_3({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
-  variable: '--font-sans',
+  variable: '--font-sans-var',
   display: 'swap',
 });
 

@@ -1,5 +1,7 @@
 import Link from 'next/link';
-import '../inner.css';
+import {
+  Arrow, Button, CallToAction, Card, CardGrid, H2, PageHero, Prose, Section, Wrap,
+} from '@/components/ui';
 
 export const metadata = {
   title: 'About',
@@ -25,25 +27,19 @@ const VALUES = [
 export default function About() {
   return (
     <>
-      <section className="phero">
-        <div className="wrap phero__inner">
-          <p className="eyebrow">About</p>
-          <h1 className="phero__title">A document system for organisations that have to be sure.</h1>
-          <p className="lede phero__lede">
-            Dossiro is a Calm Global product, built for teams whose documents
-            carry weight — where the wrong person seeing a file, or a record that
-            can’t be trusted, is a real problem rather than an inconvenience.
-          </p>
-        </div>
-      </section>
+      <PageHero
+        eyebrow="About"
+        title="A document system for organisations that have to be sure."
+        lede="Dossiro is a Calm Global product, built for teams whose documents carry weight — where the wrong person seeing a file, or a record that can’t be trusted, is a real problem rather than an inconvenience."
+      />
 
-      <section className="section">
-        <div className="wrap">
-          <div className="prose">
+      <Section>
+        <Wrap>
+          <Prose>
             <p className="eyebrow">Why we built it</p>
-            <h2 className="h-section" style={{ marginBottom: '1rem' }}>
+            <H2 className="mb-4">
               Most organisations outgrow the shared drive without noticing.
-            </h2>
+            </H2>
             <p>
               It starts as a few folders on a server. Then there are more people,
               more offices, more outside parties who need one document but not the
@@ -64,33 +60,26 @@ export default function About() {
               of records that must be accurate, private and accountable — became a
               product.
             </p>
-          </div>
+          </Prose>
 
-          <div className="values">
+          <CardGrid cols={3} className="mt-10">
             {VALUES.map((v) => (
-              <article key={v.title} className="value">
-                <h3 className="value__title">{v.title}</h3>
-                <p className="value__body">{v.body}</p>
-              </article>
+              <Card key={v.title} title={v.title}>
+                {v.body}
+              </Card>
             ))}
-          </div>
-        </div>
-      </section>
+          </CardGrid>
+        </Wrap>
+      </Section>
 
-      <section className="section band-dark">
-        <div className="wrap cta">
-          <h2 className="cta__title">Let’s talk about your documents.</h2>
-          <p className="lede cta__lede" style={{ color: 'var(--on-dark-muted)' }}>
-            Onboarding is sales-led — we set your organisation up, so the first
-            conversation is a real one.
-          </p>
-          <div className="cta__actions">
-            <Link href="/contact" className="btn btn--on-dark">
-              Request a demo <span className="arrow" aria-hidden="true">→</span>
-            </Link>
-          </div>
-        </div>
-      </section>
+      <CallToAction
+        title="Let’s talk about your documents."
+        lede="Onboarding is sales-led — we set your organisation up, so the first conversation is a real one."
+      >
+        <Button as={Link} href="/contact" variant="onDark">
+          Request a demo <Arrow />
+        </Button>
+      </CallToAction>
     </>
   );
 }

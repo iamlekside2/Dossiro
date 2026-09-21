@@ -1,5 +1,7 @@
 import Link from 'next/link';
-import '../inner.css';
+import {
+  Arrow, Button, CallToAction, Card, CardGrid, PageHero, Section, SectionHead, Step, Steps, Wrap,
+} from '@/components/ui';
 
 export const metadata = {
   title: 'Security',
@@ -33,88 +35,63 @@ const CLAIMS = [
 export default function Security() {
   return (
     <>
-      <section className="phero">
-        <div className="wrap phero__inner">
-          <p className="eyebrow">Security &amp; accountability</p>
-          <h1 className="phero__title">Built so the record can be trusted.</h1>
-          <p className="lede phero__lede">
-            Access control and an unbreakable audit trail are not features bolted
-            on the side of Dossiro. They are the reason it exists.
-          </p>
-        </div>
-      </section>
+      <PageHero
+        eyebrow="Security & accountability"
+        title="Built so the record can be trusted."
+        lede="Access control and an unbreakable audit trail are not features bolted on the side of Dossiro. They are the reason it exists."
+      />
 
-      <section className="section">
-        <div className="wrap">
-          <div className="claims">
+      <Section>
+        <Wrap>
+          <CardGrid cols={2}>
             {CLAIMS.map((c) => (
-              <article key={c.title} className="claim">
-                <h2 className="claim__title">{c.title}</h2>
-                <p className="claim__body">{c.body}</p>
-              </article>
+              <Card key={c.title} title={c.title}>
+                {c.body}
+              </Card>
             ))}
-          </div>
-        </div>
-      </section>
+          </CardGrid>
+        </Wrap>
+      </Section>
 
-      <section className="section band-tint">
-        <div className="wrap">
-          <div className="shead">
-            <p className="eyebrow">The audit trail</p>
-            <h2 className="h-section shead__title">Why it can’t be quietly changed.</h2>
-            <p className="lede">
-              Three properties, working together, turn “we have logs” into
-              evidence that survives scrutiny.
-            </p>
-          </div>
-          <div className="steps">
-            <div>
-              <span className="step__n">01</span>
-              <h3 className="step__title">Chained</h3>
-              <p className="step__body">
+      <div className="bg-surface-2">
+        <Section>
+          <Wrap>
+            <SectionHead
+              eyebrow="The audit trail"
+              title="Why it can’t be quietly changed."
+              lede="Three properties, working together, turn “we have logs” into evidence that survives scrutiny."
+            />
+            <Steps>
+              <Step n="01" title="Chained">
                 Each entry carries a fingerprint of the entry before it. Alter one
                 and every entry after it stops matching — the break is obvious and
                 it points to exactly where.
-              </p>
-            </div>
-            <div>
-              <span className="step__n">02</span>
-              <h3 className="step__title">Enforced by the database</h3>
-              <p className="step__body">
+              </Step>
+              <Step n="02" title="Enforced by the database">
                 A database rule rejects any attempt to update or delete a record —
                 including a cascading delete. Not the app’s promise; the
                 database’s refusal.
-              </p>
-            </div>
-            <div>
-              <span className="step__n">03</span>
-              <h3 className="step__title">Verifiable</h3>
-              <p className="step__body">
+              </Step>
+              <Step n="03" title="Verifiable">
                 The whole chain can be recomputed on demand and reported as intact
                 or broken, so you can prove integrity rather than assert it.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+              </Step>
+            </Steps>
+          </Wrap>
+        </Section>
+      </div>
 
-      <section className="section band-dark">
-        <div className="wrap cta">
-          <h2 className="cta__title">Ask us the hard questions.</h2>
-          <p className="lede cta__lede" style={{ color: 'var(--on-dark-muted)' }}>
-            Bring your compliance and IT people. The security model is meant to be
-            interrogated.
-          </p>
-          <div className="cta__actions">
-            <Link href="/contact" className="btn btn--on-dark">
-              Request a demo <span className="arrow" aria-hidden="true">→</span>
-            </Link>
-            <Link href="/deployment" className="btn btn--ghost-dark">
-              Where it can run
-            </Link>
-          </div>
-        </div>
-      </section>
+      <CallToAction
+        title="Ask us the hard questions."
+        lede="Bring your compliance and IT people. The security model is meant to be interrogated."
+      >
+        <Button as={Link} href="/contact" variant="onDark">
+          Request a demo <Arrow />
+        </Button>
+        <Button as={Link} href="/deployment" variant="ghostDark">
+          Where it can run
+        </Button>
+      </CallToAction>
     </>
   );
 }
