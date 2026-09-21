@@ -22,6 +22,7 @@ export const TABS = [
   ['hr', 'HR', '248'],
   ['approvals', 'Approvals', '14'],
   ['sharing', 'Sharing', '6'],
+  ['types', 'Types', ''],
   ['audit', 'Audit', ''],
   ['admin', 'Administration', ''],
 ];
@@ -36,6 +37,7 @@ export const CRUMBS = {
   hr: ['People', 'Personnel files', 'Active employees'],
   approvals: ['My work', 'Assigned to me'],
   sharing: ['Governance', 'External links'],
+  types: ['Governance', 'Document types'],
   audit: ['Governance', 'Event log', 'Last 7 days'],
   admin: ['Governance', 'Administration', 'Personnel'],
 };
@@ -169,6 +171,24 @@ export const SCOPES = {
     ],
     0,
   ],
+  types: [
+    'Document types',
+    'Search filters, retention clocks and automatic indexing all key off these. '
+      + 'Changing a field on a published type applies to new records; existing '
+      + 'ones keep the values they were filed with.',
+    // Mirrors TYPE_SCOPES in useAreaRows. The handoff also offered "starts a
+    // workflow", which needs a workflow engine to mean anything — it is left
+    // out rather than shown as a filter that can only ever return nothing.
+    [
+      ['All types', 0, ''],
+      ['In use', 0, ''],
+      ['Drafts', 0, ''],
+      ['Watermarked', 0, ''],
+      ['Single edition', 0, ''],
+      ['Archived', 0, ''],
+    ],
+    0,
+  ],
   audit: [
     'Filters',
     'Records are write-once. No role, including owner, can alter them.',
@@ -214,6 +234,7 @@ export const TOOLBAR = {
   hr: ['Open file', 'Request documents…', 'Start onboarding', 'Log leave', 'Completeness report'],
   approvals: ['Approve', 'Return', 'Reassign…', 'Open document'],
   sharing: ['New link…', 'Revoke', 'Extend…', 'Copy address'],
+  types: ['New type', 'Add field…', 'Publish', 'Archive'],
   audit: ['Export evidence', 'Filter…', 'Legal hold…'],
   admin: ['Add person…', 'Change role…', 'Suspend', 'Reset passcode…', 'Restore…'],
 };
@@ -250,6 +271,7 @@ export const FIND_PLACEHOLDER_BY_SCOPE = {
 export const FIND_PLACEHOLDER = {
   admin: 'Find a person',
   hr: 'Find a person',
+  types: 'Find a type',
   audit: 'Find an event',
 };
 
@@ -267,6 +289,7 @@ export const COLS = {
   hr: [['Employee', 1], ['File', 120], ['Unit', 130], ['Updated', 120]],
   approvals: [['Item', 1], ['Stage', 150], ['From', 140], ['Due', 96]],
   sharing: [['Link', 1], ['Rights', 120], ['Expires', 130], ['Opens', 80]],
+  types: [['Document type', 1], ['Fields', 90], ['Retention', 168], ['In use', 118]],
   audit: [['Event', 1], ['Result', 110], ['Actor', 160], ['When', 132]],
   admin: [['Person', 1], ['Role', 150], ['Unit', 130], ['Last active', 120]],
 };
@@ -401,6 +424,7 @@ export const PANES = {
   hr: [['hrfile', 'Employee file'], ['details', 'Person'], ['route', 'Onboarding']],
   approvals: [['route', 'Approval'], ['diff', 'Changes'], ['preview', 'Preview']],
   sharing: [['access', 'Link'], ['details', 'Attention'], ['preview', 'Preview']],
+  types: [['fields', 'Fields'], ['details', 'Type'], ['access', 'Who can file it']],
   audit: [['details', 'Event'], ['compliance', 'Compliance'], ['access', 'Actor']],
   admin: [['caps', 'Capabilities'], ['details', 'Person'], ['integrations', 'Integrations'], ['recovery', 'Recovery']],
 };
@@ -415,6 +439,7 @@ export const STATUS = {
   hr: ['248 personnel files', '6 incomplete', '2 starters this week'],
   approvals: ['14 assigned', '3 overdue', '31 in your unit'],
   sharing: ['6 active links', '1 revoked', '75 opens recorded'],
+  types: ['14 types', '12 in use', '3 watermarked'],
   audit: ['2,104 events today', '2 access denials', 'Write-once storage'],
   admin: ['248 people', '6 invitations pending', 'Single sign-on enforced'],
 };
@@ -428,6 +453,7 @@ export const BULK = {
   hr: ['Request documents…', 'Assign onboarding…', 'Export…'],
   approvals: ['Approve', 'Return', 'Reassign…'],
   sharing: ['Extend…', 'Revoke', 'Copy addresses'],
+  types: ['Publish', 'Archive'],
   audit: ['Export selection', 'Add to evidence pack'],
   admin: ['Change role…', 'Suspend', 'Resend invitation'],
 };

@@ -181,7 +181,7 @@ export default function Workbench() {
       ? { folderId }
       : tab === 'search'
         ? { query, folderId: searchFolderId }
-        : tab === 'audit' || tab === 'sharing'
+        : tab === 'audit' || tab === 'sharing' || tab === 'types'
           ? { scopeIndex }
           : null;
 

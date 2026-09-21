@@ -8,6 +8,7 @@ import {
 import { AccessPane, DetailsPane, EditPane, SummaryPane, VersionsPane } from './panes/Core.jsx';
 import { ShareLinkPane } from './panes/Share.jsx';
 import { SearchMatchPane } from './panes/Search.jsx';
+import { TypeAccessPane, TypeDetailsPane, TypeFieldsPane } from './panes/Types.jsx';
 import { ins } from './panes/ins.js';
 import { chip } from '../ui.js';
 import {
@@ -67,6 +68,9 @@ export default function Inspector({
     repo: { summary: DocumentSummaryPane, history: DocumentVersionsPane, access: DocumentAccessPane },
     audit: { details: DetailsPane },
     sharing: { access: ShareLinkPane },
+    // Every pane here answers from the row's own record, so the whole area is
+    // live and the illustration note never appears on it.
+    types: { fields: TypeFieldsPane, details: TypeDetailsPane, access: TypeAccessPane },
     // A search result is a document, so the Repository's Summary pane answers
     // for it unchanged; only the match itself needs its own describer.
     search: { summary: DocumentSummaryPane, details: SearchMatchPane },

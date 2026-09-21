@@ -241,7 +241,78 @@ function auditFlag(action) {
    scope is a folder, so the same loader runs with a different folder id
    rather than there being one loader per index. */
 
+/**
+ * Scope predicates for Types, in the order the scope list shows them.
+ *
+ * Filtered client-side rather than by query string: the list is a handful of
+ * rows per tenant, the endpoint only filters on status, and a second round
+ * trip to narrow six items would cost more than it saves. Repository and Audit
+ * filter server-side because those are thousands of rows.
+ */
+const TYPE_SCOPES = [
+  () => true,
+  (t) => t.status === 'PUBLISHED',
+  (t) => t.status === 'DRAFT',
+  (t) => t.watermarkAll,
+  (t) => !t.keepVersions,
+  (t) => t.status === 'ARCHIVED',
+];
+
+/** What a type's retention says, in one line. */
+function retentionLine(t) {
+  if (!t.retention) return 'No schedule';
+  const { retainMonths, action } = t.retention;
+  const years = retainMonths % 12 === 0 ? retainMonths / 12 : null;
+  const period = years ? `${years} year${years === 1 ? '' : 's'}` : `${retainMonths} months`;
+  return `${period} · ${String(action).toLowerCase()}`;
+}
+
+/** Only states worth flagging. A published type in use is not news. */
+function typeFlag(t) {
+  if (t.status === 'ARCHIVED') return 'Archived';
+  if (t.status === 'DRAFT') return 'Draft';
+  if (t.watermarkAll) return 'Watermarked';
+  return '';
+}
+
 const LIVE = {
+  types: {
+    '*': {
+      label: 'types',
+      async load({ scopeIndex = 0 } = {}) {
+        const res = await api.documentTypes.list();
+        const all = res.items ?? [];
+        const rows = all.filter(TYPE_SCOPES[scopeIndex] ?? TYPE_SCOPES[0]);
+
+        return {
+          rows: rows.map((t) =>
+            withRecord(
+              [
+                'TYP',
+                t.name,
+                t.description || (t.keepVersions ? 'Keeps every edition' : 'One edition only'),
+                typeFlag(t),
+                plural(Number(t.fieldCount), 'field'),
+                retentionLine(t),
+                Number(t.inUse) ? plural(Number(t.inUse), 'document') : 'Not yet used',
+              ],
+              t,
+            ),
+          ),
+          total: rows.length,
+          status: [
+            plural(all.length, 'type'),
+            `${all.filter((t) => t.status === 'PUBLISHED').length} in use`,
+            `${all.filter((t) => t.watermarkAll).length} watermarked`,
+            // The figure that matters when deciding whether a type is safe to
+            // change: a type nothing is filed as can be reshaped freely.
+            `${all.filter((t) => !Number(t.inUse)).length} not yet used`,
+          ],
+        };
+      },
+    },
+  },
+
   audit: {
     '*': {
       label: 'events',

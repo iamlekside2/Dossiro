@@ -197,6 +197,29 @@ export const api = {
     list: (params = {}) => request(`/documents?${qs(params)}`),
     get: (id) => request(`/documents/${id}`),
     versions: (id) => request(`/documents/${id}/versions`),
+    /** What this document holds in its type's index fields. */
+    fields: (id) => request(`/documents/${id}/fields`),
+    setType: (id, documentTypeId) =>
+      request(`/documents/${id}/type`, { method: 'PATCH', body: { documentTypeId } }),
+    setField: (id, fieldId, value) =>
+      request(`/documents/${id}/fields/${fieldId}`, { method: 'PATCH', body: { value } }),
+  },
+
+  /** User-defined document types and their typed index fields (TYP-1..7). */
+  documentTypes: {
+    list: (params = {}) => request(`/document-types?${qs(params)}`),
+    get: (id) => request(`/document-types/${id}`),
+    create: (body) => request('/document-types', { method: 'POST', body }),
+    update: (id, body) => request(`/document-types/${id}`, { method: 'PATCH', body }),
+    setStatus: (id, status) =>
+      request(`/document-types/${id}/status`, { method: 'PATCH', body: { status } }),
+    remove: (id) => request(`/document-types/${id}`, { method: 'DELETE' }),
+
+    addField: (id, body) => request(`/document-types/${id}/fields`, { method: 'POST', body }),
+    updateField: (id, fieldId, body) =>
+      request(`/document-types/${id}/fields/${fieldId}`, { method: 'PATCH', body }),
+    removeField: (id, fieldId) =>
+      request(`/document-types/${id}/fields/${fieldId}`, { method: 'DELETE' }),
   },
 
   audit: {

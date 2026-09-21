@@ -159,6 +159,122 @@ async function main(): Promise<void> {
   });
   console.log(`  corpus: ${corpus.created} filed, ${corpus.skipped} already present`);
 
+  // ---- Document types -------------------------------------------------------
+  // The backbone (TYP-1..7). Eight types covering the shapes the handoff shows:
+  // one that keeps no history, one watermarked on every view, one restricted by
+  // default, one still a draft, and one archived — so every scope in the Types
+  // area has something real to show rather than being permanently empty.
+  const keep7 = await upsertRetention(org.id, 'Contracts — 7 years', 84, 'REVIEW');
+  const keep6 = await upsertRetention(org.id, 'Statutory — 6 years', 72, 'REVIEW');
+  const keep10 = await upsertRetention(org.id, 'Regulatory — 10 years', 120, 'REVIEW');
+  const keep3 = await upsertRetention(org.id, 'Business need — 3 years', 36, 'DESTROY');
+
+  const types = [
+    await upsertDocumentType(org.id, 'Contract', {
+      description: 'Agreements with counterparties, including their renewals.',
+      watermarkAll: true,
+      retentionPolicyId: keep7.id,
+      defaultClassification: 'CONFIDENTIAL',
+      fields: [
+        { name: 'Contractor', kind: 'TEXT', required: true,
+          description: 'The counterparty as named on the signature page.' },
+        { name: 'Related project', kind: 'TEXT' },
+        { name: 'Start date', kind: 'DATE', required: true },
+        { name: 'Expiry date', kind: 'DATE', required: true, isRetentionAnchor: true,
+          description: 'Renewal notices are driven from this, ninety days ahead.' },
+        { name: 'Value', kind: 'NUMBER', description: 'Total contract value in naira.' },
+        { name: 'Region', kind: 'SELECT', options: ['Lagos', 'Abuja', 'Port Harcourt', 'Kano'] },
+        { name: 'Auto-renews', kind: 'BOOLEAN' },
+      ],
+    }),
+    await upsertDocumentType(org.id, 'Invoice', {
+      description: 'Supplier invoices, matched against purchase orders.',
+      retentionPolicyId: keep6.id,
+      fields: [
+        { name: 'Supplier', kind: 'TEXT', required: true },
+        { name: 'Invoice number', kind: 'TEXT', required: true },
+        { name: 'Invoice date', kind: 'DATE', required: true, isRetentionAnchor: true },
+        { name: 'Amount', kind: 'NUMBER', required: true },
+        { name: 'Currency', kind: 'SELECT', options: ['NGN', 'USD', 'GBP', 'EUR'] },
+        { name: 'Purchase order', kind: 'TEXT' },
+        { name: 'Verified', kind: 'BOOLEAN' },
+      ],
+    }),
+    await upsertDocumentType(org.id, 'Personnel file', {
+      description: 'Everything held about one member of staff.',
+      retentionPolicyId: keep6.id,
+      defaultClassification: 'RESTRICTED',
+      fields: [
+        { name: 'Employee', kind: 'TEXT', required: true },
+        { name: 'Staff number', kind: 'TEXT', required: true },
+        { name: 'Started', kind: 'DATE', required: true },
+        { name: 'Left', kind: 'DATE', isRetentionAnchor: true,
+          description: 'Retention runs from the leaving date, so a current employee never expires.' },
+        { name: 'Unit', kind: 'SELECT', options: ['Legal', 'Finance', 'Operations', 'People'] },
+      ],
+    }),
+    await upsertDocumentType(org.id, 'Board paper', {
+      description: 'Papers tabled at board meetings.',
+      keepVersions: false,
+      watermarkAll: true,
+      defaultClassification: 'CONFIDENTIAL',
+      fields: [
+        { name: 'Meeting date', kind: 'DATE', required: true },
+        { name: 'Agenda item', kind: 'TEXT', required: true },
+        { name: 'Tabled by', kind: 'TEXT' },
+      ],
+    }),
+    await upsertDocumentType(org.id, 'Incident report', {
+      description: 'Health, safety and security incidents.',
+      retentionPolicyId: keep10.id,
+      fields: [
+        { name: 'Occurred', kind: 'DATE', required: true, isRetentionAnchor: true },
+        { name: 'Location', kind: 'TEXT', required: true },
+        { name: 'Severity', kind: 'SELECT', required: true,
+          options: ['Near miss', 'Minor', 'Serious', 'Major'] },
+        { name: 'Reportable', kind: 'BOOLEAN',
+          description: 'Whether it must be reported to a regulator.' },
+        { name: 'Reported by', kind: 'TEXT' },
+      ],
+    }),
+    await upsertDocumentType(org.id, 'Delivery note', {
+      description: 'Proof of delivery, mostly photographed in the field.',
+      retentionPolicyId: keep3.id,
+      fields: [
+        { name: 'Delivered', kind: 'DATE', required: true, isRetentionAnchor: true },
+        { name: 'Carrier', kind: 'TEXT' },
+        { name: 'Consignment', kind: 'TEXT', required: true },
+      ],
+    }),
+    // A draft, so the Drafts scope is not permanently empty.
+    await upsertDocumentType(org.id, 'Policy', {
+      description: 'Internal policies and their acknowledgements. Still being shaped.',
+      status: 'DRAFT',
+      fields: [
+        { name: 'Policy owner', kind: 'TEXT', required: true },
+        { name: 'Effective from', kind: 'DATE', required: true },
+        { name: 'Review due', kind: 'DATE' },
+      ],
+    }),
+    // And one archived, for the same reason.
+    await upsertDocumentType(org.id, 'Fax cover sheet', {
+      description: 'Retired. Kept so existing records stay readable.',
+      status: 'ARCHIVED',
+      fields: [{ name: 'Sent to', kind: 'TEXT' }],
+    }),
+  ];
+
+  // File a handful of the corpus as Contract, so "in use" is a real figure and
+  // the Types area can be judged on something other than zeroes.
+  const contractId = types[0].id;
+  const filed = (await db.query(
+    `UPDATE documents SET "documentTypeId" = $1
+      WHERE "organizationId" = $2 AND "documentTypeId" IS NULL
+        AND (name ILIKE 'MSA_%' OR name ILIKE 'NDA_%' OR name ILIKE '%contract%')`,
+    [contractId, org.id],
+  )).rowCount;
+  console.log(`  types: ${types.length} defined, ${filed} documents filed as Contract`);
+
   // Each tenant answers on its own address, which is what settles the
   // organisation at sign-in without asking anyone.
   await upsertHostname(org.id, 'acme.localhost');
@@ -559,6 +675,99 @@ async function grant(
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now())
        RETURNING id`,
     [newId(), subjectType, userId, groupId, roleId, resourceType, folderId, documentId, level, isDeny, grantedById],
+  );
+}
+
+/**
+ * A document type with its typed index fields.
+ *
+ * Idempotent on the type's name, which is unique per tenant. Fields are
+ * replaced wholesale on a re-run: they are configuration, not records, and a
+ * partial update would leave a field behind after it was removed here.
+ */
+async function upsertDocumentType(
+  organizationId: string,
+  name: string,
+  opts: {
+    description?: string;
+    status?: string;
+    keepVersions?: boolean;
+    watermarkAll?: boolean;
+    defaultClassification?: string;
+    retentionPolicyId?: string | null;
+    fields: Array<{
+      name: string;
+      kind: string;
+      description?: string;
+      required?: boolean;
+      options?: string[];
+      isRetentionAnchor?: boolean;
+    }>;
+  },
+) {
+  const existing = await maybeOne<{ id: string }>(
+    'SELECT id FROM document_types WHERE "organizationId" = $1 AND name = $2',
+    [organizationId, name],
+  );
+
+  const id = existing?.id ?? newId();
+  if (existing) {
+    await db.query(
+      `UPDATE document_types
+          SET description = $2, status = $3::"DocumentTypeStatus", "keepVersions" = $4,
+              "watermarkAll" = $5, "defaultClassification" = $6::"Classification",
+              "retentionPolicyId" = $7, "updatedAt" = now()
+        WHERE id = $1`,
+      [id, opts.description ?? null, opts.status ?? 'PUBLISHED', opts.keepVersions ?? true,
+       opts.watermarkAll ?? false, opts.defaultClassification ?? 'INTERNAL',
+       opts.retentionPolicyId ?? null],
+    );
+    await db.query('DELETE FROM document_type_fields WHERE "documentTypeId" = $1', [id]);
+  } else {
+    await db.query(
+      `INSERT INTO document_types
+         (id, "organizationId", name, description, status, "keepVersions", "watermarkAll",
+          "defaultClassification", "retentionPolicyId", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5::"DocumentTypeStatus", $6, $7, $8::"Classification", $9, now())`,
+      [id, organizationId, name, opts.description ?? null, opts.status ?? 'PUBLISHED',
+       opts.keepVersions ?? true, opts.watermarkAll ?? false,
+       opts.defaultClassification ?? 'INTERNAL', opts.retentionPolicyId ?? null],
+    );
+  }
+
+  let position = 10;
+  for (const f of opts.fields) {
+    await db.query(
+      `INSERT INTO document_type_fields
+         (id, "organizationId", "documentTypeId", name, description, kind, required,
+          options, position, "isRetentionAnchor", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6::"FieldKind", $7, $8, $9, $10, now())`,
+      [newId(), organizationId, id, f.name, f.description ?? null, f.kind, f.required ?? false,
+       f.options ?? [], position, f.isRetentionAnchor ?? false],
+    );
+    position += 10;
+  }
+
+  return { id };
+}
+
+/** A retention schedule, idempotent on name. */
+async function upsertRetention(
+  organizationId: string,
+  name: string,
+  retainMonths: number,
+  action: string,
+) {
+  const existing = await maybeOne<{ id: string }>(
+    'SELECT id FROM retention_policies WHERE "organizationId" = $1 AND name = $2',
+    [organizationId, name],
+  );
+  if (existing) return existing;
+
+  return one<{ id: string }>(
+    `INSERT INTO retention_policies (id, "organizationId", name, "retainMonths", anchor, action)
+     VALUES ($1, $2, $3, $4, 'created', $5) RETURNING id`,
+    [newId(), organizationId, name, retainMonths, action],
   );
 }
 

@@ -70,6 +70,12 @@ export const AREA_STATE = {
     endpoint: 'GET /api/shares',
     note: 'Real links, filtered by state in the database. Expiry, access codes, download caps and revocation are all enforced server-side.',
   },
+  types: {
+    state: LIVE,
+    endpoint: 'GET /api/document-types',
+    note: 'Real types with their real index fields. Defining and publishing them works; '
+      + 'restricting a type to particular roles does not exist yet.',
+  },
   audit: {
     state: LIVE,
     endpoint: 'GET /api/audit · GET /api/audit/integrity',
