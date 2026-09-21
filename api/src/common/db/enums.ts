@@ -100,6 +100,22 @@ export const DocumentStatus = {
 } as const;
 export type DocumentStatus = (typeof DocumentStatus)[keyof typeof DocumentStatus];
 
+export const DocumentTypeStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  ARCHIVED: 'ARCHIVED',
+} as const;
+export type DocumentTypeStatus = (typeof DocumentTypeStatus)[keyof typeof DocumentTypeStatus];
+
+export const FieldKind = {
+  TEXT: 'TEXT',
+  DATE: 'DATE',
+  NUMBER: 'NUMBER',
+  BOOLEAN: 'BOOLEAN',
+  SELECT: 'SELECT',
+} as const;
+export type FieldKind = (typeof FieldKind)[keyof typeof FieldKind];
+
 export const IntegrationProvider = {
   MICROSOFT_365: 'MICROSOFT_365',
   MICROSOFT_ENTRA: 'MICROSOFT_ENTRA',

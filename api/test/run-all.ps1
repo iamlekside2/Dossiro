@@ -13,6 +13,7 @@ $suites = @(
   'suspend-reason.ps1',
   'single-session.ps1',
   'share-status.ps1',
+  'document-types.ps1',
   'endpoints.ps1'
 )
 

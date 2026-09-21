@@ -15,6 +15,8 @@ import type {
   Classification,
   ContentKind,
   DocumentStatus,
+  DocumentTypeStatus,
+  FieldKind,
   IntegrationProvider,
   JobStatus,
   JobType,
@@ -34,7 +36,7 @@ import type {
   WorkflowStatus,
 } from './enums';
 
-export type { AccessLevel, AuditAction, ChangeOp, ChannelType, Classification, ContentKind, DocumentStatus, IntegrationProvider, JobStatus, JobType, MessageDirection, MessageStatus, OrgStatus, ResourceType, ShareAccessAction, SignatureRequestStatus, SignatureType, StorageDriver, SubjectType, TaskAction, TaskStatus, UserStatus, UserTier, WorkflowStatus };
+export type { AccessLevel, AuditAction, ChangeOp, ChannelType, Classification, ContentKind, DocumentStatus, DocumentTypeStatus, FieldKind, IntegrationProvider, JobStatus, JobType, MessageDirection, MessageStatus, OrgStatus, ResourceType, ShareAccessAction, SignatureRequestStatus, SignatureType, StorageDriver, SubjectType, TaskAction, TaskStatus, UserStatus, UserTier, WorkflowStatus };
 
 /** `access_grants` */
 export interface AccessGrant {
@@ -183,6 +185,20 @@ export interface DocumentChunk {
   createdAt: Date;
 }
 
+/** `document_field_values` */
+export interface DocumentFieldValue {
+  organizationId: string;
+  documentId: string;
+  fieldId: string;
+  valueText: string | null;
+  valueDate: Date | null;
+  valueNumber: string | null;
+  valueBool: boolean | null;
+  enteredById: string | null;
+  confidence: number | null;
+  updatedAt: Date;
+}
+
 /** `document_index` */
 export interface DocumentIndex {
   documentId: string;
@@ -213,6 +229,38 @@ export interface DocumentTag {
   tagId: string;
   confidence: number | null;
   addedAt: Date;
+}
+
+/** `document_type_fields` */
+export interface DocumentTypeField {
+  id: string;
+  organizationId: string;
+  documentTypeId: string;
+  name: string;
+  description: string | null;
+  kind: FieldKind;
+  required: boolean;
+  options: string[];
+  position: number;
+  isRetentionAnchor: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/** `document_types` */
+export interface DocumentType {
+  id: string;
+  organizationId: string;
+  name: string;
+  description: string | null;
+  status: DocumentTypeStatus;
+  keepVersions: boolean;
+  watermarkAll: boolean;
+  retentionPolicyId: string | null;
+  defaultClassification: Classification;
+  createdAt: Date;
+  updatedAt: Date;
+  archivedAt: Date | null;
 }
 
 /** `document_versions` */
@@ -275,6 +323,7 @@ export interface Document {
   deletedById: string | null;
   purgeAfter: Date | null;
   retentionPolicyId: string | null;
+  documentTypeId: string | null;
 }
 
 /** `extraction_results` */
