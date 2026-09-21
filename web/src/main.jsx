@@ -6,7 +6,6 @@ import './styles/theme.css';
 import './styles/tokens.css';
 import './styles/workbench.css';
 import './styles/screens.css';
-import './styles/setup.css';
 import './styles/responsive.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(

@@ -71,17 +71,20 @@ export default function TenantSetup() {
   }
 
   return (
-    <div className="setup">
+    // Wide enough for three columns: the rails hold still and only the step
+    // scrolls, so the checklist stays reachable from the bottom of a long step.
+    // Below that the columns stack and the page scrolls normally.
+    <div className="flex min-h-screen items-stretch bg-surface-3 max-mid:flex-col mid:h-screen mid:overflow-hidden">
       {/* ---- checklist rail ---- */}
-      <aside className="setup__rail">
-        <div className="setup__brand">
-          <span className="setup__brandmark" />
-          <span className="setup__brandname">Dossiro</span>
+      <aside className="flex w-setuprail shrink-0 flex-col border-r border-line bg-surface-2 max-mid:w-full max-mid:border-r-0 max-mid:border-b mid:overflow-y-auto">
+        <div className="flex items-center gap-[9px] border-b border-line-soft p-4">
+          <span className="h-4 w-4 bg-blue" />
+          <span className="text-body font-bold tracking-[-0.01em]">Dossiro</span>
         </div>
 
-        <div className="setup__org">
-          <div className="setup__orgname">{org.name}</div>
-          <div className="setup__orgmeta">Setting up · {org.domain}</div>
+        <div className="border-b border-line-soft px-4 py-[14px]">
+          <div className="text-row font-semibold">{org.name}</div>
+          <div className="mt-0.5 text-meta text-dim">Setting up · {org.domain}</div>
         </div>
 
         {/* Pinned above the list because it determines the list, and in ink so
@@ -90,45 +93,71 @@ export default function TenantSetup() {
             as the others, and it cannot once records exist. */}
         <button
           type="button"
-          className={`setup__model${showModels ? ' setup__model--open' : ''}`}
           onClick={() => setShowModels((v) => !v)}
+          className={`block w-full cursor-pointer px-4 py-3 text-left text-white hover:bg-ink-2 ${
+            showModels ? 'bg-ink-2' : 'bg-ink'
+          }`}
         >
-          <span className="setup__modeltag">{model.tag}</span>
-          <span className="setup__modelname">{model.name}</span>
-          <span className="setup__modeladdr">{model.address}</span>
-          <span className="setup__modelmore">{showModels ? 'Close' : 'Review'}</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.07em] text-blue-on-dark">
+            {model.tag}
+          </span>
+          <span className="mt-0.5 block text-ui font-semibold">{model.name}</span>
+          <span className="mt-0.5 block text-chip leading-[1.4] text-ghost">{model.address}</span>
+          <span className="mt-[5px] block text-chip font-semibold text-blue-on-dark">
+            {showModels ? 'Close' : 'Review'}
+          </span>
         </button>
 
-        <div className="setup__progress">
-          <span className="setup__progresscount">
+        <div className="flex items-center gap-2.5 border-b border-line-soft px-4 py-3">
+          <span className="whitespace-nowrap text-chip font-semibold text-muted">
             {steps.length - remaining} of {steps.length}
           </span>
-          <span className="setup__progressbar">
+          <span className="h-1 flex-1 bg-line-soft">
             <span
-              className="setup__progressfill"
+              className="block h-full bg-green"
               style={{ width: `${((steps.length - remaining) / steps.length) * 100}%` }}
             />
           </span>
         </div>
 
-        <ol className="setup__steps">
+        <ol className="flex-1">
           {steps.map((id, i) => {
             const isDone = Boolean(done[id]);
             const isLocked = id === 'invite' && locked;
-            const state = isDone ? 'done' : isLocked ? 'locked' : id === current ? 'now' : 'todo';
+            const on = id === current;
             return (
               <li key={id}>
                 <button
                   type="button"
-                  className={`setupstep setupstep--${state}${id === current ? ' setupstep--on' : ''}`}
                   onClick={() => choose(id)}
+                  className={`flex w-full cursor-pointer items-start gap-3 border-b border-line-faint px-4 py-[11px] text-left ${
+                    on ? 'bg-blue-tint' : 'hover:bg-row-hover'
+                  }`}
                 >
-                  <span className="setupstep__box">
+                  <span
+                    className={`mt-px flex h-5 w-5 shrink-0 items-center justify-center font-bold ${
+                      isDone
+                        ? 'border border-green bg-green text-meta text-white'
+                        : isLocked
+                          ? 'border border-line-strong bg-neutral-bg text-[11px] text-ghost'
+                          : on
+                            ? 'border-2 border-blue bg-surface text-[11px] text-blue'
+                            : 'border border-line-strong bg-surface text-[11px] text-dim'
+                    }`}
+                  >
                     {isDone ? '✓' : isLocked ? '·' : i + 1}
                   </span>
-                  <span className="setupstep__text">
-                    <span className="setupstep__title">{TITLES[id]}</span>
-                    <span className="setupstep__note">{summary(id, modelId, org, done)}</span>
+                  <span className="min-w-0">
+                    <span
+                      className={`block text-row ${on ? 'font-bold' : 'font-medium'} ${
+                        isLocked ? 'text-dim' : ''
+                      }`}
+                    >
+                      {TITLES[id]}
+                    </span>
+                    <span className="mt-0.5 block text-chip leading-[1.4] text-dim">
+                      {summary(id, modelId, org, done)}
+                    </span>
                   </span>
                 </button>
               </li>
@@ -136,23 +165,27 @@ export default function TenantSetup() {
           })}
         </ol>
 
-        <div className="setup__later">
-          <div className="setup__laterhead">After setup</div>
+        <div className="border-t border-line px-4 pb-5 pt-[14px]">
+          <div className="mb-[9px] text-[10px] font-bold uppercase tracking-[0.08em] text-faint">
+            After setup
+          </div>
           {LATER.map(([title, note]) => (
-            <div className="setup__lateritem" key={title}>
-              <div className="setup__latertitle">{title}</div>
-              <div className="setup__laternote">{note}</div>
+            <div className="mb-[9px]" key={title}>
+              <div className="text-detail font-semibold text-muted">{title}</div>
+              <div className="text-chip leading-[1.4] text-dim">{note}</div>
             </div>
           ))}
         </div>
       </aside>
 
       {/* ---- main panel ---- */}
-      <main className="setup__main">
+      <main className="min-w-0 flex-1 overflow-y-auto px-8 pb-14 pt-7 max-mid:px-[18px] max-mid:pb-12 max-mid:pt-5">
         {locked ? (
-          <div className="gate">
-            <div className="gate__title">Your people cannot sign in yet</div>
-            <div className="gate__body">
+          <div className="mb-[22px] max-w-[720px] border border-ochre-border bg-ochre-bg px-[14px] py-3">
+            <div className="mb-[3px] text-row font-bold text-ochre">
+              Your people cannot sign in yet
+            </div>
+            <div className="text-detail leading-[1.55] text-ochre">
               {remaining} of {steps.length} steps remain. Invitations stay held back until roles and
               retention are saved, so that no record arrives before there is somewhere correct to
               put it.
@@ -175,16 +208,21 @@ export default function TenantSetup() {
         )}
       </main>
 
-      {/* ---- explanation rail ---- */}
-      <aside className="setup__why">
-        <div className="setup__whyhead">Worth knowing</div>
+      {/* ---- explanation rail ----
+
+          Dropped below the fold rather than squeezed: these notes are policy,
+          and policy at four words a line is not readable. */}
+      <aside className="w-whyrail shrink-0 border-l border-line bg-surface-2 px-6 py-7 max-wide:hidden mid:overflow-y-auto">
+        <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.1em] text-faint">
+          Worth knowing
+        </div>
         {RAIL[showModels ? 'model' : current].map(([title, text]) => (
-          <div className="railnote" key={title}>
-            <div className="railnote__title">{title}</div>
-            <div className="railnote__text">{text}</div>
+          <div className="border-b border-line-soft py-[14px]" key={title}>
+            <div className="text-ui font-semibold">{title}</div>
+            <div className="text-detail leading-[1.6] text-muted">{text}</div>
           </div>
         ))}
-        <p className="setup__whyfoot">
+        <p className="mt-[18px] text-meta leading-[1.55] text-dim">
           Setup takes most organisations two or three sessions. You can hand it to a colleague at
           any point, and every change is logged against whoever made it.
         </p>
@@ -197,37 +235,47 @@ export default function TenantSetup() {
 
 function ModelPanel({ current, onPick, onClose }) {
   return (
-    <section className="panel">
-      <div className="panel__eyebrow">Delivery</div>
-      <h1 className="panel__title">How Dossiro reaches your people</h1>
-      <p className="panel__lede">
+    <section className="max-w-[720px]">
+      <Eyebrow>Delivery</Eyebrow>
+      <Title>How Dossiro reaches your people</Title>
+      <Lede>
         This is normally settled before your tenancy is created, because it decides what the rest of
         setup asks you. It is shown here so you can see which one you are on — and, until your first
         record arrives, change it.
-      </p>
-      <p className="panel__lede">
+      </Lede>
+      <Lede>
         Whether you use your own domain is <em>not</em> one of these. That is a question inside
         setup, at step two, and both addresses can be live at once.
-      </p>
+      </Lede>
 
-      <div className="modelgrid">
-        {MODELS.map((m) => (
-          <button
-            type="button"
-            key={m.id}
-            className={`modelcard${m.id === current ? ' modelcard--on' : ''}`}
-            onClick={() => onPick(m.id)}
-          >
-            <span className="modelcard__head">
-              <span className="modelcard__tag">{m.tag}</span>
-              {m.id === current ? <span className="modelcard__on">Current</span> : null}
-            </span>
-            <span className="modelcard__name">{m.name}</span>
-            <span className="modelcard__addr">{m.address}</span>
-            <span className="modelcard__blurb">{m.blurb}</span>
-            <span className="modelcard__steps">{m.steps}</span>
-          </button>
-        ))}
+      <div className="grid grid-cols-2 gap-3 max-mid:grid-cols-1">
+        {MODELS.map((m) => {
+          const on = m.id === current;
+          return (
+            <button
+              type="button"
+              key={m.id}
+              onClick={() => onPick(m.id)}
+              // Border thickens on selection; padding compensates so nothing shifts.
+              className={`block cursor-pointer bg-surface text-left hover:bg-blue-bg ${
+                on ? 'border-2 border-ink p-[13px]' : 'border border-line-strong p-[14px]'
+              }`}
+            >
+              <span className="mb-[5px] flex items-baseline justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-[0.07em] text-blue">
+                  {m.tag}
+                </span>
+                {on ? <span className="text-[10.5px] font-bold text-green">Current</span> : null}
+              </span>
+              <span className="mb-0.5 block text-body font-semibold">{m.name}</span>
+              <span className="mb-[7px] block text-meta text-dim">{m.address}</span>
+              <span className="block text-detail leading-[1.55] text-muted">{m.blurb}</span>
+              <span className="mt-2 block border-t border-line-soft pt-2 text-chip font-semibold text-dim">
+                {m.steps}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <Callout tone="ochre" title="Changing this changes the steps">
@@ -236,11 +284,9 @@ function ModelPanel({ current, onPick, onClose }) {
         instead. Steps that do not apply are removed rather than greyed out.
       </Callout>
 
-      <div className="panel__actions">
-        <button type="button" className="btn btn--primary" onClick={onClose}>
-          Back to setup
-        </button>
-      </div>
+      <Actions>
+        <PrimaryButton onClick={onClose}>Back to setup</PrimaryButton>
+      </Actions>
     </section>
   );
 }
@@ -251,25 +297,25 @@ function StepPanel({ id, modelId, org, index, total, finished, onComplete }) {
   const Body = BODIES[id];
 
   return (
-    <section className="panel">
-      <div className="panel__eyebrow">
+    <section className="max-w-[720px]">
+      <Eyebrow>
         Step {index} of {total}
         {finished ? ' · done' : ''}
-      </div>
-      <h1 className="panel__title">{TITLES[id]}</h1>
-      <p className="panel__lede">{LEDE[id](modelId, org)}</p>
+      </Eyebrow>
+      <Title>{TITLES[id]}</Title>
+      <Lede>{LEDE[id](modelId, org)}</Lede>
 
       {Body ? <Body modelId={modelId} org={org} finished={finished} /> : null}
 
-      <div className="panel__actions">
+      <Actions>
         {finished ? (
-          <span className="panel__saved">Saved. Nothing further is needed here.</span>
+          <span className="text-detail text-dim">Saved. Nothing further is needed here.</span>
         ) : (
-          <button type="button" className="btn btn--primary" onClick={onComplete}>
+          <PrimaryButton onClick={onComplete}>
             {id === 'invite' ? 'Send the first wave' : 'Save and continue'}
-          </button>
+          </PrimaryButton>
         )}
-      </div>
+      </Actions>
     </section>
   );
 }
@@ -293,22 +339,22 @@ function DomainBody({ org, finished }) {
   return (
     <>
       <Field label="Your email domain" hint="The domain your people's work addresses end with.">
-        <input className="mfield" defaultValue={org.domain} />
+        <Input defaultValue={org.domain} />
       </Field>
-      <div className="codeblock">
-        <div className="codeblock__label">Add this TXT record</div>
-        <div className="codeblock__row">
-          <span className="codeblock__k">Host</span>
-          <span className="codeblock__v">_dossiro.{org.domain}</span>
+      <div className="mt-1.5 border border-line bg-surface">
+        <PanelHead>Add this TXT record</PanelHead>
+        <div className="grid grid-cols-[70px_1fr] gap-[14px] border-b border-line-faint px-[14px] py-2 text-ui">
+          <span className="text-dim">Host</span>
+          <span className="break-all font-mono text-detail">_dossiro.{org.domain}</span>
         </div>
-        <div className="codeblock__row">
-          <span className="codeblock__k">Value</span>
-          <span className="codeblock__v">dossiro-verify=8f3a91c47e2b</span>
+        <div className="grid grid-cols-[70px_1fr] gap-[14px] px-[14px] py-2 text-ui">
+          <span className="text-dim">Value</span>
+          <span className="break-all font-mono text-detail">dossiro-verify=8f3a91c47e2b</span>
         </div>
       </div>
-      <p className="panel__foot">
+      <Foot>
         We check every few minutes and hourly thereafter. Public email providers cannot be claimed.
-      </p>
+      </Foot>
     </>
   );
 }
@@ -318,7 +364,7 @@ function AddressBody({ modelId, org, finished }) {
     return (
       <>
         <Field label="Hostname" hint="Where your people reach your installation.">
-          <input className="mfield" defaultValue={`records.${org.domain}`} />
+          <Input defaultValue={`records.${org.domain}`} />
         </Field>
         <Facts
           rows={[
@@ -345,7 +391,7 @@ function AddressBody({ modelId, org, finished }) {
           label="Internal hostname"
           hint="Resolved by your own DNS. Nothing about it is published."
         >
-          <input className="mfield" defaultValue="dossiro.internal" />
+          <Input defaultValue="dossiro.internal" />
         </Field>
         <Facts
           rows={[
@@ -383,15 +429,17 @@ function AddressBody({ modelId, org, finished }) {
   return (
     <>
       <Field label="On our domain" hint="Works immediately. Nothing for your IT team to do.">
-        <div className="joined">
-          <input className="mfield" defaultValue={org.slug} />
-          <span className="joined__suffix">.dossiro.com</span>
+        <div className="flex items-stretch">
+          <Input defaultValue={org.slug} />
+          <span className="flex items-center whitespace-nowrap border border-l-0 border-line-strong bg-surface-3 px-[11px] text-ui text-dim">
+            .dossiro.com
+          </span>
         </div>
       </Field>
       <Field label="Your own domain" hint="Needs one CNAME record. We issue and renew the certificate.">
-        <input className="mfield" defaultValue={`records.${org.domain}`} />
+        <Input defaultValue={`records.${org.domain}`} />
       </Field>
-      <p className="panel__foot">Both can be live at once, and either can be added later.</p>
+      <Foot>Both can be live at once, and either can be added later.</Foot>
     </>
   );
 }
@@ -399,9 +447,11 @@ function AddressBody({ modelId, org, finished }) {
 function LicenceBody({ modelId }) {
   return (
     <>
-      <div className="drop">
-        <div className="drop__title">Drop your licence file here</div>
-        <div className="drop__note">A signed <code>.dossirolic</code> file, issued with your contract.</div>
+      <div className="border border-dashed border-line-strong bg-surface px-[18px] py-[26px] text-center">
+        <div className="mb-[3px] text-row font-semibold">Drop your licence file here</div>
+        <div className="text-detail text-dim">
+          A signed <code className="font-mono">.dossirolic</code> file, issued with your contract.
+        </div>
       </div>
       <Facts
         rows={[
@@ -441,20 +491,20 @@ function IdentityBody({ modelId, finished }) {
   }
   return (
     <>
-      <div className="choices">
+      <div className="flex flex-wrap gap-2">
         {(cloud
           ? ['Microsoft Entra ID', 'Okta', 'Active Directory', 'LDAP']
           : ['Active Directory', 'LDAP']
         ).map((name, i) => (
-          <button type="button" key={name} className={`choice${i === 0 ? ' choice--on' : ''}`}>
+          <Choice key={name} on={i === 0}>
             {name}
-          </button>
+          </Choice>
         ))}
       </div>
       {!cloud ? (
-        <p className="panel__foot">
+        <Foot>
           Cloud providers are not reachable from an air-gapped deployment, so they are not offered.
-        </p>
+        </Foot>
       ) : null}
     </>
   );
@@ -477,17 +527,19 @@ function RegionBody({ finished }) {
   }
   return (
     <>
-      <div className="choices choices--stack">
+      <div className="flex flex-col gap-2">
         {[
           ['ng-lagos-1', 'Lagos', 'The default. 112 of 184 tenancies.'],
           ['ng-abuja-1', 'Abuja', 'Second region in Nigeria. 40 tenancies.'],
           ['offshore', 'Outside Nigeria', 'Written request only, with the residency clause struck out.'],
         ].map(([id, name, note], i) => (
-          <button type="button" key={id} className={`choice choice--wide${i === 0 ? ' choice--on' : ''}`}>
-            <span className="choice__name">{name}</span>
-            <span className="choice__code">{id}</span>
-            <span className="choice__note">{note}</span>
-          </button>
+          <Choice key={id} on={i === 0} wide>
+            <span className="text-row font-semibold">{name}</span>
+            <span className="text-meta font-normal opacity-75">{id}</span>
+            <span className="col-span-full text-meta font-normal leading-[1.45] opacity-80">
+              {note}
+            </span>
+          </Choice>
         ))}
       </div>
       <Callout tone="red" title="This cannot be undone">
@@ -516,35 +568,32 @@ function CabinetsBody() {
   ];
   return (
     <>
-      <div className="choices">
+      <div className="flex flex-wrap gap-2">
         {['Start from a template', 'Import from a file share', 'Build by hand'].map((label, i) => (
-          <button
-            type="button"
-            key={label}
-            className={`choice${start === i ? ' choice--on' : ''}`}
-            onClick={() => setStart(i)}
-          >
+          <Choice key={label} on={start === i} onClick={() => setStart(i)}>
             {label}
-          </button>
+          </Choice>
         ))}
       </div>
-      <p className="panel__foot">{notes[start]}</p>
+      <Foot>{notes[start]}</Foot>
 
-      <div className="tree">
-        <div className="tree__head">Draft structure · 9 cabinets, 2 need an owner</div>
+      <div className="mt-4 border border-line bg-surface">
+        <PanelHead>Draft structure · 9 cabinets, 2 need an owner</PanelHead>
         {TREE.map(([name, depth, tail]) => (
-          <div className="tree__row" key={`${name}-${depth}`} style={{ paddingLeft: 13 + depth * 15 }}>
-            <span className="tree__name">{name}</span>
+          <div
+            key={`${name}-${depth}`}
+            className="flex items-center gap-2.5 border-b border-line-faint py-1.5 pr-[14px] text-ui last:border-b-0"
+            style={{ paddingLeft: 13 + depth * 15 }}
+          >
+            <span className="shrink">{name}</span>
             {tail ? (
               <span
                 className={
                   tail === 'Restricted'
                     ? 'chip chip--red'
-                    : tail === 'Passcode'
+                    : tail === 'Passcode' || tail === 'No owner'
                       ? 'chip chip--ochre'
-                      : tail === 'No owner'
-                        ? 'chip chip--ochre'
-                        : 'chip'
+                      : 'chip'
                 }
               >
                 {tail}
@@ -571,37 +620,41 @@ function BrandingBody({ modelId, org }) {
   ];
   return (
     <>
-      <div className="drop drop--short">
-        <div className="drop__title">Drop your logo here</div>
-        <div className="drop__note">SVG or PNG. Shown at 19px tall, so simple marks read best.</div>
+      <div className="border border-dashed border-line-strong bg-surface p-[18px] text-center">
+        <div className="mb-[3px] text-row font-semibold">Drop your logo here</div>
+        <div className="text-detail text-dim">
+          SVG or PNG. Shown at 19px tall, so simple marks read best.
+        </div>
       </div>
 
-      <div className="fieldlabel">One accent colour</div>
-      <div className="choices">
+      <div className="mb-[7px] mt-[18px] text-detail font-semibold text-muted">
+        One accent colour
+      </div>
+      <div className="flex flex-wrap gap-2">
         {accents.map(([label, hex], i) => (
-          <button
-            type="button"
-            key={label}
-            className={`choice choice--swatch${accent === i ? ' choice--on' : ''}`}
-            onClick={() => setAccent(i)}
-          >
-            <span className="choice__dot" style={{ background: hex }} />
+          <Choice key={label} on={accent === i} onClick={() => setAccent(i)}>
+            <span className="h-[14px] w-[14px] shrink-0" style={{ background: hex }} />
             {label}
-          </button>
+          </Choice>
         ))}
       </div>
-      <p className="panel__foot">{accents[accent][2]}</p>
+      <Foot>{accents[accent][2]}</Foot>
 
       {/* The preview carries the model's real address, because that is the part
           people check. A preview showing a generic one would be the only thing
           on this screen that is not true of their tenancy. */}
-      <div className="preview">
-        <div className="preview__bar">{addressFor(modelId, org)}</div>
-        <div className="preview__body">
-          <div className="preview__logo" style={{ background: accents[accent][1] }} />
-          <div className="preview__title">Sign in to {org.name}</div>
-          <div className="preview__sub">Use your work account.</div>
-          <div className="preview__btn" style={{ background: accents[accent][1] }}>
+      <div className="mt-4 border border-line bg-desk">
+        <div className="border-b border-line bg-chrome px-3 py-[7px] font-mono text-chip text-soft">
+          {addressFor(modelId, org)}
+        </div>
+        <div className="mx-auto my-[22px] max-w-[300px] border border-line bg-surface p-[22px]">
+          <div className="mb-[14px] h-[30px] w-[30px]" style={{ background: accents[accent][1] }} />
+          <div className="text-head font-bold tracking-[-0.015em]">Sign in to {org.name}</div>
+          <div className="mb-4 mt-[3px] text-detail text-dim">Use your work account.</div>
+          <div
+            className="flex h-[34px] items-center justify-center text-detail font-semibold text-white"
+            style={{ background: accents[accent][1] }}
+          >
             Continue with Microsoft
           </div>
         </div>
@@ -692,34 +745,118 @@ const BODIES = {
   invite: InviteBody,
 };
 
-/* -- small pieces --------------------------------------------------------- */
+/* -- small pieces ----------------------------------------------------------
+
+   Components rather than repeated class strings: a heading used eleven times
+   should have one definition, the same as it did when it was a CSS class.
+   -------------------------------------------------------------------------- */
+
+const Eyebrow = ({ children }) => (
+  <div className="mb-[7px] text-[10.5px] font-bold uppercase tracking-[0.1em] text-faint">
+    {children}
+  </div>
+);
+
+const Title = ({ children }) => (
+  <h1 className="mb-2.5 text-screen font-bold tracking-[-0.02em]">{children}</h1>
+);
+
+const Lede = ({ children }) => (
+  <p className="mb-[22px] max-w-[62ch] text-body leading-[1.6] text-muted">{children}</p>
+);
+
+const Foot = ({ children }) => (
+  <p className="mt-2.5 max-w-[62ch] text-detail leading-[1.55] text-dim">{children}</p>
+);
+
+const Actions = ({ children }) => (
+  <div className="mt-6 border-t border-line-soft pt-[18px]">{children}</div>
+);
+
+const PanelHead = ({ children }) => (
+  <div className="border-b border-line bg-surface-3 px-[14px] py-2 text-chip font-semibold text-dim">
+    {children}
+  </div>
+);
+
+function PrimaryButton({ onClick, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex h-[30px] cursor-pointer items-center justify-center whitespace-nowrap border border-blue bg-blue px-[14px] text-ui font-semibold text-white hover:border-blue-hover hover:bg-blue-hover"
+    >
+      {children}
+    </button>
+  );
+}
+
+function Input(props) {
+  return (
+    <input
+      {...props}
+      className="h-[38px] w-full min-w-0 flex-1 border border-line-strong bg-surface px-[14px] text-body"
+    />
+  );
+}
+
+function Choice({ on, wide, onClick, children }) {
+  const base = 'cursor-pointer border text-ui font-semibold px-[14px] ';
+  const skin = on
+    ? 'border-ink bg-ink text-white'
+    : 'border-line-strong bg-surface text-muted hover:bg-row-hover';
+  const shape = wide
+    ? 'grid w-full grid-cols-[1fr_auto] gap-x-[14px] gap-y-1 whitespace-normal py-[11px] text-left'
+    : 'flex h-[34px] items-center gap-2 whitespace-nowrap';
+  return (
+    <button type="button" onClick={onClick} className={base + shape + ' ' + skin}>
+      {children}
+    </button>
+  );
+}
 
 function Facts({ rows, note }) {
   return (
-    <div className="facts">
+    <div className="border border-line bg-surface">
       {rows.map(([k, v]) => (
-        <div className="facts__row" key={k}>
-          <span className="facts__k">{k}</span>
-          <span className="facts__v">{v}</span>
+        // last-of-type rather than last-child: a note may follow the rows, and
+        // the bottom row should still lose its divider when it does.
+        <div
+          key={k}
+          className="grid grid-cols-[180px_1fr] gap-[14px] border-b border-line-faint px-[14px] py-[9px] text-ui [&:last-of-type]:border-b-0 max-mid:grid-cols-1 max-mid:gap-0.5"
+        >
+          <span className="text-dim">{k}</span>
+          <span className="font-medium">{v}</span>
         </div>
       ))}
-      {note ? <p className="facts__note">{note}</p> : null}
+      {note ? (
+        <p className="border-t border-line-soft bg-surface-2 px-[14px] py-[11px] text-detail leading-[1.55] text-muted">
+          {note}
+        </p>
+      ) : null}
     </div>
   );
 }
 
 function Rows({ head, rows }) {
   return (
-    <div className="minitable">
-      <div className="minitable__head" style={cols(head.length)}>
+    <div className="border border-line bg-surface">
+      <div
+        className="grid items-baseline gap-[14px] border-b border-line bg-surface-3 px-[14px] py-2 text-chip font-semibold text-dim"
+        style={cols(head.length)}
+      >
         {head.map((h) => (
           <span key={h}>{h}</span>
         ))}
       </div>
       {rows.map((r) => (
-        <div className="minitable__row" key={r[0]} style={cols(head.length)}>
+        <div
+          key={r[0]}
+          className="grid items-baseline gap-[14px] border-b border-line-faint px-[14px] py-2 text-ui last:border-b-0"
+          style={cols(head.length)}
+        >
           {r.map((c, i) => (
-            <span key={i} className={i === 0 ? 'minitable__first' : undefined}>
+            <span key={i} className={i === 0 ? 'font-medium' : undefined}>
               {c}
             </span>
           ))}
@@ -735,19 +872,25 @@ function cols(n) {
 
 function Field({ label, hint, children }) {
   return (
-    <label className="field">
-      <span className="field__label">{label}</span>
+    <label className="mb-[14px] block">
+      <span className="mb-[5px] block text-detail font-semibold text-muted">{label}</span>
       {children}
-      {hint ? <span className="field__hint">{hint}</span> : null}
+      {hint ? <span className="mt-[5px] block text-chip text-dim">{hint}</span> : null}
     </label>
   );
 }
 
+const TONE = {
+  blue: 'border-blue-border bg-blue-bg text-muted',
+  ochre: 'border-ochre-border bg-ochre-bg text-ochre',
+  red: 'border-red-border bg-red-bg text-red',
+};
+
 function Callout({ tone, title, children }) {
   return (
-    <div className={`callout callout--${tone}`}>
-      <div className="callout__title">{title}</div>
-      <div className="callout__body">{children}</div>
+    <div className={`mt-4 border px-3 py-2.5 text-detail leading-[1.55] ${TONE[tone]}`}>
+      <div className="mb-0.5 font-bold">{title}</div>
+      <div className="leading-[1.55]">{children}</div>
     </div>
   );
 }
