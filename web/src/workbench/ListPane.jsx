@@ -8,6 +8,7 @@ function gridTemplate(cols) {
 }
 
 export default function ListPane({
+  hidden,
   area,
   cols,
   rows,
@@ -36,25 +37,48 @@ export default function ListPane({
   const grid = gridTemplate(cols);
 
   return (
-    // `position: relative` anchors the locked-drawer prompt to this pane.
-    <div className="list" style={{ position: 'relative' }}>
+    // `relative` anchors the locked-drawer prompt to this pane.
+    <div
+      className={`relative min-h-0 min-w-0 flex-1 flex-col bg-surface ${hidden ? 'hidden' : 'flex'}`}
+    >
       {overlay}
 
       {/* Says what is actually behind this screen, before the rows persuade
           anyone otherwise. */}
       <BuildStateBanner area={area} scopeIndex={scopeIndex} />
-      <div className="list__head" style={{ gridTemplateColumns: grid }}>
-        {cols.map(([label], i) => (
-          <button
-            key={label}
-            type="button"
-            className={`list__col${i === sortCol ? ' is-sorted' : ''}`}
-            onClick={() => onSort(i)}
-          >
-            <span>{label}</span>
-            <span className={`list__caret${i === sortCol && sortDir === 'asc' ? ' is-asc' : ''}`}>▾</span>
-          </button>
-        ))}
+
+      {/* The column template travels as a custom property rather than an inline
+          grid-template-columns, so the fold below 1180px can override it with a
+          plain utility instead of needing !important to beat an inline style.
+          The 12px right gutter aligns the header with scrollbar-inset rows. */}
+      <div
+        style={{ '--cols': grid }}
+        className="grid h-listhead flex-none grid-cols-[var(--cols)] items-center gap-[14px] border-y border-line bg-surface-3 pl-4 pr-7 text-meta font-semibold text-soft max-wide:grid-cols-1"
+      >
+        {cols.map(([label], i) => {
+          const sorted = i === sortCol;
+          return (
+            <button
+              key={label}
+              type="button"
+              onClick={() => onSort(i)}
+              className={`flex min-w-0 cursor-pointer items-center gap-[5px] overflow-hidden whitespace-nowrap border-0 bg-none p-0 text-left font-[inherit] ${
+                sorted ? 'text-ink' : 'text-inherit'
+              } ${i > 0 ? 'max-wide:hidden' : ''}`}
+            >
+              <span>{label}</span>
+              {/* Transparent until sorted, so the row does not shift when a
+                  caret appears. */}
+              <span
+                className={`text-[8px] transition-transform duration-[120ms] ${
+                  sorted ? 'text-soft' : 'text-transparent'
+                } ${sorted && sortDir === 'asc' ? 'rotate-180' : ''}`}
+              >
+                ▾
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {selCount > 0 && (
@@ -67,7 +91,7 @@ export default function ListPane({
         />
       )}
 
-      <div className="list__rows">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {error && <ErrorState error={error} onRetry={onRetry} />}
         {!error && isDenied && <DeniedState />}
         {!error && isLoading && (isLive ? <FetchingState /> : <LoadingState />)}
@@ -100,8 +124,10 @@ function Row({ record, cols, grid, selected, checked, onSelect, onToggle, foldCo
 
   return (
     <div
-      className={`row${selected ? ' is-selected' : ''}`}
-      style={{ gridTemplateColumns: grid }}
+      style={{ '--cols': grid }}
+      className={`grid cursor-pointer grid-cols-[var(--cols)] items-center gap-[14px] border-b border-line-faint px-4 py-[9px] max-wide:grid-cols-1 max-wide:py-[11px] max-narrow:min-h-16 max-narrow:py-3 ${
+        selected ? 'bg-blue-tint' : 'hover:bg-row-hover'
+      }`}
       onClick={onSelect}
       role="row"
       tabIndex={0}
@@ -112,28 +138,38 @@ function Row({ record, cols, grid, selected, checked, onSelect, onToggle, foldCo
         }
       }}
     >
-      <div className="row__record">
+      <div className="flex min-w-0 items-center gap-2.5">
         <button
           type="button"
-          className={`row__check${checked ? ' is-checked' : ''}`}
           aria-label={checked ? `Deselect ${name}` : `Select ${name}`}
           onClick={(e) => {
             e.stopPropagation();
             onToggle();
           }}
+          // The tick is always rendered and merely transparent, so checking a
+          // row cannot change its height.
+          // 22px on a phone, because 16px is not a thumb-sized target.
+          className={`flex h-4 w-4 flex-none cursor-pointer items-center justify-center border p-0 text-[10.5px] max-narrow:h-[22px] max-narrow:w-[22px] ${
+            checked
+              ? 'border-blue bg-blue text-white'
+              : 'border-line-strong bg-surface text-transparent'
+          }`}
         >
           ✓
         </button>
 
-        <span className="row__kind">{kind}</span>
+        <span className="flex h-[22px] w-[30px] flex-none items-center justify-center border border-neutral-border bg-line-faint text-tag font-bold text-soft">
+          {kind}
+        </span>
 
-        <div className="row__text">
-          <div className="row__name" title={name}>
+        {/* 120px floor so the record name can never be crushed to nothing. */}
+        <div className="min-w-[120px] flex-1">
+          <div className="truncate text-row font-medium max-narrow:text-[15px]" title={name}>
             {name}
           </div>
-          <div className="row__meta">
+          <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
             {flag ? <span className={`chip ${flagClass(flag)}`}>{flag}</span> : null}
-            <span className="row__metaText" title={meta}>
+            <span className="truncate text-detail text-dim max-narrow:text-ui" title={meta}>
               {meta}
             </span>
           </div>
@@ -141,7 +177,7 @@ function Row({ record, cols, grid, selected, checked, onSelect, onToggle, foldCo
           {/* Below 1180px the list pane cannot hold four columns, so the
               secondary values fold under the name rather than being dropped. */}
           {foldColumns && (
-            <div className="row__mobileMeta">
+            <div className="mt-[5px] hidden flex-wrap items-center gap-2 text-detail text-dim max-wide:flex">
               {c2Chip !== null ? (
                 <span className={`chip ${c2Chip}`}>{c2}</span>
               ) : (
@@ -154,35 +190,54 @@ function Row({ record, cols, grid, selected, checked, onSelect, onToggle, foldCo
         </div>
       </div>
 
-      {/* Always inside .row__cell, even when the value is a chip — otherwise a
-          bare chip escapes the rule that hides these columns when they fold,
-          and shows up twice. */}
-      <div className="row__cell">
-        {c2Chip !== null ? <span className={`chip ${c2Chip}`}>{c2}</span> : c2}
-      </div>
-      <div className="row__cell">{c3}</div>
-      <div className="row__cell">{c4}</div>
+      {/* Always wrapped, even when the value is a chip — otherwise a bare chip
+          escapes the rule that hides these columns when they fold, and shows up
+          twice. */}
+      <Cell>{c2Chip !== null ? <span className={`chip ${c2Chip}`}>{c2}</span> : c2}</Cell>
+      <Cell>{c3}</Cell>
+      <Cell>{c4}</Cell>
     </div>
   );
 }
 
+/** A secondary column. Flex so a chip inside does not stretch to fill it. */
+const Cell = ({ children }) => (
+  <div className="flex min-w-0 items-center overflow-hidden truncate whitespace-nowrap text-detail text-muted max-wide:hidden">
+    {children}
+  </div>
+);
+
 function BulkBar({ count, total, verbs, onSelectAll, onClear }) {
   return (
-    <div className="bulk">
-      <span className="bulk__count">
+    <div className="flex h-bulkbar flex-none items-center gap-2.5 bg-ink px-4 text-white max-narrow:gap-1.5 max-narrow:overflow-x-auto max-narrow:px-3">
+      <span className="whitespace-nowrap text-detail font-semibold">
         {count} record{count === 1 ? '' : 's'} selected
       </span>
-      <button type="button" className="bulk__link" onClick={onSelectAll}>
+      <button
+        type="button"
+        onClick={onSelectAll}
+        className="cursor-pointer border-0 bg-none p-0 text-detail text-blue-on-dark"
+      >
         Select all {total}
       </button>
-      <span className="bulk__divider" />
-      {verbs.map((v) => (
-        <button key={v} type="button" className="bulk__verb">
+      <span className="h-[18px] w-px bg-[#4a4f57]" />
+      {verbs.map((v, i) => (
+        <button
+          key={v}
+          type="button"
+          className={`h-[26px] cursor-pointer whitespace-nowrap border-0 bg-transparent px-2.5 text-detail text-white hover:bg-ink-2 ${
+            i === 0 ? 'font-semibold' : ''
+          }`}
+        >
           {v}
         </button>
       ))}
-      <span className="bulk__spacer" style={{ flex: '1 1 auto' }} />
-      <button type="button" className="bulk__clear" onClick={onClear}>
+      <span className="flex-1" />
+      <button
+        type="button"
+        onClick={onClear}
+        className="cursor-pointer border-0 bg-none text-detail text-crumb-sep"
+      >
         Clear
       </button>
     </div>
@@ -193,49 +248,45 @@ function BulkBar({ count, total, verbs, onSelectAll, onClear }) {
 
 function DeniedState() {
   return (
-    <div className="state">
-      <div className="state__lock">
+    <State>
+      <div className="mb-[14px] text-faint">
         <LockIcon />
       </div>
-      <h2 className="state__title">Litigation is closed to your role</h2>
-      <p className="state__body">
+      <StateTitle>Litigation is closed to your role</StateTitle>
+      <StateBody>
         This drawer is restricted to Legal Counsel and the General Counsel. You can see that it
         exists and how many records it holds, but not their names.
-      </p>
-      <p className="state__body">
+      </StateBody>
+      <StateBody>
         That is deliberate: a folder listing should never leak the existence of a matter.
-      </p>
-      <div className="state__actions">
-        <button type="button" className="btn btn--primary">
-          Request access
-        </button>
-        <button type="button" className="btn">
-          Who can grant it
-        </button>
-      </div>
-      <p className="state__note">
+      </StateBody>
+      <StateActions>
+        <Btn primary>Request access</Btn>
+        <Btn>Who can grant it</Btn>
+      </StateActions>
+      <StateNote>
         Requests go to Rachel Tan, Legal Counsel. This attempt is already in the audit trail.
-      </p>
-    </div>
+      </StateNote>
+    </State>
   );
 }
 
 function EmptyState({ area }) {
   const isApprovals = area === 'approvals';
   return (
-    <div className="state">
-      <h2 className="state__title">
+    <State>
+      <StateTitle>
         {isApprovals ? 'Nothing completed yet this week' : 'Nothing here'}
-      </h2>
-      <p className="state__body">
+      </StateTitle>
+      <StateBody>
         {isApprovals
           ? 'Items you approve or return will appear here. The queue clears at the end of each week.'
           : 'No records match this scope.'}
-      </p>
-      <p className="state__note">
+      </StateBody>
+      <StateNote>
         Records you have no clearance for are hidden entirely rather than shown as locked rows.
-      </p>
-    </div>
+      </StateNote>
+    </State>
   );
 }
 
@@ -248,25 +299,25 @@ function ErrorState({ error, onRetry }) {
   const offline = !error?.status;
 
   return (
-    <div className="state">
-      <h2 className="state__title">
+    <State>
+      <StateTitle>
         {denied ? 'You do not have access to this' : offline ? 'Cannot reach the server' : 'That did not load'}
-      </h2>
-      <p className="state__body">
+      </StateTitle>
+      <StateBody>
         {denied
           ? error.message
           : offline
             ? 'The API is not responding. Check that it is running on port 4010.'
             : error?.message}
-      </p>
+      </StateBody>
       {!denied && (
-        <div className="state__actions">
-          <button type="button" className="btn btn--primary" onClick={onRetry}>
+        <StateActions>
+          <Btn primary onClick={onRetry}>
             Try again
-          </button>
-        </div>
+          </Btn>
+        </StateActions>
       )}
-    </div>
+    </State>
   );
 }
 
@@ -275,37 +326,76 @@ function FetchingState() {
   return (
     <div>
       {[0, 1, 2, 3, 4].map((i) => (
-        <div key={i} className="skel" style={{ animationDelay: `${i * 0.12}s` }}>
-          <div className="skel__box" />
-          <div className="skel__lines">
-            <div className="skel__line" style={{ width: `${[54, 42, 62, 38, 48][i]}%` }} />
-            <div className="skel__line--2" style={{ width: `${[34, 26, 40, 22, 30][i]}%` }} />
-          </div>
-        </div>
+        <Skeleton key={i} index={i} wide={[54, 42, 62, 38, 48][i]} narrow={[34, 26, 40, 22, 30][i]} />
       ))}
     </div>
   );
 }
 
+/** A scan in progress, which does report real progress — hence the strip. */
 function LoadingState() {
   return (
     <div>
-      <div className="loading__strip">
+      <div className="flex items-center justify-between border-b border-ochre-border bg-ochre-bg px-4 py-[9px] text-detail text-ochre">
         <span>Scanner — reception is capturing sheet 7 of 18</span>
         <span>39%</span>
       </div>
-      <div className="loading__bar">
-        <div className="loading__fill" style={{ width: '39%' }} />
+      <div className="h-0.5 bg-line-soft">
+        <div className="h-0.5 bg-ochre" style={{ width: '39%' }} />
       </div>
       {[0, 1, 2, 3, 4].map((i) => (
-        <div key={i} className="skel" style={{ animationDelay: `${i * 0.12}s` }}>
-          <div className="skel__box" />
-          <div className="skel__lines">
-            <div className="skel__line" style={{ width: `${[62, 48, 70, 40, 55][i]}%` }} />
-            <div className="skel__line--2" style={{ width: `${[38, 30, 44, 26, 34][i]}%` }} />
-          </div>
-        </div>
+        <Skeleton key={i} index={i} wide={[62, 48, 70, 40, 55][i]} narrow={[38, 30, 44, 26, 34][i]} />
       ))}
     </div>
   );
 }
+
+/* -- Shared state furniture ------------------------------------------------ */
+
+const State = ({ children }) => <div className="max-w-[560px] px-10 py-11">{children}</div>;
+
+const StateTitle = ({ children }) => (
+  <h2 className="mb-2 text-head font-semibold">{children}</h2>
+);
+
+const StateBody = ({ children }) => (
+  <p className="mb-2 text-row leading-[1.6] text-muted">{children}</p>
+);
+
+const StateNote = ({ children }) => (
+  <p className="mt-[14px] text-meta leading-[1.55] text-dim">{children}</p>
+);
+
+const StateActions = ({ children }) => <div className="mt-[18px] flex gap-2">{children}</div>;
+
+const Btn = ({ primary, children, ...props }) => (
+  <button
+    type="button"
+    {...props}
+    className={`inline-flex h-[30px] cursor-pointer items-center justify-center whitespace-nowrap border px-[14px] text-ui font-semibold ${
+      primary
+        ? 'border-blue bg-blue text-white hover:border-blue-hover hover:bg-blue-hover'
+        : 'border-line-strong bg-surface text-ink hover:border-ink'
+    }`}
+  >
+    {children}
+  </button>
+);
+
+/**
+ * One placeholder row. The stagger is what makes a list of five read as
+ * loading rather than as a broken render — one of only two animations the
+ * handoff permits.
+ */
+const Skeleton = ({ index, wide, narrow }) => (
+  <div
+    className="flex animate-[cv-skeleton_1.4s_ease-in-out_infinite] items-center gap-2.5 border-b border-line-faint px-4 py-[13px]"
+    style={{ animationDelay: `${index * 0.12}s` }}
+  >
+    <div className="h-[22px] w-[30px] flex-none bg-skeleton" />
+    <div className="flex-1">
+      <div className="mb-1.5 h-[9px] bg-skeleton" style={{ width: `${wide}%` }} />
+      <div className="h-2 bg-skeleton-2" style={{ width: `${narrow}%` }} />
+    </div>
+  </div>
+);

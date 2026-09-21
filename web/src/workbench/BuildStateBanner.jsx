@@ -18,12 +18,18 @@ export default function BuildStateBanner({ area, scopeIndex }) {
   const partial = info.state === LIVE;
 
   return (
-    <div className={`buildstate ${isReady ? 'buildstate--ready' : 'buildstate--sample'}`}>
+    // Blue where an endpoint exists and the screen is simply not wired to it,
+    // ochre where nothing is built. Two different pieces of news.
+    <div
+      className={`flex flex-none items-start gap-2.5 border-b px-4 py-[9px] text-detail leading-[1.5] ${
+        isReady ? 'border-blue-border bg-blue-bg text-muted' : 'border-ochre-border bg-ochre-bg text-ochre'
+      }`}
+    >
       <span className={`chip ${isReady ? 'chip--blue' : 'chip--ochre'}`}>
         {isReady ? 'Not wired yet' : 'Sample data'}
       </span>
 
-      <div className="buildstate__text">
+      <div className="min-w-0">
         {isReady || partial ? (
           <>
             <strong>These rows are from the design, not the database.</strong>{' '}
@@ -31,7 +37,10 @@ export default function BuildStateBanner({ area, scopeIndex }) {
             {info.endpoint && (
               <>
                 {' '}
-                The endpoint is ready: <code>{info.endpoint}</code>
+                The endpoint is ready:{' '}
+                <code className="whitespace-nowrap border border-line-strong bg-surface px-1 font-mono text-chip">
+                  {info.endpoint}
+                </code>
               </>
             )}
           </>

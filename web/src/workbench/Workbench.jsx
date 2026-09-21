@@ -311,17 +311,12 @@ export default function Workbench() {
     source.status,
   ]);
 
-  const shellClass = [
-    'wb',
-    scopeOpen ? 'is-scope-open' : '',
-    isPhone ? `wb--pane-${mobilePane}` : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
-
   return (
-    <div className="wb__scroll">
-      <div className={shellClass}>
+    // Above 1180px this is a fixed-minimum-width application that scrolls
+    // sideways rather than reflowing, which is what the handoff specifies.
+    // Below it, the min-width is dropped and the panes rearrange instead.
+    <div className="h-screen overflow-y-hidden overflow-x-auto max-wide:overflow-x-hidden">
+      <div className="flex h-screen min-w-wide flex-col bg-desk max-wide:min-w-0">
         <TabStrip
           tabs={TABS}
           active={tab}
@@ -355,17 +350,17 @@ export default function Workbench() {
           }}
         />
 
-        <div className="wb__body">
+        <div className="flex min-h-0 flex-1">
           {/* Tapping outside the drawer closes it, the way a drawer should.
-              Rendered purely on `scopeOpen` and hidden by CSS above the
-              breakpoint, so the 1180px threshold lives in exactly one place
-              rather than being duplicated in JS where the two can drift. */}
+              Rendered purely on `scopeOpen` and hidden above the breakpoint by
+              a utility, so the 1180px threshold lives in one place rather than
+              being duplicated in JS where the two can drift. */}
           {scopeOpen && (
             <button
               type="button"
-              className="scope__scrim"
               aria-label="Close the scope drawer"
               onClick={() => setScopeOpen(false)}
+              className="fixed inset-0 z-[35] cursor-pointer border-0 bg-[rgba(26,29,33,0.35)] p-0 wide:hidden"
             />
           )}
 
@@ -375,6 +370,7 @@ export default function Workbench() {
             items={scopeItems}
             activeIndex={scopeIndex}
             onSelect={goScope}
+            open={scopeOpen}
           />
 
           <ListPane
@@ -384,6 +380,9 @@ export default function Workbench() {
             selectedIndex={row}
             onSelectRow={goRow}
             isPhone={isPhone}
+            // One pane at a time on a phone. Decided here rather than in CSS
+            // because the shell already tracks which pane is showing.
+            hidden={isPhone && mobilePane === 'inspector'}
             scopeIndex={scopeIndex}
             foldColumns={isNarrow}
             sortCol={sortCol}
@@ -432,6 +431,7 @@ export default function Workbench() {
             access={ACCESS[tab] ?? ACCESS.repo}
             onChanged={source.reload}
             showBack={isPhone}
+            hidden={isPhone && mobilePane === 'list'}
             onBack={() => setMobilePane('list')}
           />
         </div>

@@ -132,6 +132,9 @@
   --shadow-*: initial;
   --shadow-sheet: 0 1px 3px rgba(26, 29, 33, 0.14);
   --shadow-thumb: 0 0 0 2px #dce6f8;
+  /* A menu floating over content has to read as detached, and there is no
+     arrangement of 1px borders that conveys it. The only other exception. */
+  --shadow-menu: 0 8px 24px rgba(26, 29, 33, 0.14);
 
   /* -- Breakpoints --------------------------------------------------------
 

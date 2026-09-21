@@ -247,11 +247,6 @@
    is how a screen opts out of the shell's `overflow: hidden`, and it will end
    up in theme.css rather than being deleted.
    ------------------------------------------------------------------------- */
-.allow-scroll {
-  height: auto;
-  min-height: 100vh;
-  overflow-y: auto;
-}
 
 .field {
   display: block;

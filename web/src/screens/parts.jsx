@@ -147,13 +147,15 @@ export function Callout({ tone = 'blue', className = '', children }) {
 
 /* -- Explanation rail ------------------------------------------------------
 
-   Hidden below 900px rather than squeezed. These notes are policy, and policy
-   at four words a line is not readable.
+   Below 900px this moves beneath the card rather than vanishing: the notes are
+   explanation, not chrome, and somebody on a narrow window has the same
+   questions about what the sign-in protects as anybody else. The parent turns
+   the row into a column at the same breakpoint.
    ------------------------------------------------------------------------- */
 
 export function Rail({ title, notes, foot }) {
   return (
-    <aside className="w-[352px] shrink-0 border-l border-line bg-surface-2 px-8 py-10 max-[900px]:hidden">
+    <aside className="w-[352px] shrink-0 border-l border-line bg-surface-2 px-8 py-10 max-[900px]:w-full max-[900px]:border-l-0 max-[900px]:border-t max-[900px]:px-5 max-[900px]:py-7">
       <Label>{title}</Label>
       {notes.map((n) => (
         <div className="border-b border-line-soft py-[14px]" key={n.title}>

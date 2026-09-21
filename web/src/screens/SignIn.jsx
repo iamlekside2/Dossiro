@@ -45,8 +45,8 @@ export default function SignIn() {
   const [step, setStep] = useState('credentials');
 
   return (
-    <div className="flex min-h-screen bg-surface-3">
-      <div className="flex min-w-0 flex-1 items-center justify-center px-6 py-12">
+    <div className="allow-scroll flex min-h-screen bg-surface-3 max-[900px]:flex-col">
+      <div className="flex min-w-0 flex-1 items-center justify-center px-6 py-12 max-[900px]:px-4 max-[900px]:py-8">
         {step === 'credentials' ? (
           <Credentials onSignedIn={() => setStep('device')} />
         ) : (

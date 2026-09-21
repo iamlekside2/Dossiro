@@ -46,6 +46,7 @@ const BODIES = {
 };
 
 export default function Inspector({
+  hidden,
   area,
   paneSet,
   active,
@@ -84,24 +85,41 @@ export default function Inspector({
   const illustrationNote = ILLUSTRATION_NOTE[area] ?? ILLUSTRATION_NOTE.repo;
 
   return (
-    <div className="inspector">
-      <div className="inspector__backRow">
+    // 430px above the fold, 380 between 760 and 1180, and the full width on a
+    // phone where it replaces the list entirely.
+    <div
+      className={`min-h-0 w-inspector flex-none flex-col border-l border-line bg-surface-2 max-wide:w-[380px] max-narrow:w-full max-narrow:border-l-0 ${
+        hidden ? 'hidden' : 'flex'
+      }`}
+    >
+      <div className="flex items-stretch">
         {/* Phone only: the inspector replaces the list, so it needs a way out. */}
         {showBack && (
-          <button type="button" className="inspector__back" onClick={onBack}>
+          <button
+            type="button"
+            onClick={onBack}
+            className="hidden h-[30px] flex-none cursor-pointer items-center gap-[7px] whitespace-nowrap border-0 border-b border-r border-line bg-surface-3 px-3 text-ui font-semibold text-blue max-narrow:flex"
+          >
             <span aria-hidden="true">‹</span>
             <span>{record?.[1] ? 'List' : 'Back'}</span>
           </button>
         )}
-        <div className="inspector__tabs" role="tablist" style={{ flex: '1 1 auto', minWidth: 0 }}>
+        <div
+          role="tablist"
+          className="flex h-instabs min-w-0 flex-1 items-stretch border-b border-line max-narrow:overflow-x-auto max-narrow:[scrollbar-width:none] max-narrow:[&::-webkit-scrollbar]:hidden"
+        >
           {paneSet.map(([id, label]) => (
             <button
               key={id}
               type="button"
               role="tab"
               aria-selected={id === active}
-              className={`itab${id === active ? ' is-active' : ''}`}
               onClick={() => onSelect(id)}
+              className={`cursor-pointer whitespace-nowrap border-0 border-r border-line px-[13px] text-detail text-ink max-narrow:h-full max-narrow:px-[14px] ${
+                id === active
+                  ? 'bg-surface font-semibold shadow-[inset_0_-2px_0_var(--color-blue)]'
+                  : 'bg-transparent hover:bg-line-soft'
+              }`}
             >
               {label}
             </button>
@@ -113,13 +131,13 @@ export default function Inspector({
           above an invented contract is the most misleading state in the app,
           and the note disappears pane by pane as each one is wired. */}
       {illustrated && (
-        <div className="inspector__sampleNote">
-          <span className="chip chip--ochre">Illustration</span>
+        <div className="flex items-start gap-2 border-b border-ochre-border bg-ochre-bg px-3 py-2 text-meta leading-[1.45] text-ochre">
+          <span className="chip chip--ochre mt-px flex-none">Illustration</span>
           <span>{illustrationNote}</span>
         </div>
       )}
 
-      <div className="inspector__body">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {/* Only one body mounts at a time, so each keeps its own local state
             (signature mode, passcode toggle) scoped to a single visit. */}
         {record ? (
