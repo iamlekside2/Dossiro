@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import api from '../../lib/api.js';
+import { ins } from './ins.js';
+import { btn, callout, chip } from '../../ui.js';
+import { M } from '../../form.js';
 
 /**
  * Inspector bodies for a branch.
@@ -35,14 +38,14 @@ function useAction(onChanged) {
 function Feedback({ error, done }) {
   if (error) {
     return (
-      <div className="callout callout--red" style={{ marginTop: 12 }}>
+      <div className={callout('red')} style={{ marginTop: 12 }}>
         {error}
       </div>
     );
   }
   if (done) {
     return (
-      <div className="callout" style={{ marginTop: 12 }}>
+      <div className={callout()} style={{ marginTop: 12 }}>
         {done}
       </div>
     );
@@ -75,7 +78,7 @@ export function BranchPane({ record, onChanged }) {
   }, []);
 
   if (!branch || !form) {
-    return <div className="ins">Select a branch.</div>;
+    return <div className={ins.pane}>Select a branch.</div>;
   }
 
   const set = (k) => (e) =>
@@ -83,23 +86,23 @@ export function BranchPane({ record, onChanged }) {
 
   return (
     <div>
-      <div className="ins__section">
-        <div className="ins__label">Branch</div>
+      <div className={ins.section}>
+        <div className={ins.label}>Branch</div>
 
-        <label className="field">
-          <span className="field__label">Name</span>
-          <input className="mfield" value={form.name} onChange={set('name')} />
+        <label className={M.field}>
+          <span className={M.fieldLabel}>Name</span>
+          <input className={M.input} value={form.name} onChange={set('name')} />
         </label>
 
-        <label className="field">
-          <span className="field__label">Code</span>
-          <input className="mfield" value={form.code} onChange={set('code')} placeholder="LAG" />
-          <span className="field__hint">Short code used in reports and document references.</span>
+        <label className={M.field}>
+          <span className={M.fieldLabel}>Code</span>
+          <input className={M.input} value={form.code} onChange={set('code')} placeholder="LAG" />
+          <span className={M.fieldHint}>Short code used in reports and document references.</span>
         </label>
 
-        <label className="field">
-          <span className="field__label">Reports to</span>
-          <select className="mfield" value={form.parentId} onChange={set('parentId')}>
+        <label className={M.field}>
+          <span className={M.fieldLabel}>Reports to</span>
+          <select className={M.input} value={form.parentId} onChange={set('parentId')}>
             <option value="">Nothing — this is a top-level branch</option>
             {branches
               // A branch cannot report to itself; the API also refuses cycles.
@@ -112,28 +115,28 @@ export function BranchPane({ record, onChanged }) {
           </select>
         </label>
 
-        <label className="field">
-          <span className="field__label">Address</span>
-          <input className="mfield" value={form.address} onChange={set('address')} />
+        <label className={M.field}>
+          <span className={M.fieldLabel}>Address</span>
+          <input className={M.input} value={form.address} onChange={set('address')} />
         </label>
 
-        <label className="field">
-          <span className="field__label">Phone</span>
-          <input className="mfield" value={form.phone} onChange={set('phone')} />
+        <label className={M.field}>
+          <span className={M.fieldLabel}>Phone</span>
+          <input className={M.input} value={form.phone} onChange={set('phone')} />
         </label>
 
         <label style={{ display: 'flex', gap: 9, alignItems: 'center', margin: '12px 0 0', cursor: 'pointer' }}>
           <input type="checkbox" checked={form.isHeadOffice} onChange={set('isHeadOffice')} />
           <span style={{ fontSize: 13 }}>This is the head office</span>
         </label>
-        <div className="ins__note">
+        <div className={ins.note}>
           Only one branch can be the head office. Setting this clears it elsewhere.
         </div>
 
         <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
           <button
             type="button"
-            className="btn btn--primary"
+            className={btn('primary')}
             disabled={busy}
             onClick={() =>
               run(
@@ -157,29 +160,29 @@ export function BranchPane({ record, onChanged }) {
         <Feedback error={error} done={done} />
       </div>
 
-      <div className="ins__section">
-        <div className="ins__label">At this branch</div>
-        <div className="kvrow">
-          <span className="kv__k">People posted</span>
+      <div className={ins.section}>
+        <div className={ins.label}>At this branch</div>
+        <div className={ins.kvrow}>
+          <span className={ins.k}>People posted</span>
           <span style={{ fontSize: 14 }}>{branch.people}</span>
         </div>
-        <div className="kvrow">
-          <span className="kv__k">Cabinets</span>
+        <div className={ins.kvrow}>
+          <span className={ins.k}>Cabinets</span>
           <span style={{ fontSize: 14 }}>{branch.cabinets}</span>
         </div>
-        <div className="kvrow">
-          <span className="kv__k">Branches below</span>
+        <div className={ins.kvrow}>
+          <span className={ins.k}>Branches below</span>
           <span style={{ fontSize: 14 }}>{branch.children}</span>
         </div>
-        <div className="kvrow">
-          <span className="kv__k">Timezone</span>
+        <div className={ins.kvrow}>
+          <span className={ins.k}>Timezone</span>
           <span style={{ fontSize: 14 }}>{branch.timezone}</span>
         </div>
       </div>
 
-      <div className="ins__section">
-        <div className="ins__label">Close this branch</div>
-        <div className="callout callout--ochre">
+      <div className={ins.section}>
+        <div className={ins.label}>Close this branch</div>
+        <div className={callout('ochre')}>
           Closing unposts its {branch.people === 1 ? 'one person' : `${branch.people} people`} and
           releases {branch.cabinets === 1 ? 'its cabinet' : `its ${branch.cabinets} cabinets`}.
           Nobody is deleted and no record is lost — they simply stop belonging to an office.
@@ -187,7 +190,7 @@ export function BranchPane({ record, onChanged }) {
         </div>
         <button
           type="button"
-          className="btn btn--danger"
+          className={btn('danger')}
           style={{ marginTop: 12 }}
           disabled={busy || branch.children > 0}
           onClick={() => run(() => api.branches.close(branch.id), 'Branch closed')}
@@ -222,16 +225,16 @@ export function BranchStaffPane({ record, onChanged }) {
     void load();
   }, []);
 
-  if (!branch) return <div className="ins">Select a branch.</div>;
-  if (people === null) return <div className="ins">Loading…</div>;
+  if (!branch) return <div className={ins.pane}>Select a branch.</div>;
+  if (people === null) return <div className={ins.pane}>Loading…</div>;
 
   const here = people.filter((p) => p.branch?.id === branch.id);
   const elsewhere = people.filter((p) => p.branch?.id !== branch.id);
 
   return (
     <div>
-      <div className="ins__section">
-        <div className="ins__label">
+      <div className={ins.section}>
+        <div className={ins.label}>
           Posted to {branch.name} · {here.length}
         </div>
         {here.length === 0 && (
@@ -255,7 +258,7 @@ export function BranchStaffPane({ record, onChanged }) {
             </div>
             <button
               type="button"
-              className="linkbtn"
+              className={M.linkbtn}
               disabled={busy}
               onClick={() => run(() => api.branches.assign(p.id, null), `${p.displayName} unposted`)}
             >
@@ -266,8 +269,8 @@ export function BranchStaffPane({ record, onChanged }) {
         <Feedback error={error} done={done} />
       </div>
 
-      <div className="ins__section">
-        <div className="ins__label">Post someone here</div>
+      <div className={ins.section}>
+        <div className={ins.label}>Post someone here</div>
         {elsewhere.length === 0 ? (
           <div style={{ fontSize: 13, color: 'var(--text-dim)' }}>Everyone is already posted here.</div>
         ) : (
@@ -291,7 +294,7 @@ export function BranchStaffPane({ record, onChanged }) {
               </div>
               <button
                 type="button"
-                className="linkbtn"
+                className={M.linkbtn}
                 disabled={busy}
                 onClick={() =>
                   run(() => api.branches.assign(p.id, branch.id), `${p.displayName} posted to ${branch.name}`)
@@ -302,7 +305,7 @@ export function BranchStaffPane({ record, onChanged }) {
             </div>
           ))
         )}
-        <div className="ins__note">
+        <div className={ins.note}>
           Somebody is posted to one branch at a time. Posting here removes their previous posting.
         </div>
       </div>
@@ -316,40 +319,40 @@ export function HostnamePane({ record, onChanged }) {
   const host = record?.record;
   const { busy, error, done, run } = useAction(onChanged);
 
-  if (!host) return <div className="ins">Select a web address.</div>;
+  if (!host) return <div className={ins.pane}>Select a web address.</div>;
 
   return (
     <div>
-      <div className="ins__section">
-        <div className="ins__label">Web address</div>
+      <div className={ins.section}>
+        <div className={ins.label}>Web address</div>
         <div style={{ fontSize: 15, fontWeight: 600, wordBreak: 'break-all' }}>{host.hostname}</div>
 
         <div style={{ display: 'flex', gap: 8, margin: '10px 0 0' }}>
-          <span className={`chip ${host.verifiedAt ? 'chip--green' : 'chip--ochre'}`}>
+          <span className={chip(host.verifiedAt ? 'green' : 'ochre')}>
             {host.verifiedAt ? 'Verified' : 'Unverified'}
           </span>
-          {host.isPrimary && <span className="chip chip--blue">Primary</span>}
+          {host.isPrimary && <span className={chip('blue')}>Primary</span>}
         </div>
 
         {!host.verifiedAt && (
           <>
-            <div className="callout callout--ochre" style={{ marginTop: 12 }}>
+            <div className={callout('ochre')} style={{ marginTop: 12 }}>
               This address does not resolve yet. Because a hostname selects a tenant before anyone
               has signed in, it must be proven before it works.
             </div>
 
-            <div className="ins__label" style={{ marginTop: 14 }}>
+            <div className={ins.label} style={{ marginTop: 14 }}>
               Prove ownership
             </div>
             <p style={{ fontSize: 12.5, lineHeight: 1.55, color: 'var(--text-muted)' }}>
               Add a DNS TXT record on <strong>{host.hostname}</strong> with this value, then point
               the address at this deployment:
             </p>
-            <div className="console__link">
+            <div className={M.link}>
               <code>{host.verifyToken}</code>
               <button
                 type="button"
-                className="linkbtn"
+                className={M.linkbtn}
                 onClick={() => navigator.clipboard?.writeText(host.verifyToken ?? '')}
               >
                 Copy
@@ -358,7 +361,7 @@ export function HostnamePane({ record, onChanged }) {
 
             <button
               type="button"
-              className="btn btn--primary"
+              className={btn('primary')}
               style={{ marginTop: 12 }}
               disabled={busy}
               onClick={() => run(() => api.organization.verifyHostname(host.id), 'Address verified')}
@@ -370,13 +373,13 @@ export function HostnamePane({ record, onChanged }) {
 
         {host.verifiedAt && !host.isPrimary && (
           <>
-            <div className="ins__note" style={{ marginTop: 12 }}>
+            <div className={ins.note} style={{ marginTop: 12 }}>
               Making this primary changes the address used to build share links and invitation
               emails for this organisation.
             </div>
             <button
               type="button"
-              className="btn"
+              className={btn()}
               style={{ marginTop: 10 }}
               disabled={busy}
               onClick={() => run(() => api.organization.makePrimary(host.id), 'Now the primary address')}
@@ -387,7 +390,7 @@ export function HostnamePane({ record, onChanged }) {
         )}
 
         {host.isPrimary && (
-          <div className="callout" style={{ marginTop: 12 }}>
+          <div className={callout()} style={{ marginTop: 12 }}>
             Share links and invitation emails for this organisation are built from this address.
           </div>
         )}
@@ -395,8 +398,8 @@ export function HostnamePane({ record, onChanged }) {
         <Feedback error={error} done={done} />
       </div>
 
-      <div className="ins__section">
-        <div className="ins__label">Remove</div>
+      <div className={ins.section}>
+        <div className={ins.label}>Remove</div>
         <p style={{ fontSize: 12.5, lineHeight: 1.55, color: 'var(--text-muted)' }}>
           {host.isPrimary
             ? 'Make another verified address primary first, so existing links keep resolving.'
@@ -404,7 +407,7 @@ export function HostnamePane({ record, onChanged }) {
         </p>
         <button
           type="button"
-          className="btn btn--danger"
+          className={btn('danger')}
           disabled={busy}
           onClick={() => run(() => api.organization.removeHostname(host.id), 'Address removed')}
         >

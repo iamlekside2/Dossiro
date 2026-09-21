@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { chipClass } from '../../data/areas.js';
+import { ins } from './ins.js';
+import { btn, callout, chip } from '../../ui.js';
+import { M } from '../../form.js';
 
 /* -- Details: the generic key/value body --------------------------------- */
 
@@ -132,22 +135,22 @@ function DetailRows({ groups: details, note: detailNote }) {
   return (
     <div>
       {details.map(([label, rows]) => (
-        <div className="ins__section" key={label}>
-          <div className="ins__label">{label}</div>
+        <div className={ins.section} key={label}>
+          <div className={ins.label}>{label}</div>
           {rows.map(([k, v, conf]) => (
-            <div className="kvrow" key={k}>
-              <span className="kv__k">{k}</span>
+            <div className={ins.kvrow} key={k}>
+              <span className={ins.k}>{k}</span>
               <span style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                 <span style={{ fontSize: 14 }}>{v}</span>
-                {conf ? <span className="kv__conf">{conf}</span> : null}
+                {conf ? <span className={ins.conf}>{conf}</span> : null}
               </span>
             </div>
           ))}
         </div>
       ))}
       {detailNote ? (
-        <div className="ins">
-          <div className="callout callout--blue">{detailNote}</div>
+        <div className={ins.pane}>
+          <div className={callout('blue')}>{detailNote}</div>
         </div>
       ) : null}
     </div>
@@ -168,9 +171,9 @@ const DOT = { ochre: 'var(--ochre)', blue: 'var(--blue)', green: 'var(--green)' 
 export function SummaryPane({ record, details }) {
   return (
     <div>
-      <div className="ins__section">
+      <div className={ins.section}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <span className="ins__label ins__label--blue" style={{ marginBottom: 0 }}>
+          <span className={ins.labelBlue} style={{ marginBottom: 0 }}>
             Summary
           </span>
           <span style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>regenerated 2 minutes ago</span>
@@ -182,8 +185,8 @@ export function SummaryPane({ record, details }) {
         </p>
       </div>
 
-      <div className="ins__section">
-        <div className="ins__label">What matters here</div>
+      <div className={ins.section}>
+        <div className={ins.label}>What matters here</div>
         {FINDINGS.map(([tone, text, cite]) => (
           <div key={cite} style={{ display: 'flex', gap: 9, padding: '7px 0' }}>
             <span
@@ -197,7 +200,7 @@ export function SummaryPane({ record, details }) {
         ))}
       </div>
 
-      <div className="ins__section">
+      <div className={ins.section}>
         <div style={{ display: 'flex', gap: 8 }}>
           <input
             placeholder="Ask a question about this document"
@@ -210,11 +213,11 @@ export function SummaryPane({ record, details }) {
               fontSize: 12.5,
             }}
           />
-          <button type="button" className="btn btn--primary">
+          <button type="button" className={btn('primary')}>
             Ask
           </button>
         </div>
-        <div className="ins__note">
+        <div className={ins.note}>
           Every summary cites the clause it came from. Answers link back to the source text.
         </div>
       </div>
@@ -242,13 +245,13 @@ export function EditPane() {
 
   return (
     <div>
-      <div className="ins__section">
+      <div className={ins.section}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
-          <span className="live-dot" style={{ background: 'var(--ochre)' }} />
+          <span className={M.liveDot} style={{ background: 'var(--ochre)' }} />
           <span style={{ fontSize: 13, fontWeight: 600 }}>Two people editing with you</span>
         </div>
 
-        {PRESENCE.map(([initials, name, where, state, chip, colour]) => (
+        {PRESENCE.map(([initials, name, where, state, tone, colour]) => (
           <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '5px 0' }}>
             <span
               style={{
@@ -270,18 +273,18 @@ export function EditPane() {
               <div style={{ fontSize: 13 }}>{name}</div>
               <div style={{ fontSize: 11.5, color: 'var(--text-dim)' }}>{where}</div>
             </div>
-            <span className={`chip ${chip}`}>{state}</span>
+            <span className={chip(tone)}>{state}</span>
           </div>
         ))}
 
-        <div className="callout callout--ochre" style={{ marginTop: 10 }}>
+        <div className={callout('ochre')} style={{ marginTop: 10 }}>
           You and Rachel Tan are both in Clause 11.2. Changes merge automatically, but edits to the
           same sentence will prompt you to choose which version to keep.
         </div>
       </div>
 
-      <div className="ins__section">
-        <div className="ins__label">Page tools</div>
+      <div className={ins.section}>
+        <div className={ins.label}>Page tools</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
           {TOOLS.map((t) => (
             <button
@@ -304,8 +307,8 @@ export function EditPane() {
         </div>
       </div>
 
-      <div className="ins__section">
-        <div className="ins__label">Pages</div>
+      <div className={ins.section}>
+        <div className={ins.label}>Pages</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
           {Array.from({ length: 8 }, (_, i) => {
             const page = i + 1;
@@ -352,13 +355,13 @@ export function EditPane() {
             );
           })}
         </div>
-        <div className="ins__note">
+        <div className={ins.note}>
           Drag to reorder. Edits save as a new version; the archival master is never altered.
         </div>
       </div>
 
-      <div className="ins__section">
-        <div className="ins__label">Comments</div>
+      <div className={ins.section}>
+        <div className={ins.label}>Comments</div>
         {[
           ['Rachel Tan', '11 minutes ago', 'Twelve months is above our standing authority. Flagging for the GC.', 'Clause 11.2'],
           ['Joseph Mensah', 'Yesterday', 'Payment terms match the rate card. No change needed.', 'Clause 7.3'],
@@ -370,7 +373,7 @@ export function EditPane() {
             </div>
             <div style={{ fontSize: 13, lineHeight: 1.5, margin: '4px 0 5px' }}>{body}</div>
             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-              <span className="chip">{anchor}</span>
+              <span className={chip()}>{anchor}</span>
               <button type="button" style={linkBtn}>Resolve</button>
               <button type="button" style={linkBtn}>Reply</button>
             </div>
@@ -418,8 +421,8 @@ const DIFF = [
 export function VersionsPane() {
   return (
     <div>
-      <div className="ins__section">
-        <div className="ins__label">Revisions</div>
+      <div className={ins.section}>
+        <div className={ins.label}>Revisions</div>
         {HISTORY.map(([v, who, note, when, current]) => (
           <div
             key={v}
@@ -441,14 +444,14 @@ export function VersionsPane() {
             <div style={{ fontSize: 11.5, color: 'var(--text-dim)' }}>{who}</div>
           </div>
         ))}
-        <div className="ins__note">
+        <div className={ins.note}>
           Offline edits merge on reconnect. Where two people changed the same sentence, both appear
           as parallel revisions for you to choose between.
         </div>
       </div>
 
-      <div className="ins__section">
-        <div className="ins__label">v3.1 → v3.2 · latest change highlighted</div>
+      <div className={ins.section}>
+        <div className={ins.label}>v3.1 → v3.2 · latest change highlighted</div>
         <div style={{ border: '1px solid var(--border-soft)', background: 'var(--surface)' }}>
           {DIFF.map(([n, op, text]) => {
             const add = op === '+';
@@ -482,8 +485,8 @@ export function VersionsPane() {
           })}
         </div>
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-          <button type="button" className="btn">Restore v3.1</button>
-          <button type="button" className="btn">Side by side</button>
+          <button type="button" className={btn()}>Restore v3.1</button>
+          <button type="button" className={btn()}>Side by side</button>
         </div>
       </div>
     </div>
@@ -506,8 +509,8 @@ export function AccessPane({ access }) {
 
   return (
     <div>
-      <div className="ins__section">
-        <div className="ins__label">Who can reach this</div>
+      <div className={ins.section}>
+        <div className={ins.label}>Who can reach this</div>
         {rows.map(([who, scope, right, key]) => (
           <div
             key={who}
@@ -524,25 +527,25 @@ export function AccessPane({ access }) {
               <div style={{ fontSize: 13 }}>{who}</div>
               <div style={{ fontSize: 11.5, color: 'var(--text-dim)' }}>{scope}</div>
             </div>
-            <span className={`chip ${chipClass(key) ?? ''}`}>{right}</span>
+            <span className={chip(chipClass(key))}>{right}</span>
           </div>
         ))}
 
-        <div className="callout callout--red" style={{ marginTop: 12 }}>
+        <div className={callout('red')} style={{ marginTop: 12 }}>
           {note}
         </div>
 
         <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
           {actions.map((a, i) => (
-            <button key={a} type="button" className={`btn${i === 0 ? ' btn--primary' : ''}`}>
+            <button key={a} type="button" className={btn(i === 0 ? 'primary' : undefined)}>
               {a}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="ins__section">
-        <div className="ins__label">Grant access</div>
+      <div className={ins.section}>
+        <div className={ins.label}>Grant access</div>
 
         <ChipRow label="To" options={['A unit', 'A department', 'One person']} value={to} onChange={setTo} />
         <input
@@ -583,13 +586,13 @@ export function AccessPane({ access }) {
                 />
               ))}
             </div>
-            <div className="ins__note">
+            <div className={ins.note}>
               A passcode overrides inherited role access, including for owners.
             </div>
           </div>
         )}
 
-        <button type="button" className="btn btn--primary" style={{ marginTop: 14 }}>
+        <button type="button" className={btn('primary')} style={{ marginTop: 14 }}>
           Grant {can.toLowerCase()}
         </button>
       </div>

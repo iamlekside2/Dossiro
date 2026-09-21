@@ -16,6 +16,9 @@
    is available to hand-written CSS as well as to `bg-ink`.
    ========================================================================== */
 
+/* Must precede the Tailwind import: CSS requires @import before other rules,
+   and this one carries the face the whole theme is set in. */
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 
 @theme {
@@ -156,12 +159,46 @@
    with `.allow-scroll`.
    ------------------------------------------------------------------------- */
 
+/* -- The two permitted animations -----------------------------------------
+
+   A pulse on live-activity dots and a staggered fade on loading skeletons.
+   The handoff allows these two and no others: no page transitions, no
+   entrance animations.
+   ------------------------------------------------------------------------- */
+
+@keyframes cv-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes cv-skeleton {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
 @layer base {
   html,
   body {
     margin: 0;
     height: 100%;
     overflow: hidden;
+  }
+
+  /* The shell manages its own scrolling; an ordinary page opts back in. */
+  .allow-scroll {
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
   }
 
   body {

@@ -3,6 +3,7 @@ import {
   LATER, LEDE, MODELS, RAIL, TITLES, addressFor, findModel, inviteLocked, stepsFor,
 } from '../setup/plan.js';
 import { useSession } from '../session/SessionContext.jsx';
+import { chip } from '../ui.js';
 
 /**
  * First-run setup: what a tenant administrator completes before their people
@@ -590,10 +591,10 @@ function CabinetsBody() {
               <span
                 className={
                   tail === 'Restricted'
-                    ? 'chip chip--red'
+                    ? chip('red')
                     : tail === 'Passcode' || tail === 'No owner'
-                      ? 'chip chip--ochre'
-                      : 'chip'
+                      ? chip('ochre')
+                      : chip()
                 }
               >
                 {tail}

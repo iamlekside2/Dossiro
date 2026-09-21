@@ -7,15 +7,17 @@
  * which search reuses unchanged.
  */
 
+import { ins } from './ins.js';
+
 const sentence = (s) => (s ? s.charAt(0) + s.slice(1).toLowerCase().replace(/_/g, ' ') : '—');
 
 function Rows({ title, rows }) {
   return (
-    <div className="ins__section">
-      {title && <div className="ins__label">{title}</div>}
+    <div className={ins.section}>
+      {title && <div className={ins.label}>{title}</div>}
       {rows.map(([k, v]) => (
-        <div key={k} className="kvrow">
-          <span className="kv__k">{k}</span>
+        <div key={k} className={ins.kvrow}>
+          <span className={ins.k}>{k}</span>
           <span style={{ fontSize: 14 }}>{v}</span>
         </div>
       ))}
@@ -35,8 +37,8 @@ export function SearchMatchPane({ record }) {
   return (
     <div>
       {parts ? (
-        <div className="ins__section">
-          <div className="ins__label">What matched</div>
+        <div className={ins.section}>
+          <div className={ins.label}>What matched</div>
           <p style={{ fontSize: 14, lineHeight: 1.6, margin: 0 }}>
             {parts.map((part, i) =>
               part.startsWith('<b>') ? (
@@ -58,7 +60,7 @@ export function SearchMatchPane({ record }) {
         ]}
       />
 
-      <div className="ins__section ins__note">
+      <div className={ins.noteSection}>
         Occurrence counts and page numbers are not shown because the index stores a document's
         text, not where in it each word falls. Scanned pages match nothing at all until OCR runs.
       </div>

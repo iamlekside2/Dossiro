@@ -1,13 +1,15 @@
 import { useState } from 'react';
+import { ins } from './ins.js';
+import { btn, callout, chip } from '../../ui.js';
 
 /* Small shared building blocks ------------------------------------------- */
 
 function Section({ label, children, note }) {
   return (
-    <div className="ins__section">
-      {label ? <div className="ins__label">{label}</div> : null}
+    <div className={ins.section}>
+      {label ? <div className={ins.label}>{label}</div> : null}
       {children}
-      {note ? <div className="ins__note">{note}</div> : null}
+      {note ? <div className={ins.note}>{note}</div> : null}
     </div>
   );
 }
@@ -16,7 +18,7 @@ function Actions({ items }) {
   return (
     <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
       {items.map((a, i) => (
-        <button key={a} type="button" className={`btn${i === 0 ? ' btn--primary' : ''}`}>
+        <button key={a} type="button" className={btn(i === 0 ? 'primary' : undefined)}>
           {a}
         </button>
       ))}
@@ -59,7 +61,7 @@ export function LineItemsPane() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center', marginTop: 3 }}>
                 <span style={{ fontSize: 11.5, color: 'var(--text-dim)' }}>{detail}</span>
-                <span className={`chip ${high ? 'chip--green' : 'chip--ochre'}`}>{conf}</span>
+                <span className={chip(high ? 'green' : 'ochre')}>{conf}</span>
               </div>
             </ListRow>
           );
@@ -80,7 +82,7 @@ export function LineItemsPane() {
           <span>$48,912.40</span>
         </div>
 
-        <div className="callout callout--ochre" style={{ marginTop: 12 }}>
+        <div className={callout('ochre')} style={{ marginTop: 12 }}>
           Detention is $860 above the contracted rate of $220 per hour. Approving posts the variance
           to Finance for review.
         </div>
@@ -135,20 +137,20 @@ export function RedactPane() {
                   {file} · {page}
                 </div>
               </div>
-              <span className={`chip ${high ? 'chip--green' : 'chip--ochre'}`}>{conf}</span>
+              <span className={chip(high ? 'green' : 'ochre')}>{conf}</span>
             </div>
           </ListRow>
         );
       })}
 
-      <div className="callout callout--blue" style={{ marginTop: 12 }}>
+      <div className={callout('blue')} style={{ marginTop: 12 }}>
         Redactions are burned into the shared copy. The unredacted original stays in restricted
         storage, reachable only by the records manager and named auditors.
       </div>
 
       <Actions items={[`Apply ${count} redaction${count === 1 ? '' : 's'}`, 'Preview']} />
 
-      <div className="ins__note">
+      <div className={ins.note}>
         Applying also sets HIPAA handling on this record and starts a six-year retention clock.
       </div>
     </Section>
@@ -180,7 +182,7 @@ export function ConvertPane() {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '0 0 auto' }}>
               <span style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>{count}</span>
-              <span className={`chip ${state === 'Running' ? 'chip--ochre' : 'chip--green'}`}>{state}</span>
+              <span className={chip(state === 'Running' ? 'ochre' : 'green')}>{state}</span>
             </div>
           </div>
         </ListRow>
@@ -203,12 +205,12 @@ export function FormPane() {
           ['On submit', 'Starts procurement approval'],
           ['Files to', 'Legal / Vendor / Active'],
         ].map(([k, v]) => (
-          <div className="kvrow" key={k}>
-            <span className="kv__k">{k}</span>
+          <div className={ins.kvrow} key={k}>
+            <span className={ins.k}>{k}</span>
             <span style={{ fontSize: 14 }}>{v}</span>
           </div>
         ))}
-        <div className="callout callout--blue" style={{ marginTop: 12 }}>
+        <div className={callout('blue')} style={{ marginTop: 12 }}>
           Every submission originates a workflow and becomes a searchable record in its own right.
         </div>
         <Actions items={['Publish changes', 'Preview form']} />
@@ -263,14 +265,14 @@ export function RoutePane({ record }) {
           ))}
         </div>
 
-        <div className="callout callout--blue">
+        <div className={callout('blue')}>
           What changed: the liability cap rose from six to twelve months of fees. Everything else is
           unchanged from version 3.1.
         </div>
 
         <Actions items={['Approve and sign', 'Return']} />
 
-        <div className="ins__note">
+        <div className={ins.note}>
           Approval is recorded with your certificate, a timestamp and this device’s fingerprint.
         </div>
       </Section>
@@ -284,22 +286,22 @@ export function DiffPane() {
   return (
     <Section label="What changed">
       {[
-        ['Liability cap', '6 → 12 months of fees', 'chip--ochre', 'Material'],
-        ['Notice period', 'Unchanged, 90 days', 'chip--green', 'No change'],
-        ['Confidentiality carve-out', 'Added as clause 11.3', 'chip--ochre', 'New'],
+        ['Liability cap', '6 → 12 months of fees', 'ochre', 'Material'],
+        ['Notice period', 'Unchanged, 90 days', 'green', 'No change'],
+        ['Confidentiality carve-out', 'Added as clause 11.3', 'ochre', 'New'],
         ['Other edits', 'Two typographic corrections', '', 'Minor'],
-      ].map(([k, v, chip, tag], i, a) => (
+      ].map(([k, v, tone, tag], i, a) => (
         <ListRow key={k} last={i === a.length - 1}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: 13 }}>{k}</div>
               <div style={{ fontSize: 11.5, color: 'var(--text-dim)' }}>{v}</div>
             </div>
-            <span className={`chip ${chip}`}>{tag}</span>
+            <span className={chip(tone)}>{tag}</span>
           </div>
         </ListRow>
       ))}
-      <div className="callout callout--ochre" style={{ marginTop: 12 }}>
+      <div className={callout('ochre')} style={{ marginTop: 12 }}>
         The liability change exceeds your unit’s standing authority and will also require the
         General Counsel.
       </div>
@@ -310,15 +312,15 @@ export function DiffPane() {
 /* -- HR › Employee file --------------------------------------------------- */
 
 const CHECKLIST = [
-  ['Signed contract', true, 'Complete', 'chip--green'],
-  ['Right to work', true, 'Expiring', 'chip--ochre'],
-  ['Bank details', true, 'Complete', 'chip--green'],
-  ['Emergency contact', true, 'Complete', 'chip--green'],
-  ['Policy acknowledgements', true, 'Complete', 'chip--green'],
-  ['Confidentiality agreement', true, 'Complete', 'chip--green'],
-  ['Qualifications', false, 'Outstanding', 'chip--red'],
+  ['Signed contract', true, 'Complete', 'green'],
+  ['Right to work', true, 'Expiring', 'ochre'],
+  ['Bank details', true, 'Complete', 'green'],
+  ['Emergency contact', true, 'Complete', 'green'],
+  ['Policy acknowledgements', true, 'Complete', 'green'],
+  ['Confidentiality agreement', true, 'Complete', 'green'],
+  ['Qualifications', false, 'Outstanding', 'red'],
   ['Probation review', false, 'Scheduled', ''],
-  ['Equipment sheet', false, 'Outstanding', 'chip--red'],
+  ['Equipment sheet', false, 'Outstanding', 'red'],
 ];
 
 export function HrFilePane({ record }) {
@@ -337,7 +339,7 @@ export function HrFilePane({ record }) {
         </div>
 
         <div style={{ marginTop: 14 }}>
-          {CHECKLIST.map(([item, done, state, chip], i) => (
+          {CHECKLIST.map(([item, done, state, tone], i) => (
             <ListRow key={item} last={i === CHECKLIST.length - 1}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                 <span
@@ -357,19 +359,19 @@ export function HrFilePane({ record }) {
                   {done ? '✓' : ''}
                 </span>
                 <span style={{ flex: '1 1 auto', fontSize: 13 }}>{item}</span>
-                <span className={`chip ${chip}`}>{state}</span>
+                <span className={chip(tone)}>{state}</span>
               </div>
             </ListRow>
           ))}
         </div>
 
-        <div className="callout callout--ochre" style={{ marginTop: 12 }}>
+        <div className={callout('ochre')} style={{ marginTop: 12 }}>
           The right-to-work check expires in 41 days. Chasers go out automatically at 30 days.
         </div>
 
         <Actions items={['Request missing documents', 'Open file']} />
 
-        <div className="ins__note">
+        <div className={ins.note}>
           Personnel files are restricted to HR and the employee. Managers see completeness but never
           contents.
         </div>
@@ -421,7 +423,7 @@ export function CapabilitiesPane({ record }) {
           </div>
         </ListRow>
       ))}
-      <div className="callout callout--blue" style={{ marginTop: 12 }}>
+      <div className={callout('blue')} style={{ marginTop: 12 }}>
         Role changes take effect on the next sync and are logged against your name.
       </div>
     </Section>
@@ -449,7 +451,7 @@ export function IntegrationsPane() {
               <div style={{ fontSize: 13 }}>{name}</div>
               <div style={{ fontSize: 11.5, color: 'var(--text-dim)', lineHeight: 1.45 }}>{desc}</div>
             </div>
-            <span className={`chip ${state === 'Connected' ? 'chip--green' : 'chip--ochre'}`}>{state}</span>
+            <span className={chip(state === 'Connected' ? 'green' : 'ochre')}>{state}</span>
           </div>
           <button
             type="button"
@@ -459,7 +461,7 @@ export function IntegrationsPane() {
           </button>
         </ListRow>
       ))}
-      <div className="callout callout--blue" style={{ marginTop: 12 }}>
+      <div className={callout('blue')} style={{ marginTop: 12 }}>
         Word and Acrobat edit the stored record in place. Check out here, save there, and the new
         version returns automatically.
       </div>
@@ -470,28 +472,28 @@ export function IntegrationsPane() {
 /* -- Audit › Compliance --------------------------------------------------- */
 
 const COMPLIANCE = [
-  ['SOC 2 Type II', 'Reporting period 1 Jan – 31 Dec 2026. No exceptions raised.', 'Current', 'chip--green'],
-  ['SOC 1', 'Controls over financial reporting, 12 of 12 operating effectively.', '12 of 12', 'chip--green'],
-  ['SOC 3', 'Public summary report available to customers.', 'Published', 'chip--green'],
-  ['HIPAA readiness', 'Technical safeguards in place; two administrative gaps open.', '2 gaps', 'chip--ochre'],
-  ['Retention and legal hold', '7 policies enforced, 4 matters under hold.', 'Enforced', 'chip--green'],
+  ['SOC 2 Type II', 'Reporting period 1 Jan – 31 Dec 2026. No exceptions raised.', 'Current', 'green'],
+  ['SOC 1', 'Controls over financial reporting, 12 of 12 operating effectively.', '12 of 12', 'green'],
+  ['SOC 3', 'Public summary report available to customers.', 'Published', 'green'],
+  ['HIPAA readiness', 'Technical safeguards in place; two administrative gaps open.', '2 gaps', 'ochre'],
+  ['Retention and legal hold', '7 policies enforced, 4 matters under hold.', 'Enforced', 'green'],
 ];
 
 export function CompliancePane() {
   return (
     <Section label="Compliance posture">
-      {COMPLIANCE.map(([name, desc, state, chip], i) => (
+      {COMPLIANCE.map(([name, desc, state, tone], i) => (
         <ListRow key={name} last={i === COMPLIANCE.length - 1}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 13 }}>{name}</div>
               <div style={{ fontSize: 11.5, color: 'var(--text-dim)', lineHeight: 1.45 }}>{desc}</div>
             </div>
-            <span className={`chip ${chip}`}>{state}</span>
+            <span className={chip(tone)}>{state}</span>
           </div>
         </ListRow>
       ))}
-      <div className="callout callout--ochre" style={{ marginTop: 12 }}>
+      <div className={callout('ochre')} style={{ marginTop: 12 }}>
         Two HIPAA gaps remain: an unsigned business associate agreement with one processor, and four
         mailboxes still delivering attachments unencrypted.
       </div>
@@ -558,7 +560,7 @@ export function RecoveryPane() {
           <span>14 August 09:41</span>
         </div>
 
-        <div className="callout callout--red" style={{ marginTop: 14 }}>
+        <div className={callout('red')} style={{ marginTop: 14 }}>
           Four matters are under legal hold. They cannot be deleted and will not be overwritten by a
           restore.
         </div>

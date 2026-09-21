@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import api from '../lib/api.js';
 import { useSession } from '../session/SessionContext.jsx';
+import { chip } from '../ui.js';
 import {
   Button, Callout, Field, Modal, ModalActions, ModalLede, ModalRow, ModalTitle, TextInput,
 } from './parts.jsx';
@@ -16,10 +17,10 @@ import {
  */
 
 const STATUS_CHIP = {
-  ACTIVE: 'chip--green',
-  TRIAL: 'chip--blue',
-  SUSPENDED: 'chip--ochre',
-  CLOSED: 'chip--red',
+  ACTIVE: 'green',
+  TRIAL: 'blue',
+  SUSPENDED: 'ochre',
+  CLOSED: 'red',
 };
 
 export default function PlatformConsole() {
@@ -116,7 +117,7 @@ export default function PlatformConsole() {
                       <Slug>{t.slug}</Slug>
                     </Td>
                     <Td>
-                      <span className={`chip ${STATUS_CHIP[t.status] ?? ''}`}>{t.status}</span>
+                      <span className={chip(STATUS_CHIP[t.status])}>{t.status}</span>
                     </Td>
                     <Td>{t.plan}</Td>
                     <Td>
@@ -129,7 +130,7 @@ export default function PlatformConsole() {
                         ? t.domains.map((d) => (
                             <div key={d.domain} className="flex items-center gap-1.5 whitespace-nowrap">
                               {d.domain}
-                              {!d.verifiedAt && <span className="chip chip--ochre">unverified</span>}
+                              {!d.verifiedAt && <span className={chip('ochre')}>unverified</span>}
                             </div>
                           ))
                         : '—'}

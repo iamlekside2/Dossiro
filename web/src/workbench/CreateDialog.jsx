@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import api from '../lib/api.js';
+import { btn, callout } from '../ui.js';
+import { M } from '../form.js';
 
 /**
  * The "New …" dialogs behind the toolbar's first verb.
@@ -102,45 +104,45 @@ export default function CreateDialog({ kind, onClose, onCreated }) {
       : null;
 
   return (
-    <div className="modal" role="dialog" aria-modal="true" aria-label={spec.title}>
-      <form className="modal__card" onSubmit={submit}>
-        <h2 className="console__h1" style={{ fontSize: 19, marginBottom: 4 }}>
+    <div className={M.backdrop} role="dialog" aria-modal="true" aria-label={spec.title}>
+      <form className={M.card} onSubmit={submit}>
+        <h2 className={M.title}>
           {spec.title}
         </h2>
-        <p className="console__lede" style={{ marginBottom: 18 }}>
+        <p className={M.lede}>
           {spec.lede}
         </p>
 
         {!result ? (
           <>
             {spec.fields.map((f) => (
-              <label className="field" key={f.key}>
-                <span className="field__label">
+              <label className={M.field} key={f.key}>
+                <span className={M.fieldLabel}>
                   {f.label}
                   {f.required ? '' : ' (optional)'}
                 </span>
                 <input
-                  className="mfield"
+                  className={M.input}
                   type={f.type ?? 'text'}
                   value={values[f.key] ?? ''}
                   placeholder={f.placeholder}
                   onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
                 />
-                {f.hint && <span className="field__hint">{f.hint}</span>}
+                {f.hint && <span className={M.fieldHint}>{f.hint}</span>}
               </label>
             ))}
 
             {error && (
-              <div className="callout callout--red" style={{ margin: '0 0 14px' }}>
+              <div className={callout('red')} style={{ margin: '0 0 14px' }}>
                 {error}
               </div>
             )}
 
-            <div className="modal__actions">
-              <button type="submit" className="btn btn--primary" disabled={!ready || busy}>
+            <div className={M.actions}>
+              <button type="submit" className={btn('primary')} disabled={!ready || busy}>
                 {busy ? 'Working…' : spec.submit}
               </button>
-              <button type="button" className="btn" onClick={onClose}>
+              <button type="button" className={btn()} onClick={onClose}>
                 Cancel
               </button>
             </div>
@@ -148,16 +150,16 @@ export default function CreateDialog({ kind, onClose, onCreated }) {
         ) : (
           <>
             {handoffLink && (
-              <div className="callout callout--ochre">
+              <div className={callout('ochre')}>
                 {result.delivery === 'sent'
                   ? `An invitation has been emailed to ${result.user?.email}.`
                   : 'Email is switched off, so nothing was sent. Pass this link on yourself:'}
                 {result.delivery !== 'sent' && (
-                  <div className="console__link">
+                  <div className={M.link}>
                     <code>{handoffLink}</code>
                     <button
                       type="button"
-                      className="linkbtn"
+                      className={M.linkbtn}
                       onClick={() => navigator.clipboard?.writeText(handoffLink)}
                     >
                       Copy
@@ -168,7 +170,7 @@ export default function CreateDialog({ kind, onClose, onCreated }) {
             )}
 
             {result.instructions && (
-              <div className="callout callout--ochre">
+              <div className={callout('ochre')}>
                 <strong>{result.hostname} added.</strong> It does not resolve yet.
                 {Array.isArray(result.instructions) ? (
                   <ul style={{ margin: '8px 0 0', paddingLeft: 18 }}>
@@ -185,11 +187,11 @@ export default function CreateDialog({ kind, onClose, onCreated }) {
             )}
 
             {!handoffLink && !result.instructions && (
-              <div className="callout">Created.</div>
+              <div className={callout()}>Created.</div>
             )}
 
-            <div className="modal__actions">
-              <button type="button" className="btn btn--primary" onClick={onClose}>
+            <div className={M.actions}>
+              <button type="button" className={btn('primary')} onClick={onClose}>
                 Done
               </button>
             </div>

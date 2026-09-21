@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { PlayIcon } from '../icons.jsx';
+import { ins } from './ins.js';
+import { btn } from '../../ui.js';
 
 const MEDIA_KINDS = ['MP4', 'MP3', 'M4A'];
 
@@ -171,8 +173,8 @@ function SigningPanel() {
   const [mode, setMode] = useState('draw');
 
   return (
-    <div className="ins">
-      <div className="ins__label">Apply your signature</div>
+    <div className={ins.pane}>
+      <div className={ins.label}>Apply your signature</div>
 
       <div style={{ display: 'flex', border: '1px solid var(--border-strong)', width: 'fit-content' }}>
         {[
@@ -269,8 +271,8 @@ function SigningPanel() {
               ['SHA-256', 'a41f··· 9c02'],
               ['Held on', 'Hardware key, slot 2'],
             ].map(([k, v]) => (
-              <div className="kvrow" key={k}>
-                <span className="kv__k">{k}</span>
+              <div className={ins.kvrow} key={k}>
+                <span className={ins.k}>{k}</span>
                 <span style={{ fontSize: 12.5 }}>{v}</span>
               </div>
             ))}
@@ -279,7 +281,7 @@ function SigningPanel() {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14 }}>
-        <button type="button" className="btn btn--primary">
+        <button type="button" className={btn('primary')}>
           Apply signature
         </button>
         <span style={{ fontSize: 11.5, color: 'var(--text-dim)' }}>
@@ -368,7 +370,7 @@ function MediaPreview({ record }) {
         <div style={{ marginTop: 10, fontSize: 12, color: 'var(--text-ghost)' }}>{name}</div>
       </div>
 
-      <div className="ins__section" style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <div className={ins.section} style={{ display: 'flex', justifyContent: 'space-between' }}>
         <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{meta} · 3 speakers · searchable</span>
         <button
           type="button"

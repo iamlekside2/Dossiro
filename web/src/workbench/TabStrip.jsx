@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { CURRENT_USER } from '../data/areas.js';
 import { AREA_STATE, HIDE_UNBUILT, LIVE, READY, UNBUILT } from '../data/buildState.js';
 import { useSession } from '../session/SessionContext.jsx';
+import { chip } from '../ui.js';
 
 /** The API speaks displayName/tier; the chrome wants name/role/initials. */
 function present(user, organization) {
@@ -139,7 +140,7 @@ export default function TabStrip({ tabs, active, onSelect, counts }) {
 
             <div className="flex items-center justify-between gap-2.5 border-b border-line-soft px-[14px] py-2.5 text-detail text-muted">
               <span>This device</span>
-              <span className={`chip ${deviceTrusted ? 'chip--green' : ''}`}>
+              <span className={chip(deviceTrusted ? 'green' : '')}>
                 {deviceTrusted ? 'Trusted, caching' : 'Not trusted'}
               </span>
             </div>

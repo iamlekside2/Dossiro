@@ -8,6 +8,8 @@ import {
 import { AccessPane, DetailsPane, EditPane, SummaryPane, VersionsPane } from './panes/Core.jsx';
 import { ShareLinkPane } from './panes/Share.jsx';
 import { SearchMatchPane } from './panes/Search.jsx';
+import { ins } from './panes/ins.js';
+import { chip } from '../ui.js';
 import {
   CapabilitiesPane,
   CompliancePane,
@@ -132,7 +134,7 @@ export default function Inspector({
           and the note disappears pane by pane as each one is wired. */}
       {illustrated && (
         <div className="flex items-start gap-2 border-b border-ochre-border bg-ochre-bg px-3 py-2 text-meta leading-[1.45] text-ochre">
-          <span className="chip chip--ochre mt-px flex-none">Illustration</span>
+          <span className={chip('ochre', 'mt-px')}>Illustration</span>
           <span>{illustrationNote}</span>
         </div>
       )}
@@ -151,7 +153,7 @@ export default function Inspector({
             onChanged={onChanged}
           />
         ) : (
-          <div className="ins__section ins__note">Select a row to see its details.</div>
+          <div className={ins.noteSection}>Select a row to see its details.</div>
         )}
       </div>
     </div>

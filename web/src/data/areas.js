@@ -491,21 +491,21 @@ export const SCOPE_FILTERS = {
 /* Chip colour by label. Blue means interaction or AI/system, green allowed,
    ochre attention or confidential, red blocked or restricted. */
 const CHIP_CLASS = {
-  Confidential: 'chip--ochre',
-  Restricted: 'chip--red',
-  Blocked: 'chip--red',
-  Denied: 'chip--red',
-  Revoked: 'chip--red',
-  Allowed: 'chip--green',
-  Matched: 'chip--green',
-  Published: 'chip--green',
-  Filed: 'chip--green',
-  'View only': 'chip--green',
-  System: 'chip--blue',
-  Sign: 'chip--blue',
-  Indexed: 'chip--blue',
-  Variance: 'chip--ochre',
-  Review: 'chip--ochre',
+  Confidential: 'ochre',
+  Restricted: 'red',
+  Blocked: 'red',
+  Denied: 'red',
+  Revoked: 'red',
+  Allowed: 'green',
+  Matched: 'green',
+  Published: 'green',
+  Filed: 'green',
+  'View only': 'green',
+  System: 'blue',
+  Sign: 'blue',
+  Indexed: 'blue',
+  Variance: 'ochre',
+  Review: 'ochre',
   Internal: '',
   Download: '',
   Draft: '',
@@ -517,9 +517,9 @@ export function chipClass(label) {
 
 /** Row-flag colouring: red for hard stops, ochre for attention, else blue. */
 export function flagClass(flag) {
-  if (['Blocked', 'Revoked', 'Denied', 'Suspended'].includes(flag)) return 'chip--red';
-  if (['Review', 'Locked', 'Overdue', 'Invited'].includes(flag)) return 'chip--ochre';
-  return 'chip--blue';
+  if (['Blocked', 'Revoked', 'Denied', 'Suspended'].includes(flag)) return 'red';
+  if (['Review', 'Locked', 'Overdue', 'Invited'].includes(flag)) return 'ochre';
+  return 'blue';
 }
 
 export const DETAIL_NOTES = {

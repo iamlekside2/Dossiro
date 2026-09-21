@@ -1,4 +1,5 @@
 import { LIVE, READY, areaState, isScopeLive } from '../data/buildState.js';
+import { chip } from '../ui.js';
 
 /**
  * Says plainly what is behind the screen you are looking at.
@@ -25,7 +26,7 @@ export default function BuildStateBanner({ area, scopeIndex }) {
         isReady ? 'border-blue-border bg-blue-bg text-muted' : 'border-ochre-border bg-ochre-bg text-ochre'
       }`}
     >
-      <span className={`chip ${isReady ? 'chip--blue' : 'chip--ochre'}`}>
+      <span className={chip(isReady ? 'blue' : 'ochre')}>
         {isReady ? 'Not wired yet' : 'Sample data'}
       </span>
 

@@ -1,6 +1,7 @@
 import { chipClass, flagClass } from '../data/areas.js';
 import BuildStateBanner from './BuildStateBanner.jsx';
 import { LockIcon } from './icons.jsx';
+import { chip } from '../ui.js';
 
 /** `1` means minmax(0, 1fr) — a bare 1fr cannot shrink below its content. */
 function gridTemplate(cols) {
@@ -168,7 +169,7 @@ function Row({ record, cols, grid, selected, checked, onSelect, onToggle, foldCo
             {name}
           </div>
           <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
-            {flag ? <span className={`chip ${flagClass(flag)}`}>{flag}</span> : null}
+            {flag ? <span className={chip(flagClass(flag))}>{flag}</span> : null}
             <span className="truncate text-detail text-dim max-narrow:text-ui" title={meta}>
               {meta}
             </span>
@@ -179,7 +180,7 @@ function Row({ record, cols, grid, selected, checked, onSelect, onToggle, foldCo
           {foldColumns && (
             <div className="mt-[5px] hidden flex-wrap items-center gap-2 text-detail text-dim max-wide:flex">
               {c2Chip !== null ? (
-                <span className={`chip ${c2Chip}`}>{c2}</span>
+                <span className={chip(c2Chip)}>{c2}</span>
               ) : (
                 <span>{c2}</span>
               )}
@@ -193,7 +194,7 @@ function Row({ record, cols, grid, selected, checked, onSelect, onToggle, foldCo
       {/* Always wrapped, even when the value is a chip — otherwise a bare chip
           escapes the rule that hides these columns when they fold, and shows up
           twice. */}
-      <Cell>{c2Chip !== null ? <span className={`chip ${c2Chip}`}>{c2}</span> : c2}</Cell>
+      <Cell>{c2Chip !== null ? <span className={chip(c2Chip)}>{c2}</span> : c2}</Cell>
       <Cell>{c3}</Cell>
       <Cell>{c4}</Cell>
     </div>

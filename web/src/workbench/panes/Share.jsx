@@ -7,6 +7,8 @@
  * missing rather than filled in with something plausible.
  */
 
+import { ins } from './ins.js';
+
 const longDate = (iso) =>
   iso
     ? new Date(iso).toLocaleString('en-GB', {
@@ -22,11 +24,11 @@ const sentence = (s) => (s ? s.charAt(0) + s.slice(1).toLowerCase().replace(/_/g
 
 function Rows({ title, rows }) {
   return (
-    <div className="ins__section">
-      {title && <div className="ins__label">{title}</div>}
+    <div className={ins.section}>
+      {title && <div className={ins.label}>{title}</div>}
       {rows.map(([k, v]) => (
-        <div key={k} className="kvrow">
-          <span className="kv__k">{k}</span>
+        <div key={k} className={ins.kvrow}>
+          <span className={ins.k}>{k}</span>
           <span style={{ fontSize: 14 }}>{v}</span>
         </div>
       ))}
@@ -108,7 +110,7 @@ export function ShareLinkPane({ record }) {
         ]}
       />
 
-      <div className="ins__section ins__note">
+      <div className={ins.noteSection}>
         Every open is written to the audit trail. Time-on-page and per-page attention are not
         recorded yet — that is a separate feature, not a setting on this link.
       </div>
