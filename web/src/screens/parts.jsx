@@ -64,19 +64,31 @@ export const Label = ({ children }) => (
 
 /* -- Fields --------------------------------------------------------------- */
 
-export function Field({ label, hint, children }) {
+/**
+ * `hintTone` turns the hint red for a validation message. The hint slot is
+ * reused rather than a separate error line appearing below it, so the field
+ * does not change height when a password is too short — a form that grows as
+ * you type it is a form you lose your place in.
+ */
+export function Field({ label, hint, hintTone = 'dim', children }) {
   return (
     <label className="mb-[14px] block">
       <span className="mb-[5px] block text-detail font-semibold text-muted">{label}</span>
       {children}
-      {hint ? <span className="mt-[5px] block text-chip text-dim">{hint}</span> : null}
+      {hint ? (
+        <span className={`mt-[5px] block text-chip ${hintTone === 'red' ? 'text-red' : 'text-dim'}`}>
+          {hint}
+        </span>
+      ) : null}
     </label>
   );
 }
 
 const INPUT = 'h-[38px] w-full border border-line-strong bg-surface px-[14px] text-body';
 
-export const TextInput = (props) => <input {...props} className={INPUT} />;
+export const TextInput = ({ className = '', ...props }) => (
+  <input {...props} className={`${INPUT} ${className}`} />
+);
 
 /** Native chevron removed and redrawn, because the platform's differs per OS. */
 export const Select = ({ children, ...props }) => (
@@ -175,6 +187,47 @@ export function Terms({ items }) {
     </ul>
   );
 }
+
+/* -- Modal -----------------------------------------------------------------
+
+   Anchored to the top rather than centred, and the backdrop scrolls, so a tall
+   form on a short window can still be reached.
+   -------------------------------------------------------------------------- */
+
+export function Modal({ label, onSubmit, children }) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={label}
+      className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-[rgba(26,29,33,0.45)] px-5 py-12"
+    >
+      <form
+        onSubmit={onSubmit}
+        className="w-full max-w-[520px] border border-line-strong bg-surface p-[26px]"
+      >
+        {children}
+      </form>
+    </div>
+  );
+}
+
+export const ModalTitle = ({ children }) => (
+  <h2 className="mb-1 text-[19px] font-bold tracking-[-0.02em]">{children}</h2>
+);
+
+export const ModalLede = ({ className = 'mb-[18px]', children }) => (
+  <p className={`max-w-[62ch] text-row leading-[1.6] text-muted ${className}`}>{children}</p>
+);
+
+/** Two fields side by side, stacking on a narrow window. */
+export const ModalRow = ({ children }) => (
+  <div className="grid grid-cols-2 gap-[14px] max-[560px]:grid-cols-1">{children}</div>
+);
+
+export const ModalActions = ({ children }) => (
+  <div className="mt-2 flex gap-2">{children}</div>
+);
 
 /* -- Key/value rows -------------------------------------------------------- */
 

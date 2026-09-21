@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../lib/api.js';
 import { useSession } from '../session/SessionContext.jsx';
+import {
+  BrandLock, Button, Callout, Card, Field, Foot, H1, Lede, SheetPage, TextInput,
+} from './parts.jsx';
 
 /**
  * Where an invitation link lands.
@@ -63,12 +66,12 @@ export default function AcceptInvite() {
   if (loadError) {
     return (
       <Frame>
-        <h1 className="screen__h1">This invitation is not valid</h1>
-        <p className="screen__lede">{loadError}</p>
-        <p className="screen__foot">
+        <H1>This invitation is not valid</H1>
+        <Lede>{loadError}</Lede>
+        <Foot>
           Invitations expire after 14 days and can only be used once. Ask whoever invited you to
           send a new one.
-        </p>
+        </Foot>
       </Frame>
     );
   }
@@ -76,24 +79,26 @@ export default function AcceptInvite() {
   if (!invite) {
     return (
       <Frame>
-        <p className="screen__lede">Checking your invitation…</p>
+        <Lede>Checking your invitation…</Lede>
       </Frame>
     );
   }
 
   return (
     <Frame>
-      <h1 className="screen__h1">Join {invite.organizationName}</h1>
-      <p className="screen__lede">
+      <H1>Join {invite.organizationName}</H1>
+      <Lede>
         Choose a password for <strong>{invite.email}</strong>. You will use it with your email
         address to sign in.
-      </p>
+      </Lede>
 
       <form onSubmit={submit}>
-        <label className="field">
-          <span className="field__label">Password</span>
-          <input
-            className="mfield"
+        <Field
+          label="Password"
+          hintTone={tooShort ? 'red' : 'dim'}
+          hint={tooShort ? `${12 - password.length} more characters needed` : 'At least 12 characters'}
+        >
+          <TextInput
             type="password"
             autoComplete="new-password"
             value={password}
@@ -101,59 +106,47 @@ export default function AcceptInvite() {
             autoFocus
             required
           />
-          <span className="field__hint" style={{ color: tooShort ? 'var(--red)' : undefined }}>
-            {tooShort ? `${12 - password.length} more characters needed` : 'At least 12 characters'}
-          </span>
-        </label>
+        </Field>
 
-        <label className="field">
-          <span className="field__label">Confirm password</span>
-          <input
-            className="mfield"
+        <Field
+          label="Confirm password"
+          hintTone="red"
+          hint={mismatch ? 'These do not match' : null}
+        >
+          <TextInput
             type="password"
             autoComplete="new-password"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             required
           />
-          {mismatch && (
-            <span className="field__hint" style={{ color: 'var(--red)' }}>
-              These do not match
-            </span>
-          )}
-        </label>
+        </Field>
 
-        {error && (
-          <div className="callout callout--red" style={{ margin: '0 0 14px' }}>
-            {error}
-          </div>
-        )}
+        {error && <Callout tone="red" className="mb-[14px]">{error}</Callout>}
 
-        <button type="submit" className="btn btn--primary btn--block" disabled={!ready || busy}>
+        <Button type="submit" tone="primary" block disabled={!ready || busy}>
           {busy ? 'Setting up…' : 'Set password and continue'}
-        </button>
+        </Button>
       </form>
 
       {/* Operator-neutral, and it was also overclaiming: the people who run the
           platform cannot read a tenant's documents either, so singling them out
           as a party who merely cannot read passwords understated it. */}
-      <p className="screen__foot">
+      <Foot>
         This invitation works once. Your password is stored only as a hash — nobody can
         read it, not your administrator and not the people who run this service.
-      </p>
+      </Foot>
     </Frame>
   );
 }
 
 function Frame({ children }) {
   return (
-    <div className="sheetpage">
-      <div className="card card--gate">
-        <div className="brandlock">
-          <img className="brandlock__logo" src="/brand/dossiro-logo.svg" alt="Dossiro" />
-        </div>
+    <SheetPage>
+      <Card width="gate">
+        <BrandLock />
         {children}
-      </div>
-    </div>
+      </Card>
+    </SheetPage>
   );
 }

@@ -53,14 +53,17 @@ export default function PasscodeInput({ value, onChange, length = 6, autoFocus =
   }
 
   return (
-    <div className="digits">
+    <div className="mb-5 flex gap-2">
       {chars.map((c, i) => (
         <input
           key={i}
           ref={(el) => {
             refs.current[i] = el;
           }}
-          className={c ? 'is-filled' : undefined}
+          // A filled box keeps the focus border, so progress through the code
+          // stays visible after the caret has moved on.
+          className={`h-[52px] min-w-0 flex-1 border bg-surface text-center text-sheet font-semibold
+            text-ink outline-none focus:border-blue ${c ? 'border-blue' : 'border-line-strong'}`}
           inputMode="numeric"
           autoComplete={i === 0 ? 'one-time-code' : 'off'}
           maxLength={1}

@@ -95,10 +95,11 @@ export default function SignaturePad({ height = 128, className = '', onChange, l
 
   return (
     <div>
+      {/* touch-none so a drag draws rather than scrolling the page. */}
       <canvas
         ref={canvasRef}
-        className={`sigpad ${className}`}
-        style={{ height, width: '100%', display: 'block' }}
+        className={`block w-full touch-none cursor-crosshair border border-dashed border-line-strong bg-surface ${className}`}
+        style={{ height, width: '100%' }}
         aria-label={label}
         role="img"
         onPointerDown={start}
@@ -107,8 +108,8 @@ export default function SignaturePad({ height = 128, className = '', onChange, l
         onPointerLeave={end}
         onPointerCancel={end}
       />
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-        <span style={{ fontSize: 11.5, color: 'var(--text-dim)' }}>
+      <div className="mt-2 flex items-center justify-between">
+        <span className="text-chip text-dim">
           {hasInk ? 'Signature captured' : 'Draw your signature above'}
         </span>
         {/* Reads as a link, but keeps a 44px tap target — the handoff calls for
@@ -116,17 +117,7 @@ export default function SignaturePad({ height = 128, className = '', onChange, l
         <button
           type="button"
           onClick={clear}
-          style={{
-            background: 'none',
-            border: 0,
-            padding: '0 4px',
-            minHeight: 44,
-            minWidth: 44,
-            fontSize: 13,
-            fontWeight: 600,
-            color: 'var(--blue)',
-            cursor: 'pointer',
-          }}
+          className="min-h-[44px] min-w-[44px] cursor-pointer border-0 bg-transparent px-1 text-ui font-semibold text-blue"
         >
           Clear
         </button>

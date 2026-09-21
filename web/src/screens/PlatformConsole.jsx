@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import api from '../lib/api.js';
 import { useSession } from '../session/SessionContext.jsx';
+import {
+  Button, Callout, Field, Modal, ModalActions, ModalLede, ModalRow, ModalTitle, TextInput,
+} from './parts.jsx';
 
 /**
  * Calm Global's operator console.
@@ -54,115 +57,108 @@ export default function PlatformConsole() {
   }
 
   return (
-    <div className="console">
-      <header className="console__bar">
-        <span className="console__mark" aria-hidden="true" />
-        <span className="console__title">Platform</span>
-        <span className="console__sub">Tenant administration</span>
-        <span style={{ flex: '1 1 auto' }} />
-        <span className="console__who">{user?.email}</span>
-        <button type="button" className="console__signout" onClick={signOut}>
+    <div className="allow-scroll min-h-screen bg-surface-3">
+      {/* Ink chrome, so this is never mistaken for a customer's own tenancy. */}
+      <header className="flex h-[46px] items-center gap-2.5 bg-ink px-5 text-white">
+        <span className="h-[14px] w-[14px] shrink-0 bg-blue-on-dark" aria-hidden="true" />
+        <span className="text-row font-bold">Platform</span>
+        <span className="text-detail text-ghost">Tenant administration</span>
+        <span className="flex-1" />
+        <span className="text-detail text-ghost">{user?.email}</span>
+        <button
+          type="button"
+          onClick={signOut}
+          className="h-[26px] cursor-pointer border border-[#4a4f57] bg-transparent px-2.5 text-detail font-semibold text-white hover:bg-ink-2"
+        >
           Sign out
         </button>
       </header>
 
-      <main className="console__body">
-        <div className="console__head">
+      <main className="mx-auto max-w-[1120px] px-5 pb-16 pt-8">
+        <div className="mb-[22px] flex flex-wrap items-start justify-between gap-5">
           <div>
-            <h1 className="console__h1">Tenants</h1>
-            <p className="console__lede">
+            <h1 className="mb-1 text-screen font-bold tracking-[-0.02em]">Tenants</h1>
+            <p className="max-w-[62ch] text-row leading-[1.6] text-muted">
               Each client company is one organisation. There is no self-serve signup — a tenant
               exists because someone here created it.
             </p>
           </div>
-          <button type="button" className="btn btn--primary" onClick={() => setCreating(true)}>
+          <Button tone="primary" onClick={() => setCreating(true)}>
             Provision a tenant
-          </button>
+          </Button>
         </div>
 
-        {error && (
-          <div className="callout callout--red" style={{ marginBottom: 16 }}>
-            {error}
-          </div>
-        )}
+        {error && <Callout tone="red" className="mb-4">{error}</Callout>}
 
         {issued && <IssuedInvite issued={issued} onDismiss={() => setIssued(null)} />}
 
         {loading ? (
-          <p className="console__muted">Loading tenants…</p>
+          <p className="text-row text-dim">Loading tenants…</p>
         ) : (
-          <div className="tw">
-            <table>
+          <div className="overflow-x-auto border border-line bg-surface">
+            <table className="w-full border-collapse text-ui">
               <thead>
                 <tr>
-                  <th>Organisation</th>
-                  <th>Status</th>
-                  <th>Plan</th>
-                  <th>Seats</th>
-                  <th>Documents</th>
-                  <th>Domains</th>
-                  <th />
+                  <Th>Organisation</Th>
+                  <Th>Status</Th>
+                  <Th>Plan</Th>
+                  <Th>Seats</Th>
+                  <Th>Documents</Th>
+                  <Th>Domains</Th>
+                  <Th />
                 </tr>
               </thead>
               <tbody>
                 {tenants.map((t) => (
-                  <tr key={t.id}>
-                    <td>
-                      <div className="console__name">{t.name}</div>
-                      <div className="console__slug">{t.slug}</div>
-                    </td>
-                    <td>
+                  <tr key={t.id} className="[&:last-child>td]:border-b-0">
+                    <Td>
+                      <div className="text-row font-semibold text-ink">{t.name}</div>
+                      <Slug>{t.slug}</Slug>
+                    </Td>
+                    <Td>
                       <span className={`chip ${STATUS_CHIP[t.status] ?? ''}`}>{t.status}</span>
-                    </td>
-                    <td>{t.plan}</td>
-                    <td>
+                    </Td>
+                    <Td>{t.plan}</Td>
+                    <Td>
                       {t.seatsUsed}
                       {t.seatLimit ? ` / ${t.seatLimit}` : ' / ∞'}
-                    </td>
-                    <td>{t.documents}</td>
-                    <td>
+                    </Td>
+                    <Td>{t.documents}</Td>
+                    <Td>
                       {t.domains.length
                         ? t.domains.map((d) => (
-                            <div key={d.domain} className="console__domain">
+                            <div key={d.domain} className="flex items-center gap-1.5 whitespace-nowrap">
                               {d.domain}
                               {!d.verifiedAt && <span className="chip chip--ochre">unverified</span>}
                             </div>
                           ))
                         : '—'}
-                    </td>
-                    <td className="console__actions">
+                    </Td>
+                    <Td className="flex gap-2.5 whitespace-nowrap">
                       {/* The platform realm cannot be suspended — offering the
                           action would only ever produce a refusal. */}
                       {t.isPlatform ? (
-                        <span className="console__slug">This console</span>
+                        <Slug>This console</Slug>
                       ) : t.status === 'SUSPENDED' || t.status === 'CLOSED' ? (
-                        <button type="button" className="linkbtn" onClick={() => setStatus(t.id, 'ACTIVE')}>
-                          Reactivate
-                        </button>
+                        <LinkButton onClick={() => setStatus(t.id, 'ACTIVE')}>Reactivate</LinkButton>
                       ) : (
                         <>
                           {/* Only a trial has anywhere to be activated to.
                               Offering it on an already-active tenant is a
                               button that does nothing. */}
                           {t.status === 'TRIAL' && (
-                            <button type="button" className="linkbtn" onClick={() => setStatus(t.id, 'ACTIVE')}>
-                              Activate
-                            </button>
+                            <LinkButton onClick={() => setStatus(t.id, 'ACTIVE')}>Activate</LinkButton>
                           )}
                           {/* Never fires straight from the button. This locks a
                               whole company out of its own records, and the
                               reason is written to a trail nobody can edit
                               afterwards — so it is asked for first. */}
-                          <button
-                            type="button"
-                            className="linkbtn linkbtn--danger"
-                            onClick={() => setSuspending(t)}
-                          >
+                          <LinkButton danger onClick={() => setSuspending(t)}>
                             Suspend
-                          </button>
+                          </LinkButton>
                         </>
                       )}
-                    </td>
+                    </Td>
                   </tr>
                 ))}
               </tbody>
@@ -170,7 +166,7 @@ export default function PlatformConsole() {
           </div>
         )}
 
-        <p className="console__foot">
+        <p className="mt-4 max-w-[70ch] text-meta leading-[1.6] text-dim">
           Suspending a tenant revokes every session and blocks new sign-ins immediately. Documents
           are untouched — suspension is a commercial state, not a delete.
         </p>
@@ -227,45 +223,41 @@ function SuspendDialog({ tenant, onClose, onConfirm }) {
   }
 
   return (
-    <div className="modal" role="dialog" aria-modal="true" aria-label={`Suspend ${tenant.name}`}>
-      <form className="modal__card" onSubmit={submit}>
-        <h2 className="console__h1" style={{ fontSize: 19, marginBottom: 4 }}>
-          Suspend {tenant.name}
-        </h2>
-        <p className="console__lede" style={{ marginBottom: 18 }}>
-          Every session in the organisation is revoked immediately and nobody there can sign in
-          again until you reactivate them. Their documents are untouched.
-        </p>
+    <Modal label={`Suspend ${tenant.name}`} onSubmit={submit}>
+      <ModalTitle>Suspend {tenant.name}</ModalTitle>
+      <ModalLede>
+        Every session in the organisation is revoked immediately and nobody there can sign in
+        again until you reactivate them. Their documents are untouched.
+      </ModalLede>
 
-        <label className="field">
-          <span className="field__label">Why</span>
-          <input
-            className="mfield"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Non-payment, 60 days overdue"
-            maxLength={500}
-            autoFocus
-            required
-          />
-        </label>
-        <p className="console__lede" style={{ marginTop: -6, marginBottom: 18 }}>
-          Written to the audit trail of both this tenant and the platform. It cannot be edited or
-          removed afterwards.
-        </p>
+      <Field label="Why">
+        <TextInput
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="Non-payment, 60 days overdue"
+          maxLength={500}
+          autoFocus
+          required
+        />
+      </Field>
+      {/* Pulled up against the field it explains, rather than reading as a
+          separate paragraph about nothing in particular. */}
+      <ModalLede className="-mt-1.5 mb-[18px]">
+        Written to the audit trail of both this tenant and the platform. It cannot be edited or
+        removed afterwards.
+      </ModalLede>
 
-        {error && <div className="callout callout--red" style={{ marginBottom: 14 }}>{error}</div>}
+      {error && <Callout tone="red" className="mb-[14px]">{error}</Callout>}
 
-        <div className="modal__actions">
-          <button type="submit" className="btn btn--danger" disabled={!ready || busy}>
-            {busy ? 'Suspending…' : `Suspend ${tenant.name}`}
-          </button>
-          <button type="button" className="btn" onClick={onClose} disabled={busy}>
-            Cancel
-          </button>
-        </div>
-      </form>
-    </div>
+      <ModalActions>
+        <Button type="submit" tone="danger" disabled={!ready || busy}>
+          {busy ? 'Suspending…' : `Suspend ${tenant.name}`}
+        </Button>
+        <Button type="button" onClick={onClose} disabled={busy}>
+          Cancel
+        </Button>
+      </ModalActions>
+    </Modal>
   );
 }
 
@@ -273,7 +265,7 @@ function SuspendDialog({ tenant, onClose, onConfirm }) {
 function IssuedInvite({ issued, onDismiss }) {
   const notSent = issued.delivery !== 'sent';
   return (
-    <div className={`callout ${notSent ? 'callout--ochre' : 'callout--blue'}`} style={{ marginBottom: 16 }}>
+    <Callout tone={notSent ? 'ochre' : 'blue'} className="mb-4">
       <strong>{issued.organization.name} created.</strong>{' '}
       {issued.delivery === 'sent'
         ? `An invitation has been emailed to ${issued.owner.email}.`
@@ -281,23 +273,19 @@ function IssuedInvite({ issued, onDismiss }) {
           ? 'Email is switched off, so nothing was sent. Pass this link to the administrator yourself:'
           : 'The invitation email failed. Pass this link on instead:'}
       {notSent && (
-        <div className="console__link">
-          <code>{issued.inviteUrl}</code>
-          <button
-            type="button"
-            className="linkbtn"
-            onClick={() => navigator.clipboard?.writeText(issued.inviteUrl)}
-          >
+        <div className="mt-2 flex flex-wrap items-center gap-2.5">
+          <code className="break-all border border-line-strong bg-surface px-[7px] py-1 text-meta">
+            {issued.inviteUrl}
+          </code>
+          <LinkButton onClick={() => navigator.clipboard?.writeText(issued.inviteUrl)}>
             Copy
-          </button>
+          </LinkButton>
         </div>
       )}
-      <div style={{ marginTop: 8 }}>
-        <button type="button" className="linkbtn" onClick={onDismiss}>
-          Dismiss
-        </button>
+      <div className="mt-2">
+        <LinkButton onClick={onDismiss}>Dismiss</LinkButton>
       </div>
-    </div>
+    </Callout>
   );
 }
 
@@ -340,66 +328,93 @@ function ProvisionDialog({ onClose, onCreated }) {
   }
 
   return (
-    <div className="modal" role="dialog" aria-modal="true" aria-label="Provision a tenant">
-      <form className="modal__card" onSubmit={submit}>
-        <h2 className="console__h1" style={{ fontSize: 19, marginBottom: 4 }}>
-          Provision a tenant
-        </h2>
-        <p className="console__lede" style={{ marginBottom: 18 }}>
-          Creates the organisation, seeds its roles, and invites its first administrator.
-        </p>
+    <Modal label="Provision a tenant" onSubmit={submit}>
+      <ModalTitle>Provision a tenant</ModalTitle>
+      <ModalLede>
+        Creates the organisation, seeds its roles, and invites its first administrator.
+      </ModalLede>
 
-        <label className="field">
-          <span className="field__label">Company name</span>
-          <input className="mfield" value={form.name} onChange={set('name')} autoFocus required />
-        </label>
+      <Field label="Company name">
+        <TextInput value={form.name} onChange={set('name')} autoFocus required />
+      </Field>
 
-        <div className="modal__row">
-          <label className="field">
-            <span className="field__label">First administrator</span>
-            <input className="mfield" value={form.ownerName} onChange={set('ownerName')} required />
-          </label>
-          <label className="field">
-            <span className="field__label">Their work email</span>
-            <input className="mfield" type="email" value={form.ownerEmail} onChange={set('ownerEmail')} required />
-          </label>
-        </div>
+      <ModalRow>
+        <Field label="First administrator">
+          <TextInput value={form.ownerName} onChange={set('ownerName')} required />
+        </Field>
+        <Field label="Their work email">
+          <TextInput type="email" value={form.ownerEmail} onChange={set('ownerEmail')} required />
+        </Field>
+      </ModalRow>
 
-        <label className="field">
-          <span className="field__label">Email domains</span>
-          <input className="mfield" value={form.domains} onChange={set('domains')} placeholder="acme.com, acme.co.uk" />
-          <span className="field__hint">
-            Comma separated. Staff on these domains resolve to this tenant at sign-in. Public
-            providers like gmail.com are refused.
-          </span>
-        </label>
+      <Field
+        label="Email domains"
+        hint="Comma separated. Staff on these domains resolve to this tenant at sign-in. Public providers like gmail.com are refused."
+      >
+        <TextInput value={form.domains} onChange={set('domains')} placeholder="acme.com, acme.co.uk" />
+      </Field>
 
-        <div className="modal__row">
-          <label className="field">
-            <span className="field__label">Plan</span>
-            <input className="mfield" value={form.plan} onChange={set('plan')} />
-          </label>
-          <label className="field">
-            <span className="field__label">Seat limit</span>
-            <input className="mfield" type="number" min="1" value={form.seatLimit} onChange={set('seatLimit')} placeholder="Unlimited" />
-          </label>
-        </div>
+      <ModalRow>
+        <Field label="Plan">
+          <TextInput value={form.plan} onChange={set('plan')} />
+        </Field>
+        <Field label="Seat limit">
+          <TextInput
+            type="number"
+            min="1"
+            value={form.seatLimit}
+            onChange={set('seatLimit')}
+            placeholder="Unlimited"
+          />
+        </Field>
+      </ModalRow>
 
-        {error && (
-          <div className="callout callout--red" style={{ margin: '0 0 14px' }}>
-            {error}
-          </div>
-        )}
+      {error && <Callout tone="red" className="mb-[14px]">{error}</Callout>}
 
-        <div className="modal__actions">
-          <button type="submit" className="btn btn--primary" disabled={!ready || busy}>
-            {busy ? 'Creating…' : 'Create tenant'}
-          </button>
-          <button type="button" className="btn" onClick={onClose}>
-            Cancel
-          </button>
-        </div>
-      </form>
-    </div>
+      <ModalActions>
+        <Button type="submit" tone="primary" disabled={!ready || busy}>
+          {busy ? 'Creating…' : 'Create tenant'}
+        </Button>
+        <Button type="button" onClick={onClose}>
+          Cancel
+        </Button>
+      </ModalActions>
+    </Modal>
+  );
+}
+
+/* -- Console-local pieces --------------------------------------------------
+
+   The table was styled by element through `.console th` / `.console td`
+   descendant selectors. As components the styling travels with the cell
+   rather than depending on an ancestor's class being present.
+   -------------------------------------------------------------------------- */
+
+const Th = ({ children }) => (
+  <th className="whitespace-nowrap border-b border-line bg-surface-3 px-3 py-2 text-left text-label font-bold uppercase tracking-[0.07em] text-soft">
+    {children}
+  </th>
+);
+
+const Td = ({ className = '', children }) => (
+  <td className={`border-b border-line-faint px-3 py-2.5 align-top text-ink-2 ${className}`}>
+    {children}
+  </td>
+);
+
+const Slug = ({ children }) => <div className="mt-px text-chip text-dim">{children}</div>;
+
+/** Reads as a link but is a button, because it performs an action. */
+function LinkButton({ danger, children, ...props }) {
+  return (
+    <button
+      type="button"
+      {...props}
+      className={`cursor-pointer border-0 bg-transparent p-0 text-detail font-semibold hover:underline ${
+        danger ? 'text-red' : 'text-blue'
+      }`}
+    >
+      {children}
+    </button>
   );
 }

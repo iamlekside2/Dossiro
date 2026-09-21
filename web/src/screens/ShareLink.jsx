@@ -3,6 +3,9 @@ import { useParams } from 'react-router-dom';
 import api from '../lib/api.js';
 import PasscodeInput from './PasscodeInput.jsx';
 import SignaturePad from './SignaturePad.jsx';
+import {
+  Button, Callout, Card, Foot, H1, Label, Lede, SheetPage, Terms, TextInput,
+} from './parts.jsx';
 
 /**
  * What the external recipient sees at cv.link/<token>. No account, no install.
@@ -107,27 +110,27 @@ export default function ShareLink() {
 
   if (loadError) {
     return (
-      <div className="sheetpage">
-        <div className="card card--gate">
+      <SheetPage>
+        <Card width="gate">
           <BrandLock />
-          <h1 className="screen__h1">This link is not available</h1>
-          <p className="screen__lede">{loadError}</p>
-          <p className="screen__foot">
+          <H1>This link is not available</H1>
+          <Lede>{loadError}</Lede>
+          <Foot>
             If you still need the document, ask the person who sent it to issue a new link.
-          </p>
-        </div>
-      </div>
+          </Foot>
+        </Card>
+      </SheetPage>
     );
   }
 
   if (!meta) {
     return (
-      <div className="sheetpage">
-        <div className="card card--gate">
+      <SheetPage>
+        <Card width="gate">
           <BrandLock />
-          <p className="screen__lede">Opening…</p>
-        </div>
-      </div>
+          <Lede>Opening…</Lede>
+        </Card>
+      </SheetPage>
     );
   }
 
@@ -142,12 +145,12 @@ export default function ShareLink() {
 
 function BrandLock() {
   return (
-    <div className="brandlock">
-      <img className="brandlock__logo" src="/brand/dossiro-logo.svg" alt="Dossiro" />
+    <div className="mb-[26px] flex items-center gap-[9px]">
+      <img className="block h-[30px] w-auto" src="/brand/dossiro-logo.svg" alt="Dossiro" />
       {/* No organisation is named here. One deployment serves every customer,
           so naming any of them is wrong for the rest — and the public share
           endpoint withholds the owning organisation on purpose. */}
-      <span className="brandlock__by">secure document link</span>
+      <span className="text-detail text-dim">secure document link</span>
     </div>
   );
 }
@@ -158,22 +161,21 @@ function Gate({ meta, code, setCode, email, setEmail, open, busy, error }) {
   const expires = meta.expiresAt ? new Date(meta.expiresAt) : null;
 
   return (
-    <div className="sheetpage">
-      <div className="card card--gate">
+    <SheetPage>
+      <Card width="gate">
         <BrandLock />
 
-        <h1 className="screen__h1">{meta.sharedBy ?? 'Someone'} shared a document with you</h1>
-        <p className="screen__lede">
+        <H1>{meta.sharedBy ?? 'Someone'} shared a document with you</H1>
+        <Lede>
           {meta.name}.{' '}
           {meta.requiresPassword
             ? `Enter the six-digit code ${(meta.sharedBy ?? 'they').split(' ')[0]} sent you separately.`
             : 'Confirm your address to open it.'}
-        </p>
+        </Lede>
 
         {meta.requiresEmail && (
-          <input
-            className="mfield"
-            style={{ marginBottom: 14 }}
+          <TextInput
+            className="mb-[14px]"
             type="email"
             placeholder="you@company.com"
             value={email}
@@ -186,49 +188,43 @@ function Gate({ meta, code, setCode, email, setEmail, open, busy, error }) {
           <PasscodeInput value={code} onChange={setCode} autoFocus onComplete={open} />
         )}
 
-        {error && (
-          <div className="callout callout--red" style={{ marginBottom: 14 }}>
-            {error}
-          </div>
-        )}
+        {error && <Callout tone="red" className="mb-[14px]">{error}</Callout>}
 
-        <button
-          type="button"
-          className="btn btn--primary btn--block"
+        <Button
+          tone="primary"
+          block
           onClick={open}
           disabled={busy || (meta.requiresPassword && code.length < 6)}
         >
           {busy ? 'Opening…' : 'Open the document'}
-        </button>
+        </Button>
 
         {/* Stated plainly, before entry — not buried after the fact. */}
-        <ul className="terms">
-          <li>
-            <span className="terms__dot" style={{ background: 'var(--green)' }} />
-            You can read this document in your browser.
-          </li>
-          <li>
-            <span className="terms__dot" style={{ background: 'var(--red)' }} />
-            {meta.allowDownload
-              ? 'You can download this document.'
-              : 'You cannot download, print or forward it.'}
-          </li>
-          <li>
-            <span className="terms__dot" style={{ background: 'var(--blue)' }} />
-            Time spent on each page is reported to the sender.
-          </li>
-          <li>
-            <span className="terms__dot" style={{ background: 'var(--blue)' }} />
-            {expires ? `Access ends automatically on ${dayMonth(expires)}.` : 'This link does not expire.'}
-          </li>
-        </ul>
+        <Terms
+          items={[
+            ['green', 'You can read this document in your browser.'],
+            [
+              'red',
+              meta.allowDownload
+                ? 'You can download this document.'
+                : 'You cannot download, print or forward it.',
+            ],
+            ['blue', 'Time spent on each page is reported to the sender.'],
+            [
+              'blue',
+              expires
+                ? `Access ends automatically on ${dayMonth(expires)}.`
+                : 'This link does not expire.',
+            ],
+          ]}
+        />
 
-        <p className="screen__foot">
+        <Foot>
           {expires ? `This link expires on ${fullStamp(expires)}. ` : ''}
           Three attempts remain before it locks.
-        </p>
-      </div>
-    </div>
+        </Foot>
+      </Card>
+    </SheetPage>
   );
 }
 
@@ -246,48 +242,42 @@ function Reader({ meta, token, ticket, isDemo, onSign }) {
   }
 
   return (
-    <div className="reader">
-      <div className="reader__head">
+    <div className="flex min-h-screen flex-col bg-desk">
+      <div className="flex flex-none flex-wrap items-center gap-[14px] border-b border-line bg-surface px-5 py-[14px]">
         <div>
-          <div className="reader__title">{meta.name}</div>
+          <div className="text-body font-semibold">{meta.name}</div>
           {/* The sender is shown only when the API actually supplied one.
               Inventing a name would be worse than omitting it: a recipient who
               reads the wrong company on a confidential document has been
               misinformed by us. */}
-          <div className="reader__sub">
+          <div className="text-detail text-dim">
             {meta.sharedBy ? `Shared by ${meta.sharedBy}` : 'Shared with you'}
             {expires ? ` · expires ${dayMonth(expires)}` : ''}
           </div>
         </div>
 
-        <div className="reader__actions">
-          <button type="button" className="raction raction--primary" onClick={onSign}>
+        <div className="ml-auto flex gap-2">
+          <ReaderAction primary onClick={onSign}>
             Sign
-          </button>
-          <button type="button" className="raction">
-            Ask a question
-          </button>
-          <button
-            type="button"
-            className={meta.allowDownload ? 'raction' : 'raction raction--off'}
+          </ReaderAction>
+          <ReaderAction>Ask a question</ReaderAction>
+          <ReaderAction
+            off={!meta.allowDownload}
             onClick={download}
-            disabled={!meta.allowDownload}
             title={meta.allowDownload ? undefined : 'Downloading is switched off for this link'}
           >
             Download
-          </button>
-          <button
-            type="button"
-            className={meta.allowPrint ? 'raction' : 'raction raction--off'}
-            disabled={!meta.allowPrint}
+          </ReaderAction>
+          <ReaderAction
+            off={!meta.allowPrint}
             title={meta.allowPrint ? undefined : 'Printing is switched off for this link'}
           >
             Print
-          </button>
+          </ReaderAction>
         </div>
       </div>
 
-      <div className="reader__banner">
+      <div className="flex flex-none flex-wrap justify-between gap-[14px] border-b border-red-border bg-red-bg px-5 py-[9px] text-detail text-red">
         <span>
           This document is confidential. Download, print and forwarding are switched off, and your
           reading time is reported to the sender.
@@ -303,125 +293,101 @@ function Reader({ meta, token, ticket, isDemo, onSign }) {
         </span>
       </div>
 
-      <div className="reader__body">
-        <div className="reader__stage">
-          <div className="docsheet">
+      <div className="flex min-h-0 flex-1">
+        <div className="min-w-0 flex-1 overflow-y-auto p-8">
+          <div className="relative mx-auto max-w-[660px] overflow-hidden bg-surface px-11 pb-12 pt-10">
+            {/* Carries the recipient's own address and the time they opened it,
+                so a screenshot identifies who it was sent to. */}
             {meta.watermark && (
-              <div className="docsheet__watermark" aria-hidden="true">
+              <div
+                className="pointer-events-none absolute inset-0 flex rotate-[-24deg] items-center justify-center whitespace-nowrap text-mobile font-bold text-[rgba(26,29,33,0.07)]"
+                aria-hidden="true"
+              >
                 {viewer} · {new Date().toLocaleDateString(LOCALE)}
               </div>
             )}
 
-            <div className="docsheet__label">
+            <div className="mb-5 flex justify-between text-label font-bold uppercase tracking-[0.07em] text-soft">
               <span>Confidential</span>
               <span>CG-LEG-2026-0418</span>
             </div>
 
-            <h2 style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.015em', margin: '0 0 6px' }}>
+            <h2 className="mb-1.5 text-sheet font-bold tracking-[-0.015em]">
               Master Services Agreement
             </h2>
-            <p style={{ fontSize: 13, color: 'var(--text-dim)', margin: '0 0 24px' }}>
-              Northwind Logistics LLC and Calm Global Inc.
-            </p>
+            <p className="mb-6 text-ui text-dim">Northwind Logistics LLC and Calm Global Inc.</p>
 
             {PAGE_LINES.map((w, i) =>
               w === 0 ? (
-                <div key={i} style={{ height: 14 }} />
+                <div key={i} className="h-[14px]" />
               ) : (
                 <div
                   key={i}
-                  style={{ height: 9, width: `${w * 100}%`, background: 'var(--border-faint)', marginBottom: 7 }}
+                  className="mb-[7px] h-[9px] bg-line-faint"
+                  style={{ width: `${w * 100}%` }}
                 />
               ),
             )}
 
             <div
-              style={{
-                margin: '24px 0',
-                padding: '12px 14px',
-                background: 'var(--blue-bg)',
-                borderLeft: '2px solid var(--blue)',
-                fontSize: 14,
-                lineHeight: 1.6,
-                color: 'var(--ink-2)',
-              }}
+              className="my-6 border-l-2 border-blue bg-blue-bg px-[14px] py-3 text-body leading-[1.6] text-ink-2"
             >
               11.2&nbsp;&nbsp;Aggregate liability shall not exceed{' '}
-              <span style={{ background: 'var(--highlight)' }}>twelve (12) months</span> of fees paid
+              <span className="bg-highlight">twelve (12) months</span> of fees paid
               under this agreement.
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 32 }}>
+            <div className="mt-8 grid grid-cols-2 gap-5">
               <div>
-                <div
-                  style={{
-                    fontSize: 17,
-                    fontFamily: 'Georgia, serif',
-                    fontStyle: 'italic',
-                    paddingBottom: 4,
-                    borderBottom: '1px solid var(--ink)',
-                  }}
-                >
+                <div className="border-b border-ink pb-1 font-[Georgia,serif] text-head-lg italic">
                   A. Okoro
                 </div>
-                <div style={{ fontSize: 11.5, color: 'var(--text-dim)', marginTop: 5 }}>
-                  Signed 14 Aug 2026
-                </div>
+                <div className="mt-[5px] text-chip text-dim">Signed 14 Aug 2026</div>
               </div>
               <button
                 type="button"
                 onClick={onSign}
-                style={{
-                  border: '1px dashed var(--ochre-dash)',
-                  background: 'var(--ochre-bg)',
-                  height: 52,
-                  fontSize: 12.5,
-                  color: 'var(--ochre)',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                }}
+                className="h-[52px] cursor-pointer border border-dashed border-ochre-dash bg-ochre-bg text-detail font-semibold text-ochre hover:bg-highlight"
               >
                 Sign here
-                <div style={{ fontWeight: 400, fontSize: 11.5, marginTop: 2 }}>
-                  You, on behalf of Northwind
-                </div>
+                <div className="mt-0.5 text-chip font-normal">You, on behalf of Northwind</div>
               </button>
             </div>
 
-            <div
-              style={{
-                position: 'absolute',
-                right: 44,
-                bottom: 16,
-                fontSize: 11,
-                color: 'var(--text-faint)',
-              }}
-            >
+            <div className="absolute bottom-4 right-11 text-label text-faint">
               {page} of {pages}
             </div>
           </div>
         </div>
 
-        <aside className="reader__rail">
-          <div className="ins__label">Pages</div>
-          <div className="thumbgrid">
+        <aside className="w-[264px] shrink-0 overflow-y-auto border-l border-line bg-surface-2 p-4">
+          <Label>Pages</Label>
+          <div className="grid grid-cols-3 gap-2">
             {Array.from({ length: Math.min(pages, 9) }, (_, i) => (
               <button
                 key={i}
                 type="button"
-                className={`thumb${i + 1 === page ? ' is-active' : ''}`}
+                className={`h-[52px] cursor-pointer border bg-surface p-0 ${
+                  i + 1 === page ? 'border-blue shadow-thumb' : 'border-line'
+                }`}
                 onClick={() => setPage(i + 1)}
                 aria-label={`Page ${i + 1}`}
               />
             ))}
           </div>
 
-          <p style={{ fontSize: 12.5, lineHeight: 1.55, color: 'var(--text-muted)', marginTop: 16 }}>
+          <p className="mt-4 text-detail leading-[1.55] text-muted">
             You are on page {page}. Ask {(meta.sharedBy ?? 'the sender').split(' ')[0]} a question and it
             arrives as a comment on this clause.
           </p>
 
-          <input className="mfield" style={{ height: 36, fontSize: 13, marginTop: 8 }} placeholder={`Ask about page ${page}`} />
+          {/* Its own classes rather than TextInput with overrides: two
+              conflicting height utilities resolve by stylesheet order, not by
+              the order they appear in the attribute. */}
+          <input
+            className="mt-2 h-9 w-full border border-line-strong bg-surface px-[14px] text-ui"
+            placeholder={`Ask about page ${page}`}
+          />
         </aside>
       </div>
     </div>
@@ -434,52 +400,70 @@ function SignStep({ meta, onBack }) {
   const [hasInk, setHasInk] = useState(false);
 
   return (
-    <div className="sheetpage">
-      <div className="card card--sign">
+    <SheetPage>
+      <Card width="sign">
         <BrandLock />
 
-        <h1 className="screen__h1">Sign as Daniel Kowalski</h1>
-        <p className="screen__lede">
+        <H1>Sign as Daniel Kowalski</H1>
+        <Lede>
           Counsel, Northwind Logistics LLC. Your signature completes step 3 of 4 and returns the
           agreement to Calm Global.
-        </p>
+        </Lede>
 
-        <div className="ins__label">Draw your signature</div>
+        <Label>Draw your signature</Label>
         <SignaturePad height={128} onChange={setHasInk} label="Draw your signature" />
-        <p className="screen__foot" style={{ marginTop: 8 }}>
+        <Foot className="mt-2">
           Drawn signatures are bound to this link, your address and this moment in time.
-        </p>
+        </Foot>
 
-        <div className="ins__label" style={{ marginTop: 24 }}>
-          You are agreeing to
+        <div className="mt-6">
+          <Label>You are agreeing to</Label>
         </div>
-        <ul className="terms">
-          {[
-            'Version 3.2, including the liability cap of twelve months of fees.',
-            'That you are authorised to bind Northwind Logistics LLC.',
-            'That an electronic signature carries the same weight as ink.',
-          ].map((t) => (
-            <li key={t}>
-              <span className="terms__dot" style={{ background: 'var(--blue)' }} />
-              {t}
-            </li>
-          ))}
-        </ul>
+        <Terms
+          items={[
+            ['blue', 'Version 3.2, including the liability cap of twelve months of fees.'],
+            ['blue', 'That you are authorised to bind Northwind Logistics LLC.'],
+            ['blue', 'That an electronic signature carries the same weight as ink.'],
+          ]}
+        />
 
-        <div style={{ display: 'flex', gap: 8, marginTop: 24 }}>
-          <button type="button" className="btn btn--primary" disabled={!hasInk}>
+        <div className="mt-6 flex gap-2">
+          <Button tone="primary" disabled={!hasInk}>
             Sign and return
-          </button>
-          <button type="button" className="btn" onClick={onBack}>
-            Back
-          </button>
+          </Button>
+          <Button onClick={onBack}>Back</Button>
         </div>
 
-        <p className="screen__foot">
+        <Foot>
           A sealed copy is emailed to you at {meta.viewerEmail ?? 'your address'}. That copy is yours
           to keep, even though this link cannot download.
-        </p>
-      </div>
-    </div>
+        </Foot>
+      </Card>
+    </SheetPage>
+  );
+}
+
+/* -- Reader toolbar action -------------------------------------------------
+
+   `off` renders struck through and not-allowed rather than hidden. The
+   recipient has to understand the constraint — a missing Download button
+   reads as a broken page, a struck-through one reads as a decision.
+   -------------------------------------------------------------------------- */
+
+function ReaderAction({ primary, off, children, ...props }) {
+  const skin = off
+    ? 'border-line-soft text-crumb-sep line-through cursor-not-allowed'
+    : primary
+      ? 'border-blue bg-blue text-white cursor-pointer'
+      : 'border-line-strong bg-surface text-muted cursor-pointer';
+  return (
+    <button
+      type="button"
+      disabled={off}
+      {...props}
+      className={`inline-flex h-8 items-center border px-[13px] text-ui font-semibold ${skin}`}
+    >
+      {children}
+    </button>
   );
 }
