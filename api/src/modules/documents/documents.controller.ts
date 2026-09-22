@@ -6,6 +6,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
   Res,
@@ -20,7 +21,13 @@ import { CurrentUser, RequireAccess, RequirePermissions } from '../../common/dec
 import { PERMISSIONS } from '../../common/rbac/permissions';
 import type { AuthUser } from '../../common/types/auth.types';
 import { DocumentsService } from './documents.service';
-import { AddVersionDto, ListDocumentsDto, UploadDocumentDto } from './dto/document.dto';
+import {
+  AddVersionDto,
+  ClassifyDocumentDto,
+  ListDocumentsDto,
+  MoveDocumentDto,
+  UploadDocumentDto,
+} from './dto/document.dto';
 
 @ApiTags('documents')
 @Controller('documents')
@@ -168,5 +175,35 @@ export class DocumentsController {
   @ApiOperation({ summary: 'Recover a deleted document (feature 24)' })
   restore(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.documents.restore(user, id);
+  }
+
+  @Patch(':id/folder')
+  @RequireAccess({ param: 'id', type: 'DOCUMENT', level: AccessLevel.WRITE })
+  @ApiOperation({
+    summary: 'Move a document to another folder (feature 4)',
+    description:
+      'Needs write on the destination as well as the document. Refused when the destination is '
+      + 'more sensitive than the document, because a folder raises the floor for what sits in it '
+      + 'and must not silently reclassify what arrives.',
+  })
+  move(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: MoveDocumentDto) {
+    return this.documents.move(user, id, dto.folderId ?? null);
+  }
+
+  @Patch(':id/classification')
+  @RequireAccess({ param: 'id', type: 'DOCUMENT', level: AccessLevel.WRITE })
+  @ApiOperation({
+    summary: 'Change a document’s classification (FIL-9)',
+    description:
+      'Refused when it would drop below the folder the document sits in — otherwise anyone with '
+      + 'write access could declassify a record in place and route around the folder’s own '
+      + 'restriction.',
+  })
+  reclassify(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: ClassifyDocumentDto,
+  ) {
+    return this.documents.reclassify(user, id, dto.classification);
   }
 }

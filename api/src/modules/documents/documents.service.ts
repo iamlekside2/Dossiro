@@ -113,9 +113,14 @@ export class DocumentsService {
           kindFromMime(input.mimeType),
           input.mimeType,
           DocumentStatus.ACTIVE,
-          // Inherit the folder's sensitivity unless told otherwise. Defaulting
-          // to PUBLIC here would be the single most dangerous line in the app.
-          input.classification ?? folderClassification ?? Classification.INTERNAL,
+          // The folder is a floor, never a ceiling: the more sensitive of what
+          // the caller asked for and what the folder carries.
+          //
+          // Taking the caller's value outright — which this did — let an
+          // explicit classification undercut the folder, so a PUBLIC upload
+          // into a RESTRICTED drawer stayed PUBLIC. Move and reclassify both
+          // refuse that, and upload was the way round it.
+          atLeastFolder(input.classification, folderClassification),
           user.id,
           input.channel ?? ChannelType.WEB,
           input.sourceRef ?? null,
@@ -137,11 +142,10 @@ export class DocumentsService {
       );
 
       await this.db.execute(
-        `INSERT INTO change_log (id, "organizationId", "entityType", "entityId", op, "actorId",
+        `INSERT INTO change_log ("organizationId", "entityType", "entityId", op, "actorId",
                                  snapshot, "createdAt")
-              VALUES ($1, $2, 'document', $3, $4, $5, $6, now())`,
+              VALUES ($1, 'document', $2, $3, $4, $5, now())`,
         [
-          newId(),
           user.organizationId,
           doc.id,
           ChangeOp.CREATE,
@@ -218,11 +222,10 @@ export class DocumentsService {
       );
 
       await this.db.execute(
-        `INSERT INTO change_log (id, "organizationId", "entityType", "entityId", op, "actorId",
+        `INSERT INTO change_log ("organizationId", "entityType", "entityId", op, "actorId",
                                  snapshot, "createdAt")
-              VALUES ($1, $2, 'version', $3, $4, $5, $6, now())`,
+              VALUES ($1, 'version', $2, $3, $4, $5, now())`,
         [
-          newId(),
           user.organizationId,
           versionId,
           ChangeOp.CREATE,
@@ -506,9 +509,9 @@ export class DocumentsService {
         [user.id, purgeAfter, DocumentStatus.DELETED, id],
       );
       await this.db.execute(
-        `INSERT INTO change_log (id, "organizationId", "entityType", "entityId", op, "actorId", "createdAt")
-              VALUES ($1, $2, 'document', $3, $4, $5, now())`,
-        [newId(), user.organizationId, id, ChangeOp.DELETE, user.id],
+        `INSERT INTO change_log ("organizationId", "entityType", "entityId", op, "actorId", "createdAt")
+              VALUES ($1, 'document', $2, $3, $4, now())`,
+        [user.organizationId, id, ChangeOp.DELETE, user.id],
       );
     });
 
@@ -640,7 +643,114 @@ export class DocumentsService {
     const clean = base.replace(/[\u0000-\u001f<>:"|?*]/g, '').trim();
     return (clean || 'untitled').slice(0, 255);
   }
+
+  /* -- Move and reclassify ---------------------------------------------------
+
+     Both change where a document sits in the access model, so both need write
+     on what they are leaving and on what they are joining, and both are
+     audited. Neither existed, which is why the Repository toolbar's Move and
+     Classify verbs had nothing to call.
+     ------------------------------------------------------------------------ */
+
+  /** Moves a document to another folder (feature 4). */
+  async move(user: AuthUser, id: string, folderId: string | null) {
+    const doc = await this.findOne(user, id);
+    await this.access.assertDocument(user, id, AccessLevel.WRITE);
+
+    let destination: { classification: Classification; name: string } | null = null;
+    if (folderId) {
+      // Write on the destination too: moving a record into a folder puts it in
+      // front of that folder's readers, which needs the same permission as
+      // filing it there in the first place.
+      await this.access.assertFolder(user, folderId, AccessLevel.WRITE);
+      destination = await this.db.maybeOne<{ classification: Classification; name: string }>(
+        `SELECT classification, name FROM folders
+          WHERE id = $1 AND "organizationId" = $2 AND "deletedAt" IS NULL`,
+        [folderId, user.organizationId],
+      );
+      if (!destination) throw new NotFoundException('Folder not found');
+
+      // A folder raises the floor for everything inside it, so a document
+      // cannot be moved into somewhere more sensitive than itself without
+      // being reclassified first — otherwise the folder's restriction would
+      // apply to a record that does not carry it (FIL-9).
+      if (RANK[destination.classification] > RANK[doc.classification as Classification]) {
+        throw new BadRequestException(
+          `${destination.name} is ${destination.classification.toLowerCase()}. `
+            + 'Reclassify the document to at least that before moving it there.',
+        );
+      }
+    }
+
+    await this.db.execute(
+      'UPDATE documents SET "folderId" = $1, "updatedAt" = now() WHERE id = $2',
+      [folderId, id],
+    );
+
+    await this.audit.record({
+      organizationId: user.organizationId,
+      actorId: user.id,
+      action: AuditAction.DOCUMENT_MOVE,
+      resourceType: 'Document',
+      resourceId: id,
+      resourceName: doc.name as string,
+      metadata: { event: 'document_moved', from: doc.folderId as string | null, to: folderId },
+    });
+
+    return this.findOne(user, id);
+  }
+
+  /**
+   * Changes a document's classification (FIL-9).
+   *
+   * Lowering it below the folder it sits in is refused. The folder's level is
+   * the floor for everything inside it, and a document that could be
+   * declassified in place would let anyone with write access route around the
+   * folder's own restriction.
+   */
+  async reclassify(user: AuthUser, id: string, classification: Classification) {
+    const doc = await this.findOne(user, id);
+    await this.access.assertDocument(user, id, AccessLevel.WRITE);
+
+    if (doc.folderId) {
+      const folder = await this.db.maybeOne<{ classification: Classification; name: string }>(
+        'SELECT classification, name FROM folders WHERE id = $1',
+        [doc.folderId as string],
+      );
+      if (folder && RANK[classification] < RANK[folder.classification]) {
+        throw new BadRequestException(
+          `${folder.name} is ${folder.classification.toLowerCase()}, so a document inside it `
+            + `cannot be ${classification.toLowerCase()}. Move it out first.`,
+        );
+      }
+    }
+
+    await this.db.execute(
+      'UPDATE documents SET classification = $1, "updatedAt" = now() WHERE id = $2',
+      [classification, id],
+    );
+
+    await this.audit.record({
+      organizationId: user.organizationId,
+      actorId: user.id,
+      action: AuditAction.DOCUMENT_UPDATE,
+      resourceType: 'Document',
+      resourceId: id,
+      resourceName: doc.name as string,
+      metadata: { event: 'document_reclassified', from: doc.classification as Classification, to: classification },
+    });
+
+    return this.findOne(user, id);
+  }
 }
+
+/** Sensitivity order, for the two comparisons above. */
+const RANK: Record<Classification, number> = {
+  PUBLIC: 0,
+  INTERNAL: 1,
+  CONFIDENTIAL: 2,
+  RESTRICTED: 3,
+};
 
 function kindFromMime(mime: string): ContentKind {
   if (mime.startsWith('image/')) return ContentKind.IMAGE;
@@ -650,4 +760,19 @@ function kindFromMime(mime: string): ContentKind {
   if (/zip|tar|rar|7z|gzip/.test(mime)) return ContentKind.ARCHIVE;
   if (/pdf|word|excel|powerpoint|text|opendocument|officedocument/.test(mime)) return ContentKind.DOCUMENT;
   return ContentKind.OTHER;
+}
+
+/**
+ * The more sensitive of what was asked for and what the folder carries.
+ *
+ * Defaults to INTERNAL when neither is known. Defaulting to PUBLIC here would
+ * be the single most dangerous line in the application.
+ */
+function atLeastFolder(
+  requested: Classification | undefined,
+  folder: Classification | undefined,
+): Classification {
+  const asked = requested ?? folder ?? Classification.INTERNAL;
+  if (!folder) return asked;
+  return RANK[folder] > RANK[asked] ? folder : asked;
 }

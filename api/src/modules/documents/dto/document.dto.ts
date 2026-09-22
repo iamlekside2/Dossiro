@@ -50,3 +50,23 @@ export class ListDocumentsDto {
   @IsBoolean()
   includeDeleted?: boolean;
 }
+
+/** Where a document should be filed. */
+export class MoveDocumentDto {
+  /**
+   * The destination folder, or null to leave the document unfiled at the root.
+   *
+   * Optional rather than required because "no folder" is a legitimate place for
+   * a document to be — anything captured before somebody has decided where it
+   * belongs sits there.
+   */
+  @IsOptional()
+  @IsString()
+  folderId?: string | null;
+}
+
+/** How sensitive a document is (FIL-9). */
+export class ClassifyDocumentDto {
+  @IsEnum(Classification)
+  classification!: Classification;
+}

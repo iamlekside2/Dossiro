@@ -18,7 +18,16 @@ $all = (Invoke-Api GET '/shares?take=500' $tok).body
 
 # Fixtures for the two states nothing in the seed produces. Created through the
 # API, then aged by hand: waiting a week for an expiry is not a test.
-$doc = (Invoke-Api GET '/documents?take=1' $tok).body.items[0]
+#
+# The document has to be one an anonymous link is allowed to carry. Taking
+# whichever document happened to be first made this suite fail the moment a
+# confidential one sorted to the top — a confidential share must name its
+# recipients, so the fixture was refused and every later assertion collapsed
+# with it.
+$shareable = (Invoke-Api GET '/documents?take=100' $tok).body.items |
+  Where-Object { $_.classification -in @('PUBLIC', 'INTERNAL') }
+$doc = $shareable | Select-Object -First 1
+if (-not $doc) { throw 'No PUBLIC or INTERNAL document to build share fixtures on.' }
 $expired = (Invoke-Api POST '/shares' $tok @{ documentId = $doc.id }).body.share
 $capped = (Invoke-Api POST '/shares' $tok @{ documentId = $doc.id; maxDownloads = 2 }).body.share
 
