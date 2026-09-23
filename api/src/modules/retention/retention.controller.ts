@@ -33,6 +33,17 @@ export class DecisionDto {
 export class RetentionController {
   constructor(private readonly retention: RetentionService) {}
 
+  @Get('policies')
+  @ApiOperation({
+    summary: 'Retention schedules defined by this tenant (GOV-6)',
+    description:
+      'With how many types and documents each one governs. A schedule attached to nothing will '
+      + 'never fire, and the count is what shows it.',
+  })
+  policies(@CurrentUser() user: AuthUser) {
+    return this.retention.policies(user);
+  }
+
   @Get('due')
   @ApiOperation({
     summary: 'Documents whose retention period has elapsed (GOV-7)',

@@ -84,7 +84,8 @@ export const AREA_STATE = {
   admin: {
     state: LIVE,
     endpoint: 'GET /api/users · /roles · /branches · /organization/hostnames',
-    note: 'Personnel, Roles, Branches and Web addresses are live. The remaining scopes are still sample.',
+    note: 'Personnel, Roles, Branches, Web addresses, Retention policies, Recovery and Support access are live. '
+      + 'Classification guardrails and Integrations are still sample.',
   },
 };
 
@@ -92,7 +93,7 @@ export const AREA_STATE = {
 export const LIVE_SCOPES = {
   // Personnel, Roles, Branches, Web addresses — and Support access, which is
   // the tenant's own copy of who from Calm Global has looked inside (PLT-2).
-  admin: [0, 1, 2, 3, 8],
+  admin: [0, 1, 2, 3, 6, 7, 8],
 };
 
 export function areaState(area) {

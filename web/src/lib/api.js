@@ -225,6 +225,13 @@ export const api = {
       request(`/support/tenants/${organizationId}/records?take=${take}`),
   },
 
+  /** Retention schedules and what has fallen due under them (GOV-6, GOV-7). */
+  retention: {
+    policies: () => request('/retention/policies'),
+    due: () => request('/retention/due'),
+    history: () => request('/retention/history'),
+  },
+
   users: {
     list: (params = {}) => request(`/users?${qs(params)}`),
     invite: (body) => request('/users/invite', { method: 'POST', body }),
@@ -255,6 +262,7 @@ export const api = {
     list: (params = {}) => request(`/documents?${qs(params)}`),
     get: (id) => request(`/documents/${id}`),
     versions: (id) => request(`/documents/${id}/versions`),
+    recycleBin: (params = {}) => request(`/documents/recycle-bin?${qs(params)}`),
     /** What this document holds in its type's index fields. */
     fields: (id) => request(`/documents/${id}/fields`),
     setType: (id, documentTypeId) =>

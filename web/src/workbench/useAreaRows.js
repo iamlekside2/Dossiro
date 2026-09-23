@@ -634,6 +634,76 @@ const LIVE = {
       },
     },
 
+    // The schedules themselves, not what has fallen due under them — the
+    // scope is called Retention policies and that is what it should list.
+    6: {
+      label: 'retention policies',
+      async load() {
+        const res = await api.retention.policies();
+        const years = (m) => (m % 12 === 0 ? `${m / 12} years` : `${m} months`);
+        return {
+          rows: res.items.map((p) =>
+            withRecord(
+              [
+                'RET',
+                p.name,
+                p.useTypeAnchor
+                  ? 'Counts from the type’s own date field'
+                  : 'Counts from the day the record arrives',
+                // A schedule attached to no type will never fire, which is
+                // worth saying on the row rather than leaving to be noticed.
+                Number(p.typeCount) === 0 ? 'Attached to nothing' : '',
+                years(p.retainMonths),
+                p.action === 'DESTROY' ? 'Destroy' : p.action === 'REVIEW' ? 'Review first' : 'Notify',
+                `${p.documentCount} record${Number(p.documentCount) === 1 ? '' : 's'}`,
+              ],
+              p,
+            ),
+          ),
+          total: res.total,
+          status: [
+            plural(res.total, 'schedule'),
+            `${res.items.filter((p) => Number(p.typeCount) === 0).length} attached to nothing`,
+            'Clocks start at ingest',
+            'A hold outranks every one of these',
+          ],
+        };
+      },
+    },
+
+    // What is recoverable, and for how much longer.
+    7: {
+      label: 'recoverable records',
+      async load() {
+        const res = await api.documents.recycleBin({ take: 200 });
+        const daysLeft = (iso) =>
+          iso ? Math.max(0, Math.ceil((new Date(iso) - Date.now()) / 86_400_000)) : null;
+        return {
+          rows: res.items.map((d) => {
+            const left = daysLeft(d.purgeAfter);
+            return withRecord(
+              [
+                'DEL',
+                d.name,
+                `Deleted ${since(d.deletedAt)}`,
+                left !== null && left <= 7 ? 'Going soon' : '',
+                left === null ? 'No purge date' : `${left} day${left === 1 ? '' : 's'} left`,
+                d.classification ? d.classification.toLowerCase() : '',
+                shortDate(d.deletedAt),
+              ],
+              d,
+            );
+          }),
+          total: res.total,
+          status: [
+            plural(res.total, 'recoverable record'),
+            'Restoring brings back its history too',
+            'Nothing under a legal hold is ever purged',
+          ],
+        };
+      },
+    },
+
     // Who from Calm Global has looked inside this tenancy (PLT-2). The
     // customer's own copy of the list, reachable without asking us for it.
     8: {

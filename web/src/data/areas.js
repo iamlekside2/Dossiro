@@ -270,6 +270,8 @@ export const FIND_PLACEHOLDER_BY_SCOPE = {
     1: 'Find a role',
     2: 'Find a branch',
     3: 'Find an address',
+    6: 'Find a schedule',
+    7: 'Find a deleted record',
     8: 'Find a support session',
   },
 };
@@ -310,6 +312,8 @@ export const COLS_BY_SCOPE = {
     1: [['Role', 1], ['Key', 150], ['People', 90], ['Permissions', 120]],
     2: [['Branch', 1], ['Code', 90], ['People', 90], ['Reports to', 150]],
     3: [['Web address', 1], ['Status', 130], ['Role', 120], ['Added', 120]],
+    6: [['Schedule', 1], ['Keep for', 110], ['Then', 120], ['Governs', 110]],
+    7: [['Deleted record', 1], ['Recovery', 130], ['Class', 110], ['Deleted', 100]],
     8: [['Why they asked', 1], ['State', 110], ['Scope', 120], ['Asked', 100]],
   },
 };

@@ -245,4 +245,30 @@ export class RetentionService {
     );
     return { items, total: items.length };
   }
+
+  /**
+   * The schedules themselves, with how much each one governs.
+   *
+   * A policy nobody has attached to a type is a rule that will never fire, and
+   * the count is the only thing that distinguishes the two on sight.
+   */
+  async policies(user: AuthUser) {
+    const items = await this.db.query(
+      `SELECT rp.id, rp.name, rp."retainMonths", rp.anchor, rp.action, rp."useTypeAnchor",
+              rp."createdAt",
+              COALESCE(t.n, 0) AS "typeCount",
+              COALESCE(d.n, 0) AS "documentCount"
+         FROM retention_policies rp
+         LEFT JOIN LATERAL (SELECT count(*) AS n FROM document_types
+                             WHERE "retentionPolicyId" = rp.id) t ON TRUE
+         LEFT JOIN LATERAL (SELECT count(*) AS n FROM documents doc
+                             JOIN document_types dt ON dt.id = doc."documentTypeId"
+                            WHERE dt."retentionPolicyId" = rp.id
+                              AND doc."deletedAt" IS NULL) d ON TRUE
+        WHERE rp."organizationId" = $1
+        ORDER BY rp."retainMonths" DESC, rp.name ASC`,
+      [user.organizationId],
+    );
+    return { items, total: items.length };
+  }
 }
