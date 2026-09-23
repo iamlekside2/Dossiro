@@ -284,6 +284,12 @@ export const api = {
       request(`/document-types/${id}/status`, { method: 'PATCH', body: { status } }),
     remove: (id) => request(`/document-types/${id}`, { method: 'DELETE' }),
 
+    /** Which roles may file as this type, plus every role that could. */
+    roles: (id) => request(`/document-types/${id}/roles`),
+    /** Replaces the list; an empty array removes the restriction. */
+    setRoles: (id, roleIds) =>
+      request(`/document-types/${id}/roles`, { method: 'PATCH', body: { roleIds } }),
+
     addField: (id, body) => request(`/document-types/${id}/fields`, { method: 'POST', body }),
     updateField: (id, fieldId, body) =>
       request(`/document-types/${id}/fields/${fieldId}`, { method: 'PATCH', body }),

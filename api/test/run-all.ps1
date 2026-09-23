@@ -17,6 +17,7 @@ $suites = @(
   'document-types-api.ps1',
   'search-fields.ps1',
   'view-without-download.ps1',
+  'type-filing-roles.ps1',
   'retention.ps1',
   'endpoints.ps1'
 )

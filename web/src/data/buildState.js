@@ -73,8 +73,8 @@ export const AREA_STATE = {
   types: {
     state: LIVE,
     endpoint: 'GET /api/document-types',
-    note: 'Real types with their real index fields. Defining and publishing them works; '
-      + 'restricting a type to particular roles does not exist yet.',
+    note: 'Real types with their real index fields. Defining, publishing and restricting who may '
+      + 'file as a type all work.',
   },
   audit: {
     state: LIVE,

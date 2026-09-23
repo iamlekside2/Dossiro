@@ -2,14 +2,13 @@
  * Inspector panes for a document type.
  *
  * Everything shown comes from the row's own record, so the Fields and Type
- * panes make no request of their own. "Who can file it" does not exist yet as
- * a real permission — there is no per-type access control in the schema — so
- * it says so rather than showing an invented list.
+ * panes make no request of their own. "Who can file it" does, because the
+ * answer is a list of roles rather than anything carried on the row.
  */
 import { useEffect, useState } from 'react';
 import api from '../../lib/api.js';
 import { ins } from './ins.js';
-import { chip } from '../../ui.js';
+import { btn, chip } from '../../ui.js';
 
 const KIND_WORD = {
   TEXT: 'Text',
@@ -173,24 +172,139 @@ export function TypeDetailsPane({ record }) {
  */
 export function TypeAccessPane({ record }) {
   const t = record?.record;
+  const [state, setState] = useState({ status: 'loading' });
+  const [chosen, setChosen] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!t?.id) return undefined;
+    let cancelled = false;
+    setState({ status: 'loading' });
+    setError(null);
+
+    api.documentTypes
+      .roles(t.id)
+      .then((res) => {
+        if (cancelled) return;
+        setState({ status: 'ready', ...res });
+        setChosen(new Set(res.roles.filter((r) => r.allowed).map((r) => r.id)));
+      })
+      .catch((err) => !cancelled && setState({ status: 'error', error: err }));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [t?.id]);
+
   if (!t) return <div className={ins.noteSection}>Select a type.</div>;
+  if (state.status === 'loading') return <div className={ins.noteSection}>Loading…</div>;
+  if (state.status === 'error') {
+    return (
+      <div className={ins.noteSection}>
+        {state.error?.message ?? 'Could not load who may file this.'}
+      </div>
+    );
+  }
+
+  const allowed = chosen ?? new Set();
+  const restricted = allowed.size > 0;
+  const dirty =
+    state.roles.some((r) => r.allowed !== allowed.has(r.id));
+
+  function toggle(id) {
+    setChosen((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await api.documentTypes.setRoles(t.id, [...allowed]);
+      setState({ status: 'ready', ...res });
+      setChosen(new Set(res.roles.filter((r) => r.allowed).map((r) => r.id)));
+    } catch (err) {
+      setError(err.body?.message ?? err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div>
       <div className={ins.section}>
         <div className={ins.label}>Who can file it</div>
         <p className="text-detail leading-[1.55] text-muted">
-          Anyone who can add a document to a folder can file it as{' '}
-          <strong>{t.name}</strong>. Access is decided by the folder the record lands in, not by
-          its type.
+          {restricted ? (
+            <>
+              Only the roles ticked below may file a record as <strong>{t.name}</strong>.
+            </>
+          ) : (
+            <>
+              Anyone who can add a document to a folder may file it as <strong>{t.name}</strong>.
+              Tick a role to restrict that.
+            </>
+          )}
         </p>
       </div>
 
       <div className={ins.section}>
-        <div className="border border-ochre-border bg-ochre-bg px-3 py-2.5 text-detail leading-[1.55] text-ochre">
-          Restricting a type to particular roles is not built. The design shows it; the schema has
-          no per-type permission, so there is nothing real to display here yet.
+        {state.roles.map((r) => (
+          <label
+            key={r.id}
+            className="flex cursor-pointer items-start gap-2.5 py-[7px]"
+          >
+            <input
+              type="checkbox"
+              checked={allowed.has(r.id)}
+              onChange={() => toggle(r.id)}
+              className="mt-[3px] h-4 w-4 flex-none accent-blue"
+            />
+            <span className="min-w-0">
+              <span className="block text-[13.5px] font-medium">{r.name}</span>
+              {r.description ? (
+                <span className="block text-chip leading-[1.45] text-dim">{r.description}</span>
+              ) : null}
+            </span>
+          </label>
+        ))}
+
+        {error ? (
+          <div className="mt-3 border border-red-border bg-red-bg px-3 py-2 text-detail text-red">
+            {error}
+          </div>
+        ) : null}
+
+        <div className="mt-3.5 flex items-center gap-2">
+          <button
+            type="button"
+            className={btn('primary')}
+            disabled={!dirty || saving}
+            onClick={save}
+          >
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+          {restricted && (
+            <button
+              type="button"
+              className={btn()}
+              disabled={saving}
+              onClick={() => setChosen(new Set())}
+            >
+              Remove the restriction
+            </button>
+          )}
         </div>
+      </div>
+
+      <div className={ins.noteSection}>
+        This governs filing, not reading. Who may open a record is decided by the folder it sits in
+        and its classification — restricting a type here does not hide anything already filed as it.
       </div>
     </div>
   );

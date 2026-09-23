@@ -107,6 +107,14 @@ export class ValueDto {
   confidence?: number;
 }
 
+export class TypeRolesDto {
+  /** Empty removes the restriction. Omitted is treated the same way. */
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  roleIds?: string[];
+}
+
 export class AssignTypeDto {
   /** null returns the document to untyped. */
   @IsOptional()
@@ -211,6 +219,32 @@ export class DocumentTypesController {
     @Param('fieldId') fieldId: string,
   ) {
     return this.types.removeField(user, id, fieldId);
+  }
+
+  /* -- Who may file as this type -------------------------------------------- */
+
+  @Get('document-types/:id/roles')
+  @ApiOperation({
+    summary: 'Which roles may file a record as this type',
+    description:
+      'Returns every role in the organisation with a flag for each, so the answer and the choices '
+      + 'arrive together. `restricted: false` means anybody who can add a document may file it.',
+  })
+  roles(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.types.rolesFor(user, id);
+  }
+
+  @Patch('document-types/:id/roles')
+  @RequirePermissions(PERMISSIONS.SETTINGS_MANAGE)
+  @ApiOperation({
+    summary: 'Restrict filing to particular roles',
+    description:
+      'Replaces the list. An empty array removes the restriction rather than forbidding everyone. '
+      + 'Restricts filing only — who may read a record is decided by its folder and its '
+      + 'classification.',
+  })
+  setRoles(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: TypeRolesDto) {
+    return this.types.setRoles(user, id, dto.roleIds ?? []);
   }
 
   /* -- Values on a document ------------------------------------------------- */

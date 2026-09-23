@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -398,6 +399,124 @@ export class DocumentTypesService {
     return this.get(user, typeId);
   }
 
+
+  /* -- Who may file a record as this type ----------------------------------- */
+
+  /**
+   * The roles permitted to file as this type, alongside every role that could
+   * be chosen.
+   *
+   * Both halves, because a picker showing only what is already granted cannot
+   * be used to grant anything, and a second round trip to fill it in is a
+   * round trip for nothing.
+   */
+  async rolesFor(user: AuthUser, typeId: string) {
+    await this.get(user, typeId);
+
+    const rows = await this.db.query<{
+      id: string;
+      name: string;
+      description: string | null;
+      allowed: boolean;
+    }>(
+      `SELECT r.id, r.name, r.description,
+              (tr."roleId" IS NOT NULL) AS allowed
+         FROM roles r
+         LEFT JOIN document_type_roles tr
+                ON tr."roleId" = r.id AND tr."documentTypeId" = $1
+        WHERE r."organizationId" = $2 OR r."organizationId" IS NULL
+        ORDER BY r.name ASC`,
+      [typeId, user.organizationId],
+    );
+
+    const allowed = rows.filter((r) => r.allowed);
+    return {
+      // No rows means unrestricted, not forbidden. Stated in the payload so
+      // the interface does not have to infer it from an empty list.
+      restricted: allowed.length > 0,
+      roles: rows,
+    };
+  }
+
+  /**
+   * Replaces the allowlist wholesale.
+   *
+   * An empty array removes the restriction rather than forbidding everyone —
+   * the same meaning the table has, and the only reading that makes "clear
+   * this" expressible at all.
+   */
+  async setRoles(user: AuthUser, typeId: string, roleIds: string[]) {
+    const type = await this.get(user, typeId);
+
+    // Roles from another tenant would be a cross-tenant reference, and a role
+    // that does not exist would be a restriction nobody could ever satisfy.
+    if (roleIds.length) {
+      const valid = await this.db.query<{ id: string }>(
+        `SELECT id FROM roles
+          WHERE id = ANY($1) AND ("organizationId" = $2 OR "organizationId" IS NULL)`,
+        [roleIds, user.organizationId],
+      );
+      if (valid.length !== roleIds.length) {
+        throw new BadRequestException('One of those roles does not belong to this organisation.');
+      }
+    }
+
+    await this.db.transaction(async () => {
+      await this.db.execute('DELETE FROM document_type_roles WHERE "documentTypeId" = $1', [typeId]);
+      for (const roleId of roleIds) {
+        await this.db.execute(
+          `INSERT INTO document_type_roles
+             ("organizationId", "documentTypeId", "roleId", "grantedById")
+           VALUES ($1, $2, $3, $4)`,
+          [user.organizationId, typeId, roleId, user.id],
+        );
+      }
+    });
+
+    await this.audit.record({
+      organizationId: user.organizationId,
+      actorId: user.id,
+      action: AuditAction.SETTINGS_CHANGE,
+      resourceType: 'DocumentType',
+      resourceId: typeId,
+      resourceName: type.name as string,
+      metadata: {
+        event: roleIds.length ? 'type_filing_restricted' : 'type_filing_unrestricted',
+        roles: roleIds.length,
+      },
+    });
+
+    return this.rolesFor(user, typeId);
+  }
+
+  /**
+   * Whether this person may file a record as this type.
+   *
+   * Checked against the roles they hold, not their tier: a customer defines
+   * roles, and a restriction expressed in terms of our tiers would be
+   * meaningless to them.
+   */
+  private async assertMayFile(user: AuthUser, typeId: string, typeName: string) {
+    const restrictions = await this.db.query<{ roleId: string }>(
+      'SELECT "roleId" FROM document_type_roles WHERE "documentTypeId" = $1',
+      [typeId],
+    );
+    if (restrictions.length === 0) return; // unrestricted
+
+    const held = await this.db.query<{ n: string }>(
+      `SELECT count(*) AS n
+         FROM user_roles ur
+        WHERE ur."userId" = $1 AND ur."roleId" = ANY($2)`,
+      [user.id, restrictions.map((r) => r.roleId)],
+    );
+
+    if (Number(held[0]?.n ?? 0) === 0) {
+      throw new ForbiddenException(
+        `Filing a record as ${typeName} is restricted to particular roles, and you hold none of them.`,
+      );
+    }
+  }
+
   /* -- Values on a document ------------------------------------------------- */
 
   /** What one document holds in its type's fields. */
@@ -524,7 +643,10 @@ export class DocumentTypesService {
 
   /** Assigns a document to a type. Clearing it leaves the values orphaned, so they go too. */
   async setDocumentType(user: AuthUser, documentId: string, typeId: string | null) {
-    if (typeId) await this.get(user, typeId);
+    if (typeId) {
+      const type = await this.get(user, typeId);
+      await this.assertMayFile(user, typeId, type.name as string);
+    }
 
     const done = await this.db.execute(
       'UPDATE documents SET "documentTypeId" = $1, "updatedAt" = now() WHERE id = $2 AND "organizationId" = $3',
