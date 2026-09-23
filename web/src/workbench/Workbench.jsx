@@ -279,8 +279,12 @@ export default function Workbench() {
       classification: liveDoc?.classification,
       folderId,
       folderName: tab === 'repo' ? scopeItems[scopeIndex]?.[0] : undefined,
+
+      // Types: Add field needs to know which type it is adding to.
+      typeId: tab === 'types' ? selectedRow?.record?.id : undefined,
+      typeName: tab === 'types' ? selectedRow?.record?.name : undefined,
     }),
-    [liveDoc, bulkIds, folderId, tab, scopeItems, scopeIndex],
+    [liveDoc, bulkIds, folderId, tab, scopeItems, scopeIndex, selectedRow],
   );
 
   /**
@@ -291,10 +295,25 @@ export default function Workbench() {
    */
   const toolbarVerbs = useMemo(() => {
     const base = TOOLBAR_BY_SCOPE[tab]?.[scopeIndex] ?? TOOLBAR[tab];
-    if (tab !== 'repo' || !liveDoc) return base;
-    const mine = liveDoc.checkedOutById && liveDoc.checkedOutById === user?.id;
-    return base.map((v) => (v === 'Check out' && mine ? 'Check in' : v));
-  }, [tab, scopeIndex, liveDoc, user?.id]);
+
+    if (tab === 'repo' && liveDoc) {
+      const mine = liveDoc.checkedOutById && liveDoc.checkedOutById === user?.id;
+      return base.map((v) => (v === 'Check out' && mine ? 'Check in' : v));
+    }
+
+    // A type is either a draft, published or archived, and only one of the two
+    // transitions is meaningful at a time. Offering both means one of them
+    // does nothing, which teaches people to distrust the toolbar.
+    if (tab === 'types') {
+      const status = selectedRow?.record?.status;
+      if (!status) return base.filter((v) => v === 'New type');
+      return base.filter((v) =>
+        v === 'Publish' ? status !== 'PUBLISHED' : v === 'Archive' ? status === 'PUBLISHED' : true,
+      );
+    }
+
+    return base;
+  }, [tab, scopeIndex, liveDoc, user?.id, selectedRow]);
 
   /**
    * Toolbar verbs that do something rather than open a form.
@@ -303,6 +322,7 @@ export default function Workbench() {
    * nothing is worse than one that says who is holding the document.
    */
   async function runVerb(verb) {
+    if (tab === 'types') return runTypeVerb(verb);
     if (tab !== 'repo' || !liveDoc) return;
     try {
       if (verb.startsWith('Open')) {
@@ -329,6 +349,31 @@ export default function Workbench() {
   }
 
   /**
+   * Publishing makes a type available to file against; archiving withdraws it
+   * without touching the records already filed as it.
+   */
+  async function runTypeVerb(verb) {
+    const type = selectedRow?.record;
+    if (!type?.id) return;
+
+    const status = verb.startsWith('Publish')
+      ? 'PUBLISHED'
+      : verb.startsWith('Archive')
+        ? 'ARCHIVED'
+        : null;
+    if (!status) return;
+
+    try {
+      await api.documentTypes.setStatus(type.id, status);
+      source.reload();
+    } catch (err) {
+      // The API refuses publishing a type with no fields, which is the whole
+      // reason this reports rather than silently doing nothing.
+      setVerbError(err.body?.message ?? err.message);
+    }
+  }
+
+  /**
    * The same actions, applied to everything ticked.
    *
    * Runs one at a time and keeps going after a refusal, because a mixed
@@ -338,7 +383,28 @@ export default function Workbench() {
    */
   async function runBulk(verb) {
     const ids = rows.filter((r) => sel[r[1]] && r.record?.id).map((r) => r.record.id);
-    if (tab !== 'repo' || ids.length === 0) return;
+    if (ids.length === 0) return;
+
+    if (tab === 'types') {
+      const status = verb.startsWith('Publish') ? 'PUBLISHED' : verb.startsWith('Archive') ? 'ARCHIVED' : null;
+      if (!status) return;
+      const failures = [];
+      for (const id of ids) {
+        try {
+          await api.documentTypes.setStatus(id, status);
+        } catch (err) {
+          failures.push(err.body?.message ?? err.message);
+        }
+      }
+      setSel({});
+      source.reload();
+      if (failures.length) {
+        setVerbError(`${ids.length - failures.length} of ${ids.length} changed. ${failures[0]}`);
+      }
+      return;
+    }
+
+    if (tab !== 'repo') return;
 
     if (verb.startsWith('Classify') || verb.startsWith('Move')) {
       // Both need a destination, so they go through the same dialog the

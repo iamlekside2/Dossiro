@@ -198,6 +198,134 @@ const FORMS = {
       });
     },
   },
+  /* -- Document types ------------------------------------------------------ */
+
+  type: {
+    title: 'New document type',
+    lede:
+      'A kind of record your organisation files — Contract, Personnel file, Delivery note. Its '
+      + 'fields are what make those records searchable as data rather than as prose, and what '
+      + 'retention and workflow key off.',
+    submit: 'Create type',
+    done: 'Type created as a draft. Add its fields, then publish it.',
+    initial: () => ({ name: '', keepVersions: 'true', watermarkAll: 'false', defaultClassification: 'INTERNAL' }),
+    fields: () => [
+      { key: 'name', label: 'Name', required: true, placeholder: 'Contract' },
+      {
+        key: 'description',
+        label: 'What it is for',
+        placeholder: 'Agreements with counterparties, signed by both sides.',
+      },
+      {
+        key: 'defaultClassification',
+        label: 'Default classification',
+        type: 'select',
+        options: [
+          ['PUBLIC', 'Public'],
+          ['INTERNAL', 'Internal'],
+          ['CONFIDENTIAL', 'Confidential'],
+          ['RESTRICTED', 'Restricted'],
+        ],
+        hint: 'What a record of this type is classified as when filed. The folder can still raise it.',
+      },
+      {
+        key: 'keepVersions',
+        label: 'Version history',
+        type: 'select',
+        options: [
+          ['true', 'Keep every edition'],
+          ['false', 'One edition only'],
+        ],
+        hint: 'Board papers are the usual reason to keep only one — there is no draft to return to.',
+      },
+      {
+        key: 'watermarkAll',
+        label: 'Watermark',
+        type: 'select',
+        options: [
+          ['false', 'Only on shared links'],
+          ['true', 'Every view of this type'],
+        ],
+      },
+    ],
+    async submitFn(values) {
+      return api.documentTypes.create({
+        name: values.name.trim(),
+        description: values.description?.trim() || undefined,
+        defaultClassification: values.defaultClassification,
+        keepVersions: values.keepVersions === 'true',
+        watermarkAll: values.watermarkAll === 'true',
+      });
+    },
+  },
+
+  field: {
+    title: 'Add an index field',
+    lede: (ctx) =>
+      `A value every ${ctx?.typeName ?? 'record'} carries, stored as data rather than buried in the `
+      + 'text. Searchable as a field, so you can ask for contracts expiring between two dates.',
+    submit: 'Add field',
+    done: 'Field added.',
+    initial: () => ({ kind: 'TEXT', required: 'false', isRetentionAnchor: 'false', options: '' }),
+    fields: (ctx, _l) => [
+      { key: 'name', label: 'Field name', required: true, placeholder: 'Contractor' },
+      { key: 'description', label: 'What it holds', placeholder: 'The counterparty as named on the signature page.' },
+      {
+        key: 'kind',
+        label: 'Kind',
+        type: 'select',
+        options: [
+          ['TEXT', 'Text'],
+          ['DATE', 'Date'],
+          ['NUMBER', 'Number'],
+          ['BOOLEAN', 'Yes / no'],
+          ['SELECT', 'Selection list'],
+        ],
+        hint: 'The kind cannot change once records carry a value for it, so choose it deliberately.',
+      },
+      {
+        key: 'options',
+        label: 'List options',
+        placeholder: 'Lagos, Abuja, Port Harcourt, Kano',
+        hint: 'Separated by commas. Selection lists only — the database refuses them on other kinds.',
+      },
+      {
+        key: 'required',
+        label: 'Required',
+        type: 'select',
+        options: [
+          ['false', 'Optional'],
+          ['true', 'Must be filled in'],
+        ],
+      },
+      {
+        key: 'isRetentionAnchor',
+        label: 'Drives the retention clock',
+        type: 'select',
+        options: [
+          ['false', 'No'],
+          ['true', 'Yes — count the retention period from this date'],
+        ],
+        hint: 'One field per type, and it must be a date. This is what makes "six years after expiry" expressible.',
+      },
+    ],
+    async submitFn(values, ctx) {
+      const kind = values.kind;
+      return api.documentTypes.addField(ctx.typeId, {
+        name: values.name.trim(),
+        description: values.description?.trim() || undefined,
+        kind,
+        required: values.required === 'true',
+        isRetentionAnchor: values.isRetentionAnchor === 'true',
+        // Sent only for a selection list; the schema refuses options on any
+        // other kind, so an empty array on a text field would be a 400.
+        options:
+          kind === 'SELECT'
+            ? values.options.split(',').map((o) => o.trim()).filter(Boolean)
+            : undefined,
+      });
+    },
+  },
 };
 
 /**
@@ -448,6 +576,11 @@ export function dialogForVerb(area, scopeIndex, verb) {
     if (verb.startsWith('Move')) return 'move';
     if (verb.startsWith('Classify')) return 'classify';
     return null; // Open, Check out and Share are actions, not forms.
+  }
+  if (area === 'types') {
+    if (verb.startsWith('New type')) return 'type';
+    if (verb.startsWith('Add field')) return 'field';
+    return null; // Publish and Archive act on the selected type.
   }
   if (area !== 'admin') return null;
   if (scopeIndex === 0 && verb.startsWith('Add person')) return 'person';
