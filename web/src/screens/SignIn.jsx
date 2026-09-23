@@ -319,7 +319,7 @@ function DeviceTrust() {
 
       <div className="mt-[22px] flex gap-2">
         <Button tone="primary" onClick={enter}>
-          Open the repository
+          {user?.isPlatform ? 'Open the operator console' : 'Open the repository'}
         </Button>
       </div>
 
