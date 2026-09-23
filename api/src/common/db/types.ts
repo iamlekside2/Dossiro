@@ -30,6 +30,8 @@ import type {
   SignatureType,
   StorageDriver,
   SubjectType,
+  SupportScope,
+  SupportSessionState,
   TaskAction,
   TaskStatus,
   UserStatus,
@@ -37,7 +39,7 @@ import type {
   WorkflowStatus,
 } from './enums';
 
-export type { AccessLevel, AuditAction, ChangeOp, ChannelType, Classification, ContentKind, DispositionDecision, DocumentStatus, DocumentTypeStatus, FieldKind, IntegrationProvider, JobStatus, JobType, MessageDirection, MessageStatus, OrgStatus, ResourceType, ShareAccessAction, SignatureRequestStatus, SignatureType, StorageDriver, SubjectType, TaskAction, TaskStatus, UserStatus, UserTier, WorkflowStatus };
+export type { AccessLevel, AuditAction, ChangeOp, ChannelType, Classification, ContentKind, DispositionDecision, DocumentStatus, DocumentTypeStatus, FieldKind, IntegrationProvider, JobStatus, JobType, MessageDirection, MessageStatus, OrgStatus, ResourceType, ShareAccessAction, SignatureRequestStatus, SignatureType, StorageDriver, SubjectType, SupportScope, SupportSessionState, TaskAction, TaskStatus, UserStatus, UserTier, WorkflowStatus };
 
 /** `access_grants` */
 export interface AccessGrant {
@@ -246,6 +248,15 @@ export interface DocumentTypeField {
   isRetentionAnchor: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/** `document_type_roles` */
+export interface DocumentTypeRole {
+  organizationId: string;
+  documentTypeId: string;
+  roleId: string;
+  grantedById: string | null;
+  grantedAt: Date;
 }
 
 /** `document_types` */
@@ -664,6 +675,36 @@ export interface Signature {
   certificate: string | null;
   evidence: unknown | null;
   signedAt: Date;
+}
+
+/** `support_session_views` */
+export interface SupportSessionView {
+  id: string;
+  sessionId: string;
+  documentId: string | null;
+  documentName: string;
+  viewedAt: Date;
+  dwellSeconds: number | null;
+}
+
+/** `support_sessions` */
+export interface SupportSession {
+  id: string;
+  organizationId: string;
+  operatorId: string;
+  scope: SupportScope;
+  state: SupportSessionState;
+  reason: string;
+  requestedAt: Date;
+  approvedAt: Date | null;
+  approvedById: string | null;
+  expiresAt: Date;
+  revokedAt: Date | null;
+  revokedById: string | null;
+  revokedReason: string | null;
+  breakGlass: boolean;
+  reviewedAt: Date | null;
+  reviewedById: string | null;
 }
 
 /** `tags` */

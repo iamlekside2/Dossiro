@@ -18,6 +18,7 @@ $suites = @(
   'search-fields.ps1',
   'view-without-download.ps1',
   'type-filing-roles.ps1',
+  'support-access.ps1',
   'retention.ps1',
   'endpoints.ps1'
 )

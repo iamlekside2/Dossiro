@@ -229,6 +229,22 @@ export const SubjectType = {
 } as const;
 export type SubjectType = (typeof SubjectType)[keyof typeof SubjectType];
 
+export const SupportScope = {
+  METADATA: 'METADATA',
+  CONFIGURATION: 'CONFIGURATION',
+  DOCUMENTS: 'DOCUMENTS',
+} as const;
+export type SupportScope = (typeof SupportScope)[keyof typeof SupportScope];
+
+export const SupportSessionState = {
+  REQUESTED: 'REQUESTED',
+  ACTIVE: 'ACTIVE',
+  REFUSED: 'REFUSED',
+  REVOKED: 'REVOKED',
+  EXPIRED: 'EXPIRED',
+} as const;
+export type SupportSessionState = (typeof SupportSessionState)[keyof typeof SupportSessionState];
+
 export const TaskAction = {
   REVIEW: 'REVIEW',
   APPROVE: 'APPROVE',
