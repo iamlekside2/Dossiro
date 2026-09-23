@@ -14,7 +14,7 @@
  * schema that is not there.
  */
 
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { config } from 'dotenv';
@@ -22,7 +22,19 @@ import { Client } from 'pg';
 
 config();
 
-const DIR = join(__dirname, 'migrations');
+/**
+ * Where the .sql files are.
+ *
+ * Beside this file when running from source. One level up and into db/ when the
+ * runner has been bundled into dist/ for deployment, where the migrations ship
+ * as data rather than being compiled in — they are applied by the database, and
+ * inlining them would mean a build step between writing a migration and being
+ * able to read what actually ran.
+ */
+const DIR = [join(__dirname, 'migrations'), join(__dirname, '..', 'db', 'migrations')].find(
+  (d) => existsSync(d),
+);
+if (!DIR) throw new Error(`No migrations directory found next to ${__dirname}`);
 
 interface Migration {
   name: string;

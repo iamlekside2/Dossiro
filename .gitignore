@@ -32,3 +32,6 @@ api/.keys/
 docs/meeting-*.srt
 docs/meeting-*-transcript.txt
 docs/contentverse-product-teardown.md
+
+# Next.js static export output
+site/out/

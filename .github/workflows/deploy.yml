@@ -1,0 +1,158 @@
+# Build and deploy Dossiro to the Windows development server.
+#
+# Build and deploy only, by decision — no tests in the pipeline. The 260
+# assertions need a running API and a seeded corpus, so they stay a local gate.
+# What this does still catch is a build that does not compile: the API is
+# TypeScript and `nest build` fails on a type error, so a push that would not
+# run does not reach the server.
+#
+# The server is Windows. Three things about that shaped this file, all learned
+# the hard way on the RealCousins deployment to the same box:
+#
+#   - Its shell over SSH is PowerShell 5.1, which has no `&&`. Every remote
+#     command is wrapped in `cmd /c` so chaining works.
+#   - Each SSH command runs in its own session, so `cd` does not persist
+#     between them. Each one starts with `cd /d`.
+#   - `chmod`, `tar --owner` and the other POSIX flags are not available.
+#
+# Deployment is a release directory plus a swap, not an in-place overwrite, so
+# a half-uploaded build is never the running one.
+
+name: Deploy to development
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # A second push while the first is mid-swap would interleave two releases in
+  # the same directory. Queue instead, and do not cancel: a cancelled run can
+  # leave the API stopped.
+  group: deploy-development
+  cancel-in-progress: false
+
+env:
+  REMOTE_ROOT: D:\sites\dossiro
+  NODE_VERSION: '20'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build the API
+        working-directory: api
+        run: npm run build
+
+      # After the API build, which cleans dist. The migration runner is
+      # TypeScript and the server installs production dependencies only, so it
+      # is bundled into one self-contained file with pg left external — pg is
+      # already a runtime dependency there. The seed goes the same way: it is a
+      # development fixture, and this is the development server.
+      - name: Build the migration runner and the seed
+        working-directory: api
+        run: npm run db:build-migrator
+
+      - name: Build the workbench
+        working-directory: web
+        run: npm run build
+        env:
+          # Same origin: IIS proxies /api to the Node process. An absolute URL
+          # here would also send the API a Host header that belongs to no
+          # tenant, and the sign-in page would lose its branding.
+          VITE_API_URL: /api
+
+      - name: Build the marketing site
+        working-directory: site
+        run: npm run build
+
+      # node_modules is not shipped. argon2 is a native module, this runner is
+      # Linux and the server is Windows, so the server installs its own.
+      #
+      # That means `npm ci` has to work there, and `api` is an npm workspace
+      # with no lock file of its own — the lock is at the repository root. So
+      # the release carries the root manifests and the app installs as a
+      # workspace, exactly as it does here. web/package.json comes along because
+      # the root manifest names it as a workspace and npm refuses to install
+      # without it; its build output is shipped separately as static files.
+      - name: Assemble the release
+        run: |
+          mkdir -p release/app/api/dist release/app/web release/web release/site
+          cp -r api/dist/. release/app/api/dist/
+          cp -r api/db release/app/api/db
+          cp api/package.json release/app/api/package.json
+          cp web/package.json release/app/web/package.json
+          cp package.json package-lock.json release/app/
+          cp deploy/ecosystem.config.cjs release/
+          cp -r web/dist/. release/web/
+          cp -r site/out/. release/site/
+          echo "${{ github.sha }}" > release/RELEASE
+          tar -czf release.tgz -C release .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: release.tgz
+          retention-days: 7
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release
+
+      - name: Upload the release
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEV_SSH_HOST }}
+          username: ${{ secrets.DEV_SSH_USER }}
+          key: ${{ secrets.DEV_SSH_KEY }}
+          port: ${{ secrets.DEV_SSH_PORT || 22 }}
+          source: release.tgz
+          target: ${{ env.REMOTE_ROOT }}\incoming
+
+      - name: Unpack, migrate and swap
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEV_SSH_HOST }}
+          username: ${{ secrets.DEV_SSH_USER }}
+          key: ${{ secrets.DEV_SSH_KEY }}
+          port: ${{ secrets.DEV_SSH_PORT || 22 }}
+          command_timeout: 20m
+          script_stop: true
+          script: |
+            cmd /c "cd /d D:\sites\dossiro\incoming && rmdir /s /q staging 2>nul & mkdir staging && tar -xzf release.tgz -C staging"
+            cmd /c "cd /d D:\sites\dossiro\incoming\staging\app && npm ci --omit=dev --no-audit --no-fund"
+            cmd /c "copy /y D:\sites\dossiro\app\api\.env D:\sites\dossiro\incoming\staging\app\api\.env"
+            cmd /c "cd /d D:\sites\dossiro\incoming\staging\app\api && node dist\migrate.cjs"
+            cmd /c "cd /d D:\sites\dossiro && rmdir /s /q previous-app 2>nul & if exist app ren app previous-app"
+            cmd /c "cd /d D:\sites\dossiro && move incoming\staging\app app"
+            cmd /c "cd /d D:\sites\dossiro && robocopy incoming\staging\web web /mir /njh /njs /ndl /nc /ns & if errorlevel 8 exit 1"
+            cmd /c "cd /d D:\sites\dossiro && robocopy incoming\staging\site site /mir /njh /njs /ndl /nc /ns & if errorlevel 8 exit 1"
+            cmd /c "copy /y D:\sites\dossiro\incoming\staging\ecosystem.config.cjs D:\sites\dossiro\ecosystem.config.cjs"
+            cmd /c "cd /d D:\sites\dossiro && pm2 startOrReload ecosystem.config.cjs --update-env && pm2 save"
+
+      # A deploy that leaves the API dead should fail loudly here rather than be
+      # discovered by whoever opens the site next.
+      - name: Check the API answers
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEV_SSH_HOST }}
+          username: ${{ secrets.DEV_SSH_USER }}
+          key: ${{ secrets.DEV_SSH_KEY }}
+          port: ${{ secrets.DEV_SSH_PORT || 22 }}
+          script: |
+            cmd /c "timeout /t 8 /nobreak >nul & curl -sf -o nul -w "%%{http_code}" http://127.0.0.1:4010/api/health"

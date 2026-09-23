@@ -153,7 +153,18 @@ export class OrganizationsController {
   @Get('tenant/by-host')
   @ApiOperation({ summary: 'Which tenant does this hostname belong to?' })
   async byHost(@Req() req: { headers: Record<string, string | undefined> }) {
-    return (await this.hostnames.resolveByHost(req.headers.host)) ?? { organizationId: null };
+    // Behind a reverse proxy the Host header is the proxy's own address, so the
+    // tenant would never resolve in any deployment that has one. The forwarded
+    // header carries what the browser actually asked for.
+    //
+    // Trusted because nothing reachable from outside sets it: the proxy in
+    // front of this process overwrites it on every request. If the API is ever
+    // exposed directly, this becomes a way to claim another tenant's branding
+    // on the sign-in page — so it must stay behind the proxy, which is also
+    // where its TLS comes from.
+    const forwarded = req.headers['x-forwarded-host'];
+    const host = (forwarded ?? req.headers.host)?.split(',')[0]?.trim();
+    return (await this.hostnames.resolveByHost(host)) ?? { organizationId: null };
   }
 
   @Post('organization/domains')

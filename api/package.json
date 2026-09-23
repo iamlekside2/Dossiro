@@ -15,7 +15,8 @@
     "db:deploy": "tsx db/migrate.ts",
     "db:types": "tsx db/generate-types.ts",
     "db:seed": "tsx db/seed.ts",
-    "db:reset": "tsx db/reset.ts"
+    "db:reset": "tsx db/reset.ts",
+    "db:build-migrator": "esbuild db/migrate.ts --bundle --platform=node --format=cjs --target=node20 --external:pg --outfile=dist/migrate.cjs && esbuild db/seed.ts --bundle --platform=node --format=cjs --target=node20 --external:pg --external:argon2 --outfile=dist/seed.cjs"
   },
   "dependencies": {
     "@nestjs/bullmq": "^11.0.2",
@@ -55,6 +56,7 @@
     "@types/nodemailer": "^6.4.17",
     "@types/passport-jwt": "^4.0.1",
     "dotenv": "^16.4.7",
+    "esbuild": "^0.28.2",
     "source-map-support": "^0.5.21",
     "ts-loader": "^9.5.2",
     "tsconfig-paths": "^4.2.0",
