@@ -5,6 +5,16 @@ import { levelSatisfies, strongestLevel } from '../../common/rbac/permissions';
 import type { AuthUser } from '../../common/types/auth.types';
 
 /**
+ * What resolution actually matches on. Narrower than AuthUser so the service
+ * can answer for somebody who is not the caller — an approval step has to be
+ * checked against a role's members, none of whom are signed in.
+ */
+export type AccessSubject = Pick<
+  AuthUser,
+  'id' | 'organizationId' | 'tier' | 'roleIds' | 'groupIds' | 'branchIds'
+>;
+
+/**
  * Resolves "what may this user do with this object?".
  *
  * Resolution is by SPECIFICITY, most specific scope first:
@@ -26,7 +36,50 @@ export class AccessService {
   constructor(private readonly db: DatabaseService) {}
 
   /** Effective level for a user on a document. */
-  async getDocumentAccess(user: AuthUser, documentId: string): Promise<AccessLevel> {
+  async getDocumentAccess(user: AccessSubject, documentId: string): Promise<AccessLevel> {
+    const settled = await this.settleDocument(user, documentId);
+
+    // Somebody said something about this user here, granting or refusing. Either
+    // way it stands: an approval task is not a way around a deny, because the
+    // answer to "they were denied but must approve it" is to assign the step to
+    // somebody else.
+    if (settled !== null) return settled;
+
+    // Nobody said anything. An open task is itself the grant (WFL-4).
+    return (await this.taskGrant(user, documentId)) ?? AccessLevel.NONE;
+  }
+
+  /**
+   * Which of these people are *refused* the document, as opposed to merely not
+   * granted it.
+   *
+   * The difference is the whole of WFL-4. A task's grant fills silence, so
+   * somebody nobody has said anything about can be assigned an approval and will
+   * be able to read what they are deciding on. It does not overrule a deny, so
+   * assigning that same step to somebody explicitly refused produces a task they
+   * can see and cannot open. The engine asks this before raising tasks so it
+   * never creates that dead end.
+   */
+  async refusedBy(documentId: string, userIds: string[]): Promise<Set<string>> {
+    const refused = new Set<string>();
+    if (userIds.length === 0) return refused;
+
+    for (const subject of await this.loadSubjects(userIds)) {
+      const settled = await this.settleDocument(subject, documentId);
+      if (settled === AccessLevel.NONE) refused.add(subject.id);
+    }
+    return refused;
+  }
+
+  /**
+   * The grants alone, before an open task is considered. Returns null when no
+   * scope says anything about this person, which callers need to tell apart
+   * from a refusal.
+   */
+  private async settleDocument(
+    user: AccessSubject,
+    documentId: string,
+  ): Promise<AccessLevel | null> {
     const doc = await this.db.maybeOne<{ id: string; ownerId: string | null; folderId: string | null }>(
       `SELECT id, "ownerId", "folderId"
          FROM documents
@@ -51,23 +104,67 @@ export class AccessService {
     );
 
     const direct = this.resolveScope(directGrants);
+    if (direct !== null) return direct;
 
     // Scopes 2..n: the folder chain.
-    const settled =
-      direct !== null ? direct : doc.folderId ? await this.resolveFolderChain(user, doc.folderId) : null;
+    return doc.folderId ? this.resolveFolderChain(user, doc.folderId) : null;
+  }
 
-    // Somebody said something about this user here, granting or refusing. Either
-    // way it stands: an approval task is not a way around a deny, because the
-    // answer to "they were denied but must approve it" is to assign the step to
-    // somebody else.
-    if (settled !== null) return settled;
+  /**
+   * The subject ids access resolution matches on, for people who are not the
+   * caller. Group and branch membership are closures rather than the direct
+   * rows: a deny addressed to a parent group reaches everybody beneath it, and
+   * reading only direct membership would miss it and reinstate the dead end
+   * this exists to prevent.
+   */
+  private async loadSubjects(userIds: string[]): Promise<AccessSubject[]> {
+    const rows = await this.db.query<{
+      id: string;
+      organizationId: string;
+      tier: UserTier;
+      roleIds: string[] | null;
+      groupIds: string[] | null;
+      branchIds: string[] | null;
+    }>(
+      `SELECT u.id, u."organizationId", u.tier,
+              ARRAY(SELECT "roleId" FROM user_roles WHERE "userId" = u.id) AS "roleIds",
+              ARRAY(
+                WITH RECURSIVE closure AS (
+                      SELECT g.id, g."parentId"
+                        FROM group_members m JOIN groups g ON g.id = m."groupId"
+                       WHERE m."userId" = u.id
+                       UNION ALL
+                      SELECT g.id, g."parentId"
+                        FROM groups g JOIN closure c ON g.id = c."parentId"
+                    ) CYCLE id SET looped USING trail
+                SELECT DISTINCT id FROM closure
+              ) AS "groupIds",
+              ARRAY(
+                WITH RECURSIVE chain AS (
+                      SELECT id, "parentId" FROM branches WHERE id = u."branchId"
+                       UNION ALL
+                      SELECT b.id, b."parentId"
+                        FROM branches b JOIN chain c ON b.id = c."parentId"
+                    ) CYCLE id SET looped USING trail
+                SELECT id FROM chain
+              ) AS "branchIds"
+         FROM users u
+        WHERE u.id = ANY($1::text[])`,
+      [userIds],
+    );
 
-    // Nobody said anything. An open task is itself the grant (WFL-4).
-    return (await this.taskGrant(user, doc.id)) ?? AccessLevel.NONE;
+    return rows.map((r) => ({
+      id: r.id,
+      organizationId: r.organizationId,
+      tier: r.tier,
+      roleIds: r.roleIds ?? [],
+      groupIds: r.groupIds ?? [],
+      branchIds: r.branchIds ?? [],
+    }));
   }
 
   /** Effective level for a user on a folder. */
-  async getFolderAccess(user: AuthUser, folderId: string): Promise<AccessLevel> {
+  async getFolderAccess(user: AccessSubject, folderId: string): Promise<AccessLevel> {
     const adminLevel = this.adminOverride(user);
     if (adminLevel) return adminLevel;
     return (await this.resolveFolderChain(user, folderId)) ?? AccessLevel.NONE;
@@ -85,7 +182,7 @@ export class AccessService {
    * It reaches the document only, never its folder, so an approver sees the one
    * record they are deciding on and not what sits beside it.
    */
-  private async taskGrant(user: AuthUser, documentId: string): Promise<AccessLevel | null> {
+  private async taskGrant(user: AccessSubject, documentId: string): Promise<AccessLevel | null> {
     const rows = await this.db.query<{ grantedLevel: AccessLevel | null }>(
       `SELECT t."grantedLevel"
          FROM workflow_tasks t
@@ -108,7 +205,7 @@ export class AccessService {
   }
 
   /** Throws unless the user has at least `required` on the document. */
-  async assertDocument(user: AuthUser, documentId: string, required: AccessLevel): Promise<AccessLevel> {
+  async assertDocument(user: AccessSubject, documentId: string, required: AccessLevel): Promise<AccessLevel> {
     const actual = await this.getDocumentAccess(user, documentId);
     if (!levelSatisfies(actual, required)) {
       throw new ForbiddenException(`Requires ${required} access to this document (you have ${actual}).`);
@@ -117,7 +214,7 @@ export class AccessService {
   }
 
   /** Throws unless the user has at least `required` on the folder. */
-  async assertFolder(user: AuthUser, folderId: string, required: AccessLevel): Promise<AccessLevel> {
+  async assertFolder(user: AccessSubject, folderId: string, required: AccessLevel): Promise<AccessLevel> {
     const actual = await this.getFolderAccess(user, folderId);
     if (!levelSatisfies(actual, required)) {
       throw new ForbiddenException(`Requires ${required} access to this folder (you have ${actual}).`);
@@ -131,7 +228,7 @@ export class AccessService {
    *
    * Returns null for administrators, meaning "no restriction".
    */
-  async readableFolderIds(user: AuthUser): Promise<string[] | null> {
+  async readableFolderIds(user: AccessSubject): Promise<string[] | null> {
     if (this.adminOverride(user)) return null;
 
     const p = new Params();
@@ -174,7 +271,7 @@ export class AccessService {
    * about this user, which the document resolver needs to tell apart from a
    * refusal before it consults an open task.
    */
-  private async resolveFolderChain(user: AuthUser, folderId: string): Promise<AccessLevel | null> {
+  private async resolveFolderChain(user: AccessSubject, folderId: string): Promise<AccessLevel | null> {
     const folder = await this.db.maybeOne<{ id: string; path: string }>(
       `SELECT id, path FROM folders WHERE id = $1 AND "organizationId" = $2`,
       [folderId, user.organizationId],
@@ -241,7 +338,7 @@ export class AccessService {
    * bind loosely against the surrounding ANDs and a grant to any group would
    * match any document.
    */
-  private subjectCondition(user: AuthUser, p: Params): string {
+  private subjectCondition(user: AccessSubject, p: Params): string {
     const clauses = [`(g."subjectType" = '${SubjectType.USER}' AND g."userId" = ${p.add(user.id)})`];
 
     if (user.groupIds.length) {
@@ -265,7 +362,7 @@ export class AccessService {
     return `(${clauses.join(' OR ')})`;
   }
 
-  private adminOverride(user: AuthUser): AccessLevel | null {
+  private adminOverride(user: AccessSubject): AccessLevel | null {
     if (user.tier === UserTier.SYSTEM_ADMIN) return AccessLevel.OWNER;
     if (user.tier === UserTier.ORG_ADMIN) return AccessLevel.MANAGE;
     return null;

@@ -178,19 +178,43 @@ export function WorkflowInFlightPane({ record }) {
     );
   }
 
+  const stuck = items.filter((i) => i.blockedReason);
+
   return (
     <div>
+      {stuck.length > 0 && (
+        <div className={ins.section}>
+          <div className={callout('ochre')}>
+            <strong className="mb-1 block">
+              {stuck.length} waiting on nobody
+            </strong>
+            These will not appear in anybody&rsquo;s queue, which is the problem with them. A step
+            with no one able to act on it is left standing rather than skipped, because advancing
+            past an approval nobody could give is worse than it being stuck.
+          </div>
+        </div>
+      )}
+
       {items.map((i) => (
         <div key={i.id} className={ins.section}>
-          <div className="mb-1 flex items-center gap-2">
-            <span className={chip(i.status === 'ACTIVE' ? 'green' : '')}>
-              {i.status.toLowerCase()}
+          <div className="mb-1 flex flex-wrap items-center gap-2">
+            <span className={chip(i.blockedReason ? 'ochre' : i.status === 'ACTIVE' ? 'green' : '')}>
+              {i.blockedReason ? 'blocked' : i.status.toLowerCase()}
             </span>
             <span className="text-chip text-dim">
               step {Number(i.currentStep) + 1} · {i.openTasks} waiting
             </span>
           </div>
           <div className="text-[13.5px] font-medium">{i.documentName}</div>
+          {/* The two reasons need different remedies, so the pane says which. */}
+          {i.blockedReason === 'REFUSED' ? (
+            <p className={ins.note}>
+              Everybody who holds this step is denied the record. Lift the deny or assign the step
+              to somebody else.
+            </p>
+          ) : i.blockedReason === 'NO_ASSIGNEE' ? (
+            <p className={ins.note}>Nobody holds this step&rsquo;s role. Somebody has to be given it.</p>
+          ) : null}
         </div>
       ))}
     </div>

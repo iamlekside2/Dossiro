@@ -11,6 +11,7 @@ import {
 } from '../../common/db';
 import type { AuthUser } from '../../common/types/auth.types';
 import { AuditService } from '../audit/audit.service';
+import { AccessService } from '../access/access.service';
 
 /**
  * A step in a definition's `steps` array.
@@ -65,6 +66,7 @@ export class WorkflowService {
   constructor(
     private readonly db: DatabaseService,
     private readonly audit: AuditService,
+    private readonly access: AccessService,
   ) {}
 
   /* -- Starting --------------------------------------------------------------- */
@@ -219,7 +221,15 @@ export class WorkflowService {
     if (!step) return;
 
     const due = step.dueInDays ? `now() + interval '${Number(step.dueInDays)} days'` : 'NULL';
-    const assignees = await this.resolveAssignees(step.assignee);
+    const holders = await this.resolveAssignees(step.assignee);
+
+    // A task carries access to the record for its own duration, but that grant
+    // fills silence rather than overruling a deny (WFL-4). Raising one against
+    // somebody refused the record would put a row in their queue that they can
+    // see and cannot open, which tells them a document exists, tells them
+    // nothing about it, and cannot be acted on. They are not a candidate.
+    const refused = await this.access.refusedBy(documentId, holders);
+    const assignees = holders.filter((id) => !refused.has(id));
 
     for (const assigneeId of assignees) {
       await this.db.execute(
@@ -239,14 +249,18 @@ export class WorkflowService {
       );
     }
 
-    // Nobody holds the role. Left as an unassigned task rather than skipped:
+    // Nobody can do it. Left as an unassigned task rather than skipped:
     // silently advancing past an approval is the one outcome nobody wants.
+    //
+    // The reason is recorded because the two have different remedies. An empty
+    // role needs somebody put in it; a refused one needs either the deny lifted
+    // or the step reassigned. From the outside the two look identical.
     if (assignees.length === 0) {
       await this.db.execute(
         `INSERT INTO workflow_tasks
            (id, "instanceId", "stepIndex", "stepKey", action, status, "assigneeType",
-            "assigneeGroupId", "grantedLevel", "dueAt")
-         VALUES ($1, $2, $3, $4, $5, 'PENDING', $6, $7, $8, ${due})`,
+            "assigneeGroupId", "grantedLevel", "dueAt", "blockedReason")
+         VALUES ($1, $2, $3, $4, $5, 'PENDING', $6, $7, $8, ${due}, $9)`,
         [
           newId(),
           instanceId,
@@ -256,11 +270,10 @@ export class WorkflowService {
           step.assignee.type,
           step.assignee.id,
           step.grant ?? AccessLevel.READ,
+          holders.length === 0 ? 'NO_ASSIGNEE' : 'REFUSED',
         ],
       );
     }
-
-    void documentId;
   }
 
   /** The people a step's assignee resolves to right now. */
@@ -419,14 +432,24 @@ export class WorkflowService {
       [user.organizationId, user.id],
     );
 
+    // Assignment already skips anybody refused the record, but a deny written
+    // after the task was raised would leave one here. Filtering on the way out
+    // as well means the queue corrects itself rather than holding a row that
+    // opens onto 403 until somebody notices.
+    const blocked = new Set<string>();
+    for (const documentId of new Set(items.map((t) => t.documentId as string))) {
+      if ((await this.access.refusedBy(documentId, [user.id])).size) blocked.add(documentId);
+    }
+    const visible = items.filter((t) => !blocked.has(t.documentId as string));
+
     return {
-      items: items.map((t) => ({
+      items: visible.map((t) => ({
         ...t,
         stepName:
           (t.steps as StepSpec[])?.[t.currentStep as number]?.name ?? (t.stepKey as string),
       })),
-      total: items.length,
-      overdue: items.filter((t) => t.overdue).length,
+      total: visible.length,
+      overdue: visible.filter((t) => t.overdue).length,
     };
   }
 
@@ -499,10 +522,18 @@ export class WorkflowService {
   /** Everything a given workflow currently has running. */
   async inFlight(user: AuthUser, definitionId: string) {
     const items = await this.db.query(
+      // An instance whose current task has a blockedReason is waiting on nobody.
+      // It is reported here because this is the only screen that looks at a
+      // workflow as a whole — it will never appear in anybody's queue, which is
+      // exactly the problem with it.
       `SELECT i.id, i.status, i."currentStep", i."startedAt",
               d.name AS "documentName", d.id AS "documentId",
               (SELECT count(*) FROM workflow_tasks
-                WHERE "instanceId" = i.id AND status = 'PENDING') AS "openTasks"
+                WHERE "instanceId" = i.id AND status = 'PENDING') AS "openTasks",
+              (SELECT t."blockedReason" FROM workflow_tasks t
+                WHERE t."instanceId" = i.id AND t.status = 'PENDING'
+                  AND t."blockedReason" IS NOT NULL
+                LIMIT 1) AS "blockedReason"
          FROM workflow_instances i
          JOIN documents d ON d.id = i."documentId"
         WHERE i."definitionId" = $1 AND d."organizationId" = $2
@@ -550,7 +581,12 @@ export class WorkflowService {
       const target = task.steps?.[task.stepIndex]?.escalateTo;
       if (!target) continue;
 
-      const people = await this.resolveAssignees(target);
+      // Same rule as raising a task: escalating to somebody refused the record
+      // would move the dead end rather than clear it, and would also expire the
+      // original task, so the step would end up worse off than before.
+      const holders = await this.resolveAssignees(target);
+      const refused = await this.access.refusedBy(task.documentId, holders);
+      const people = holders.filter((id) => !refused.has(id));
       if (people.length === 0) continue;
 
       await this.db.execute(
