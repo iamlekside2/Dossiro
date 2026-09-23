@@ -332,6 +332,7 @@ export default function Workbench() {
    */
   async function runVerb(verb) {
     if (tab === 'types') return runTypeVerb(verb);
+    if (tab === 'ingest') return runIngestVerb();
     if (tab !== 'repo' || !liveDoc) return;
     try {
       if (verb.startsWith('Open')) {
@@ -361,6 +362,21 @@ export default function Workbench() {
    * Publishing makes a type available to file against; archiving withdraws it
    * without touching the records already filed as it.
    */
+  /**
+   * Puts a job back on the queue. A job that failed because this deployment
+   * cannot read the file will fail again the same way, which the message says.
+   */
+  async function runIngestVerb() {
+    const job = selectedRow?.record;
+    if (!job?.id) return;
+    try {
+      await api.processing.retry(job.id);
+      source.reload();
+    } catch (err) {
+      setVerbError(err.body?.message ?? err.message);
+    }
+  }
+
   async function runTypeVerb(verb) {
     const type = selectedRow?.record;
     if (!type?.id) return;
@@ -393,6 +409,20 @@ export default function Workbench() {
   async function runBulk(verb) {
     const ids = rows.filter((r) => sel[r[1]] && r.record?.id).map((r) => r.record.id);
     if (ids.length === 0) return;
+
+    if (tab === 'ingest') {
+      for (const id of ids) await api.processing.retry(id).catch(() => undefined);
+      setSel({});
+      source.reload();
+      return;
+    }
+
+    if (tab === 'ingest') {
+      for (const id of ids) await api.processing.retry(id).catch(() => undefined);
+      setSel({});
+      source.reload();
+      return;
+    }
 
     if (tab === 'types') {
       const status = verb.startsWith('Publish') ? 'PUBLISHED' : verb.startsWith('Archive') ? 'ARCHIVED' : null;

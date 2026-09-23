@@ -268,7 +268,7 @@ export const TOOLBAR = {
   repo: ['Open', 'Check out', 'New folder', 'Move…', 'Classify…', 'Share…'],
   search: ['Open', 'Refine…', 'Save this search', 'Export results'],
   capture: ['Start scan', 'Scan profile…', 'Insert separator', 'Pause', 'Discard'],
-  ingest: ['Accept all', 'Review flagged', 'Convert…', 'Rename rule…', 'Cancel batch'],
+  ingest: ['Read it again'],
   invoices: ['Verify', 'Post to ledger', 'Dispute…', 'Open purchase order'],
   forms: ['Edit fields', 'Preview', 'Publish', 'Duplicate', 'Submissions'],
   hr: ['Open file', 'Request documents…', 'Start onboarding', 'Log leave', 'Completeness report'],
@@ -508,7 +508,7 @@ export const BULK = {
   // nothing is worse than an absent one.
   repo: ['Classify…', 'Move…', 'Delete'],
   capture: ['Rescan', 'Accept', 'Assign profile…', 'Discard'],
-  ingest: ['Accept', 'Review…', 'Change destination…', 'Reject'],
+  ingest: ['Read them again'],
   invoices: ['Verify', 'Post…', 'Dispute', 'Export…'],
   forms: ['Make required', 'Change type…', 'Remove'],
   hr: ['Request documents…', 'Assign onboarding…', 'Export…'],
