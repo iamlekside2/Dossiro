@@ -44,6 +44,7 @@ const VALUE_COLUMN: Record<FieldKind, string> = {
   DATE: 'valueDate',
   NUMBER: 'valueNumber',
   BOOLEAN: 'valueBool',
+  USER: 'valueUser',
 };
 
 /**
@@ -526,7 +527,7 @@ export class DocumentTypesService {
     const rows = await this.db.query(
       `SELECT f.id AS "fieldId", f.name, f.kind, f.required, f.options, f.position,
               f."isRetentionAnchor",
-              v."valueText", v."valueDate", v."valueNumber", v."valueBool",
+              v."valueText", v."valueDate", v."valueNumber", v."valueBool", v."valueUser",
               v.confidence, v."updatedAt"
          FROM documents d
          JOIN document_type_fields f ON f."documentTypeId" = d."documentTypeId"
@@ -592,17 +593,34 @@ export class DocumentTypesService {
     // A selection list accepts only what it offers. Checked here rather than
     // in the schema because the options can change after the value was set,
     // and an old value should not make the row unreadable.
+    // A person from another tenancy would be a cross-tenant reference, and an
+    // id that is nobody would be a field pointing at nothing.
+    if (field.kind === FieldKind.USER) {
+      const person = await this.db.maybeOne<{ id: string }>(
+        `SELECT id FROM users
+          WHERE id = $1 AND "organizationId" = $2 AND "deletedAt" IS NULL`,
+        [String(value), user.organizationId],
+      );
+      if (!person) {
+        throw new BadRequestException(`${field.name} must name somebody in this organisation.`);
+      }
+    }
+
     if (field.kind === FieldKind.SELECT && !field.options.includes(String(value))) {
       throw new BadRequestException(
         `“${value}” is not one of the options for ${field.name}.`,
       );
     }
 
-    // All four columns are sent every time, three of them null, so the upsert
+    // Every value column is sent each time, all but one null, so the upsert
     // can assign each exactly once from EXCLUDED. Setting them to null and
     // then re-assigning the live one is "multiple assignments to same column",
     // which Postgres refuses — and it also keeps the column name out of the
     // SQL string, so nothing is interpolated into a statement.
+    //
+    // Every column, not most of them: a kind whose column is missing here
+    // writes nothing at all, and the row is then refused by the "exactly one
+    // value" constraint rather than by anything that names the real problem.
     const coerced = this.coerce(field.kind, value, field.name);
     const column = VALUE_COLUMN[field.kind];
     const cols = {
@@ -610,20 +628,25 @@ export class DocumentTypesService {
       valueDate: null as unknown,
       valueNumber: null as unknown,
       valueBool: null as unknown,
+      valueUser: null as unknown,
     };
+    if (!(column in cols)) {
+      throw new BadRequestException(`No column is defined for a ${field.kind} field.`);
+    }
     cols[column as keyof typeof cols] = coerced;
 
     await this.db.execute(
       `INSERT INTO document_field_values
          ("organizationId", "documentId", "fieldId",
-          "valueText", "valueDate", "valueNumber", "valueBool",
+          "valueText", "valueDate", "valueNumber", "valueBool", "valueUser",
           "enteredById", confidence, "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now())
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now())
        ON CONFLICT ("documentId", "fieldId") DO UPDATE
          SET "valueText"   = EXCLUDED."valueText",
              "valueDate"   = EXCLUDED."valueDate",
              "valueNumber" = EXCLUDED."valueNumber",
              "valueBool"   = EXCLUDED."valueBool",
+             "valueUser"   = EXCLUDED."valueUser",
              "enteredById" = EXCLUDED."enteredById",
              confidence    = EXCLUDED.confidence,
              "updatedAt"   = now()`,
@@ -635,6 +658,7 @@ export class DocumentTypesService {
         cols.valueDate,
         cols.valueNumber,
         cols.valueBool,
+        cols.valueUser,
         user.id,
         confidence ?? null,
       ],
@@ -694,10 +718,14 @@ export class DocumentTypesService {
     if (row.valueDate !== null && row.valueDate !== undefined) return row.valueDate;
     if (row.valueNumber !== null && row.valueNumber !== undefined) return Number(row.valueNumber);
     if (row.valueBool !== null && row.valueBool !== undefined) return row.valueBool;
+    if (row.valueUser !== null && row.valueUser !== undefined) return row.valueUser;
     return null;
   }
 
   private coerce(kind: FieldKind, value: string | number | boolean, name: string) {
+    // USER is an id, and it is checked against the tenancy before it is
+    // stored — see setValue. Nothing to convert here.
+    if (kind === FieldKind.USER) return String(value);
     if (kind === FieldKind.NUMBER) {
       const n = Number(value);
       if (Number.isNaN(n)) throw new BadRequestException(`${name} expects a number.`);

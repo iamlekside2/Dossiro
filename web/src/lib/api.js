@@ -228,6 +228,12 @@ export const api = {
       request(`/support/tenants/${organizationId}/records?take=${take}`),
   },
 
+  /** Personnel files (feature 16). Read-only; filing happens in Repository. */
+  hr: {
+    people: () => request('/hr/people'),
+    file: (userId) => request(`/hr/people/${userId}`),
+  },
+
   /** E-forms and what has been submitted to them (SIG-5, SIG-6). */
   forms: {
     list: () => request('/forms'),

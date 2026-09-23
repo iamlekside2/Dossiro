@@ -277,6 +277,49 @@ function typeFlag(t) {
 
 const LIVE = {
   /**
+   * Personnel files. A person's file is every record naming them through a
+   * person-kind field, so this reads the same documents as Repository under
+   * the same permissions rather than keeping a second copy.
+   */
+  hr: {
+    '*': {
+      label: 'people',
+      async load({ scopeIndex = 0 } = {}) {
+        const res = await api.hr.people();
+        const items =
+          scopeIndex === 1
+            ? res.items.filter((p) => Number(p.documents) === 0)
+            : scopeIndex === 2
+              ? res.items.filter((p) => p.status !== 'ACTIVE')
+              : res.items.filter((p) => p.status === 'ACTIVE');
+        return {
+          rows: items.map((p) =>
+            withRecord(
+              [
+                'PPL',
+                p.displayName,
+                p.jobTitle || p.email,
+                // The only thing on this screen anybody acts on.
+                Number(p.documents) === 0 ? 'Nothing on file' : '',
+                `${p.documents} on file`,
+                p.unitName ?? 'No unit',
+                p.lastFiled ? since(p.lastFiled) : 'Never',
+              ],
+              p,
+            ),
+          ),
+          total: items.length,
+          status: [
+            plural(items.length, 'person'),
+            `${res.withFiles} with something on file`,
+            'A file is every record naming them, not one folder',
+          ],
+        };
+      },
+    },
+  },
+
+  /**
    * The first screen anybody sees, and the one most likely to be believed
    * without checking. Both halves are yours specifically: approvals assigned
    * to you, and documents you personally opened.

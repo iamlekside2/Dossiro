@@ -64,9 +64,10 @@ export const AREA_STATE = {
       + 'is API-only so far — the screen lists and publishes them.',
   },
   hr: {
-    state: UNBUILT,
-    needs: 'HR document handling on top of document types (feature 16)',
-    note: 'Blocked behind user-defined document types.',
+    state: LIVE,
+    endpoint: 'GET /api/hr/people',
+    note: 'Real people and the records that name them, through a person-kind index field. '
+      + 'Timesheets, leave and reviews are HR processes rather than documents and are not built.',
   },
   approvals: {
     state: LIVE,

@@ -200,6 +200,7 @@ export interface DocumentFieldValue {
   enteredById: string | null;
   confidence: number | null;
   updatedAt: Date;
+  valueUser: string | null;
 }
 
 /** `document_index` */

@@ -148,16 +148,15 @@ export const SCOPES = {
   ],
   hr: [
     'People',
-    'Personnel files are visible to HR and the employee only. Managers see completeness, never contents.',
+    'A person’s file is every record that names them, wherever it is filed — so it reads the same '
+      + 'documents as Repository, under the same permissions.',
+    // Timesheets, leave and reviews are HR processes rather than documents,
+    // and onboarding needs a workflow per starter. None of the three exists,
+    // so none of them is listed.
     [
-      ['Active employees', 0, '248'],
-      ['Starters this month', 0, '6'],
-      ['Incomplete files', 0, '6'],
-      ['Onboarding in flight', 0, '4'],
-      ['Timesheets, week 32', 0, '241'],
-      ['Leave requests', 0, '12'],
-      ['Reviews due', 0, '31'],
-      ['Leavers', 0, '3'],
+      ['Employees', 0, ''],
+      ['Nothing on file', 0, ''],
+      ['Former staff', 0, ''],
     ],
     0,
   ],
@@ -316,7 +315,7 @@ export const COLS = {
   ingest: [['Incoming file', 1], ['Proposed name', 210], ['Destination', 150], ['Status', 96]],
   invoices: [['Invoice', 1], ['Amount', 110], ['Match', 140], ['Due', 100]],
   forms: [['Form', 1], ['Fields', 110], ['Files into', 160], ['Submissions', 110]],
-  hr: [['Employee', 1], ['File', 120], ['Unit', 130], ['Updated', 120]],
+  hr: [['Person', 1], ['On file', 120], ['Unit', 130], ['Last filed', 120]],
   approvals: [['Waiting on you', 1], ['Step', 170], ['Workflow', 140], ['Due', 96]],
   sharing: [['Link', 1], ['Rights', 120], ['Expires', 130], ['Opens', 80]],
   types: [['Document type', 1], ['Fields', 90], ['Retention', 168], ['In use', 118]],

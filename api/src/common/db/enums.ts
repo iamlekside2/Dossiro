@@ -120,6 +120,7 @@ export const FieldKind = {
   NUMBER: 'NUMBER',
   BOOLEAN: 'BOOLEAN',
   SELECT: 'SELECT',
+  USER: 'USER',
 } as const;
 export type FieldKind = (typeof FieldKind)[keyof typeof FieldKind];
 
