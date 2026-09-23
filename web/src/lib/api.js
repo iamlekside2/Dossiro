@@ -202,6 +202,29 @@ export const api = {
       request(`/platform/organizations/${id}/status`, { method: 'PATCH', body: { status, reason } }),
   },
 
+  /**
+   * Support access to a tenancy (PLT-2).
+   *
+   * Both sides call the same routes: an operator requests and revokes, the
+   * tenant approves, refuses and revokes, and both read the same list.
+   */
+  support: {
+    /** A tenant omits the id and gets their own. */
+    sessions: (organizationId) =>
+      request(`/support/sessions${organizationId ? `?organizationId=${organizationId}` : ''}`),
+    session: (id) => request(`/support/sessions/${id}`),
+    request: (body) => request('/support/sessions', { method: 'POST', body }),
+    approve: (id) => request(`/support/sessions/${id}/approve`, { method: 'PATCH', body: {} }),
+    refuse: (id, reason) =>
+      request(`/support/sessions/${id}/refuse`, { method: 'PATCH', body: { reason } }),
+    revoke: (id, reason) =>
+      request(`/support/sessions/${id}/revoke`, { method: 'PATCH', body: { reason } }),
+
+    /** Only reachable with a live session of sufficient scope. */
+    records: (organizationId, take = 50) =>
+      request(`/support/tenants/${organizationId}/records?take=${take}`),
+  },
+
   users: {
     list: (params = {}) => request(`/users?${qs(params)}`),
     invite: (body) => request('/users/invite', { method: 'POST', body }),

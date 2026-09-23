@@ -633,6 +633,38 @@ const LIVE = {
         };
       },
     },
+
+    // Who from Calm Global has looked inside this tenancy (PLT-2). The
+    // customer's own copy of the list, reachable without asking us for it.
+    8: {
+      label: 'support sessions',
+      async load() {
+        const res = await api.support.sessions();
+        return {
+          rows: res.items.map((s) =>
+            withRecord(
+              [
+                'SUP',
+                s.reason,
+                `${s.operatorName} · ${s.scope.toLowerCase()}`,
+                s.state === 'ACTIVE' ? 'Open now' : s.state === 'REQUESTED' ? 'Waiting on you' : '',
+                s.state === 'ACTIVE' ? 'Active' : s.state.charAt(0) + s.state.slice(1).toLowerCase(),
+                s.breakGlass ? 'Break-glass' : s.scope.toLowerCase(),
+                since(s.requestedAt),
+              ],
+              s,
+            ),
+          ),
+          total: res.total,
+          status: [
+            plural(res.total, 'support session'),
+            res.active > 0 ? `${res.active} open now` : 'None open',
+            'Every entry is in your audit trail',
+            'You can end any of them yourself',
+          ],
+        };
+      },
+    },
   },
 };
 

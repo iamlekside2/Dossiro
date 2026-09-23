@@ -90,7 +90,9 @@ export const AREA_STATE = {
 
 /** Scopes that are genuinely live, even when their area is only partly so. */
 export const LIVE_SCOPES = {
-  admin: [0, 1, 2, 3],
+  // Personnel, Roles, Branches, Web addresses — and Support access, which is
+  // the tenant's own copy of who from Calm Global has looked inside (PLT-2).
+  admin: [0, 1, 2, 3, 8],
 };
 
 export function areaState(area) {

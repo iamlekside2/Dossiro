@@ -8,6 +8,7 @@ import {
 } from './panes/Document.jsx';
 import { AccessPane, DetailsPane, EditPane, SummaryPane, VersionsPane } from './panes/Core.jsx';
 import { ShareLinkPane } from './panes/Share.jsx';
+import { SupportSessionPane } from './panes/Support.jsx';
 import { SearchMatchPane } from './panes/Search.jsx';
 import { TypeAccessPane, TypeDetailsPane, TypeFieldsPane } from './panes/Types.jsx';
 import { ins } from './panes/ins.js';
@@ -30,6 +31,7 @@ const BODIES = {
   branch: BranchPane,
   branchstaff: BranchStaffPane,
   hostname: HostnamePane,
+  support: SupportSessionPane,
   preview: Preview,
   summary: SummaryPane,
   edit: EditPane,

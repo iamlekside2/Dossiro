@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import api from '../lib/api.js';
+import SupportAccess from './SupportAccess.jsx';
 import { useSession } from '../session/SessionContext.jsx';
 import { chip } from '../ui.js';
 import {
@@ -31,6 +32,8 @@ export default function PlatformConsole() {
   const [creating, setCreating] = useState(false);
   const [issued, setIssued] = useState(null);
   const [suspending, setSuspending] = useState(null);
+  /** Which tenant's support access is open, if any. */
+  const [supporting, setSupporting] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -154,6 +157,10 @@ export default function PlatformConsole() {
                               whole company out of its own records, and the
                               reason is written to a trail nobody can edit
                               afterwards — so it is asked for first. */}
+                          {/* The only route to a customer's records, and it
+                              is deliberately as visible as Suspend — hiding it
+                              would not make it rarer, only less considered. */}
+                          <LinkButton onClick={() => setSupporting(t)}>Support access</LinkButton>
                           <LinkButton danger onClick={() => setSuspending(t)}>
                             Suspend
                           </LinkButton>
@@ -182,6 +189,10 @@ export default function PlatformConsole() {
             void load();
           }}
         />
+      )}
+
+      {supporting && (
+        <SupportAccess tenant={supporting} onClose={() => setSupporting(null)} />
       )}
 
       {suspending && (

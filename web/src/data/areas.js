@@ -219,6 +219,10 @@ export const SCOPES = {
       ['Integrations', 0, '5'],
       ['Retention policies', 0, '7'],
       ['Recovery and holds', 0, '4'],
+      // The tenant's half of PLT-2. It belongs in their own administration
+      // rather than in a report we send them: a record of who looked inside
+      // their tenancy is only reassuring if they can reach it unprompted.
+      ['Support access', 0, ''],
     ],
     0,
   ],
@@ -257,6 +261,7 @@ export const PANES_BY_SCOPE = {
   admin: {
     2: [['branch', 'Branch'], ['branchstaff', 'Staff']],
     3: [['hostname', 'Address']],
+    8: [['support', 'Session']],
   },
 };
 
@@ -265,6 +270,7 @@ export const FIND_PLACEHOLDER_BY_SCOPE = {
     1: 'Find a role',
     2: 'Find a branch',
     3: 'Find an address',
+    8: 'Find a support session',
   },
 };
 
@@ -304,6 +310,7 @@ export const COLS_BY_SCOPE = {
     1: [['Role', 1], ['Key', 150], ['People', 90], ['Permissions', 120]],
     2: [['Branch', 1], ['Code', 90], ['People', 90], ['Reports to', 150]],
     3: [['Web address', 1], ['Status', 130], ['Role', 120], ['Added', 120]],
+    8: [['Why they asked', 1], ['State', 110], ['Scope', 120], ['Asked', 100]],
   },
 };
 
