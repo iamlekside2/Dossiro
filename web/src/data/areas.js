@@ -108,15 +108,16 @@ export const SCOPES = {
     0,
   ],
   ingest: [
-    'Sources',
-    'Scanner, mailbox and WhatsApp intake all land in the same pipeline.',
+    'The pipeline',
+    'Everything filed is read so it can be searched by its contents. A PDF carrying its own text '
+      + 'is read directly; a scan needs recognition, which this deployment does not have.',
+    // The handoff listed intake devices. None of them exists, and the pipeline
+    // does — so these are the states a job can be in instead.
     [
-      ['Scanner — 3rd floor', 0, '62'],
-      ['Mailbox intake', 0, '28'],
-      ['WhatsApp Business', 0, '14'],
-      ['SharePoint sync', 0, '12'],
-      ['Watched folder', 0, '8'],
-      ['Adobe Acrobat', 0, ''],
+      ['Everything', 0, ''],
+      ['Waiting', 0, ''],
+      ['Read', 0, ''],
+      ['Could not be read', 0, ''],
     ],
     0,
   ],
@@ -312,7 +313,7 @@ export const COLS = {
   repo: [['Document', 1], ['Class', 124], ['Last edited', 144], ['Owner', 110]],
   search: [['Result', 1], ['Class', 124], ['Where', 180], ['Edited', 110]],
   capture: [['Captured item', 1], ['Pages', 86], ['Quality', 150], ['Status', 110]],
-  ingest: [['Incoming file', 1], ['Proposed name', 210], ['Destination', 150], ['Status', 96]],
+  ingest: [['Document', 1], ['Outcome', 150], ['Kind', 150], ['Filed', 96]],
   invoices: [['Invoice', 1], ['Amount', 110], ['Match', 140], ['Due', 100]],
   forms: [['Form', 1], ['Fields', 110], ['Files into', 160], ['Submissions', 110]],
   hr: [['Person', 1], ['On file', 120], ['Unit', 130], ['Last filed', 120]],

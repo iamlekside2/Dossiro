@@ -23,6 +23,7 @@ import { SupportModule } from './modules/support/support.module';
 import { WorkflowModule } from './modules/workflow/workflow.module';
 import { FormsModule } from './modules/forms/forms.module';
 import { HrModule } from './modules/hr/hr.module';
+import { ProcessingModule } from './modules/processing/processing.module';
 import { DocumentTypesModule } from './modules/document-types/document-types.module';
 import { RetentionModule } from './modules/retention/retention.module';
 import { FoldersModule } from './modules/folders/folders.module';
@@ -63,6 +64,7 @@ import { LicensingModule } from './modules/licensing/licensing.module';
     WorkflowModule,
     FormsModule,
     HrModule,
+    ProcessingModule,
     DocumentTypesModule,
     RetentionModule,
     FoldersModule,

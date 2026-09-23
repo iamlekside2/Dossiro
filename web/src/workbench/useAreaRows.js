@@ -277,6 +277,48 @@ function typeFlag(t) {
 
 const LIVE = {
   /**
+   * The pipeline, as it actually ran. Not a picture of intake — a record of
+   * what was read, what could not be, and why.
+   */
+  ingest: {
+    '*': {
+      label: 'jobs',
+      async load({ scopeIndex = 0 } = {}) {
+        const STATUS = [null, 'PENDING', 'SUCCEEDED', 'FAILED'];
+        const res = await api.processing.queue(STATUS[scopeIndex] ?? undefined);
+        return {
+          rows: res.items.map((j) => {
+            const out = j.output ?? {};
+            return withRecord(
+              [
+                'JOB',
+                j.documentName,
+                j.error
+                  ? j.error
+                  : out.characters
+                    ? `Read ${Number(out.characters).toLocaleString('en-GB')} characters from ${out.source}`
+                    : j.folderName || 'Waiting',
+                j.status === 'FAILED' ? 'Could not read' : '',
+                j.status.charAt(0) + j.status.slice(1).toLowerCase(),
+                j.mimeType,
+                since(j.createdAt),
+              ],
+              j,
+            );
+          }),
+          total: res.total,
+          status: [
+            plural(res.total, 'job'),
+            `${res.counts.SUCCEEDED ?? 0} read`,
+            `${res.counts.FAILED ?? 0} could not be`,
+            'Scans need recognition, which is not installed',
+          ],
+        };
+      },
+    },
+  },
+
+  /**
    * Personnel files. A person's file is every record naming them through a
    * person-kind field, so this reads the same documents as Repository under
    * the same permissions rather than keeping a second copy.

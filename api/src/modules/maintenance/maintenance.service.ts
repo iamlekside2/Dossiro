@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { DatabaseService } from '../../common/db';
 import { SharesService } from '../shares/shares.service';
 import { StorageService } from '../storage/storage.service';
+import { ProcessingService } from '../processing/processing.service';
 import { WorkflowService } from '../workflow/workflow.service';
 
 /**
@@ -22,6 +23,7 @@ export class MaintenanceService {
     private readonly shares: SharesService,
     private readonly storage: StorageService,
     private readonly workflow: WorkflowService,
+    private readonly processing: ProcessingService,
   ) {}
 
   /** Closes share links whose time frame has elapsed (feature 1). */
@@ -29,6 +31,20 @@ export class MaintenanceService {
   async expireShares(): Promise<void> {
     const count = await this.shares.expireOverdue();
     if (count > 0) this.logger.log(`Expired ${count} share link(s)`);
+  }
+
+  /**
+   * Reads whatever has been filed since the last pass.
+   *
+   * Every minute rather than on upload, so a burst of a hundred documents
+   * does not hold a hundred requests open while each one is parsed. Somebody
+   * who files a contract sees it searchable within the minute, which is the
+   * standard the requirement sets.
+   */
+  @Cron(CronExpression.EVERY_MINUTE)
+  async runPipeline(): Promise<void> {
+    const { ran, failed } = await this.processing.drain(25);
+    if (ran || failed) this.logger.log(`Pipeline: ${ran} read, ${failed} could not be`);
   }
 
   /**

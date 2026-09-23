@@ -47,9 +47,11 @@ export const AREA_STATE = {
     note: 'Nothing behind this screen. Features 1 and 3.',
   },
   ingest: {
-    state: UNBUILT,
-    needs: 'The processing queue; WhatsApp and email intake exist but do not surface here yet',
-    note: 'Channel intake works at the API level — this screen is not connected to it.',
+    state: LIVE,
+    endpoint: 'GET /api/processing/queue',
+    note: 'The real pipeline. Text and PDFs carrying their own text layer are read and indexed '
+      + 'within the minute; scans and photographs are failed with that said, because recognising '
+      + 'them needs an engine this deployment does not have.',
   },
   invoices: {
     state: UNBUILT,

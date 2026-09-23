@@ -17,6 +17,7 @@ import {
   Classification,
   ContentKind,
   DocumentStatus,
+  JobType,
   type Document,
   type DocumentVersion,
 } from '../../common/db';
@@ -24,6 +25,7 @@ import { LicenseService } from '../../common/licensing/license.service';
 import type { AuthUser } from '../../common/types/auth.types';
 import { AccessService } from '../access/access.service';
 import { AuditService } from '../audit/audit.service';
+import { ProcessingService } from '../processing/processing.service';
 import { StorageService } from '../storage/storage.service';
 
 export interface IngestInput {
@@ -48,6 +50,7 @@ export class DocumentsService {
     private readonly access: AccessService,
     private readonly audit: AuditService,
     private readonly config: ConfigService<{ app: AppConfig }, true>,
+    private readonly processing: ProcessingService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -168,8 +171,10 @@ export class DocumentsService {
       metadata: { size: stored.size, mimeType: input.mimeType, checksum: stored.checksum },
     });
 
-    // TODO(pipeline): enqueue VIRUS_SCAN -> OCR -> TEXT_INDEX -> EMBED ->
-    // CLASSIFY here once ProcessingModule is wired to a queue.
+    // Queued rather than done here: parsing a PDF inside the upload request
+    // would hold it open for as long as the file is long, and a document that
+    // failed to parse must not fail the upload that produced it.
+    await this.processing.enqueue(document.id, JobType.TEXT_INDEX).catch(() => undefined);
 
     return document;
   }

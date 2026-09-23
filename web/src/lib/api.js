@@ -228,6 +228,14 @@ export const api = {
       request(`/support/tenants/${organizationId}/records?take=${take}`),
   },
 
+  /** The document pipeline. */
+  processing: {
+    queue: (status) => request(`/processing/queue${status ? `?status=${status}` : ''}`),
+    retry: (jobId) => request(`/processing/jobs/${jobId}/retry`, { method: 'POST' }),
+    reindex: (documentId) =>
+      request(`/processing/documents/${documentId}/reindex`, { method: 'POST' }),
+  },
+
   /** Personnel files (feature 16). Read-only; filing happens in Repository. */
   hr: {
     people: () => request('/hr/people'),
