@@ -61,9 +61,11 @@ export const AREA_STATE = {
     note: 'Blocked behind user-defined document types.',
   },
   approvals: {
-    state: UNBUILT,
-    needs: 'Workflow engine and notifications (features 11 and 13)',
-    note: 'Workflow tables exist; nothing drives them.',
+    state: LIVE,
+    endpoint: 'GET /api/workflow/tasks',
+    note: 'Real tasks from the workflow engine. Filing a document as a type starts whatever '
+      + 'matches, approving advances it, and an overdue step escalates hourly to the named '
+      + 'alternative. Notifications are not built, so the queue is the only place a task appears.',
   },
   sharing: {
     state: LIVE,

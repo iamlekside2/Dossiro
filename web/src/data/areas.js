@@ -146,13 +146,15 @@ export const SCOPES = {
   ],
   approvals: [
     'Queues',
-    'Queues follow your role, not your inbox.',
+    'A step assigned to a role reaches whoever holds it today, not whoever held it when the '
+      + 'workflow was written.',
+    // The handoff also offered "My unit", "Sent by me" and "Completed". The
+    // engine answers what is waiting on you and what is late; the other three
+    // need queries that do not exist, and a permanently empty queue is worse
+    // than an absent one.
     [
-      ['Assigned to me', 0, '14'],
-      ['My unit', 0, '31'],
-      ['Sent by me', 0, '9'],
-      ['Overdue', 0, '3'],
-      ['Completed', 0, ''],
+      ['Waiting on you', 0, ''],
+      ['Overdue', 0, ''],
     ],
     0,
   ],
@@ -295,7 +297,7 @@ export const COLS = {
   invoices: [['Invoice', 1], ['Amount', 110], ['Match', 140], ['Due', 100]],
   forms: [['Field', 1], ['Type', 110], ['Validation', 160], ['Maps to', 150]],
   hr: [['Employee', 1], ['File', 120], ['Unit', 130], ['Updated', 120]],
-  approvals: [['Item', 1], ['Stage', 150], ['From', 140], ['Due', 96]],
+  approvals: [['Waiting on you', 1], ['Step', 170], ['Workflow', 140], ['Due', 96]],
   sharing: [['Link', 1], ['Rights', 120], ['Expires', 130], ['Opens', 80]],
   types: [['Document type', 1], ['Fields', 90], ['Retention', 168], ['In use', 118]],
   audit: [['Event', 1], ['Result', 110], ['Actor', 160], ['When', 132]],

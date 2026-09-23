@@ -20,6 +20,7 @@ import { ChannelsModule } from './modules/channels/channels.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { BranchesModule } from './modules/branches/branches.module';
 import { SupportModule } from './modules/support/support.module';
+import { WorkflowModule } from './modules/workflow/workflow.module';
 import { DocumentTypesModule } from './modules/document-types/document-types.module';
 import { RetentionModule } from './modules/retention/retention.module';
 import { FoldersModule } from './modules/folders/folders.module';
@@ -57,6 +58,7 @@ import { LicensingModule } from './modules/licensing/licensing.module';
     LicensingModule,
     BranchesModule,
     SupportModule,
+    WorkflowModule,
     DocumentTypesModule,
     RetentionModule,
     FoldersModule,

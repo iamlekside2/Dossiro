@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { DatabaseService } from '../../common/db';
 import { SharesService } from '../shares/shares.service';
 import { StorageService } from '../storage/storage.service';
+import { WorkflowService } from '../workflow/workflow.service';
 
 /**
  * Scheduled housekeeping.
@@ -20,6 +21,7 @@ export class MaintenanceService {
     private readonly db: DatabaseService,
     private readonly shares: SharesService,
     private readonly storage: StorageService,
+    private readonly workflow: WorkflowService,
   ) {}
 
   /** Closes share links whose time frame has elapsed (feature 1). */
@@ -27,6 +29,18 @@ export class MaintenanceService {
   async expireShares(): Promise<void> {
     const count = await this.shares.expireOverdue();
     if (count > 0) this.logger.log(`Expired ${count} share link(s)`);
+  }
+
+  /**
+   * Moves overdue approvals to their named alternative (WFL-6).
+   *
+   * Hourly rather than nightly: a two-day deadline that escalates at 3am the
+   * following morning has already cost most of a working day.
+   */
+  @Cron(CronExpression.EVERY_HOUR)
+  async escalateWorkflows(): Promise<void> {
+    const moved = await this.workflow.escalateOverdue();
+    if (moved > 0) this.logger.log(`Escalated ${moved} overdue approval(s)`);
   }
 
   /** Drops refresh sessions that are past their expiry. */

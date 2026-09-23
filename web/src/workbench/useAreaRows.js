@@ -276,6 +276,42 @@ function typeFlag(t) {
 }
 
 const LIVE = {
+  // What is waiting on you, and what is late (WFL-9). One fetch serves both:
+  // the endpoint returns everything assigned to you, and lateness is a
+  // property of each task rather than a different question to ask.
+  approvals: {
+    '*': {
+      label: 'approvals',
+      async load({ scopeIndex = 0 } = {}) {
+        const res = await api.workflow.tasks();
+        const rows = scopeIndex === 1 ? res.items.filter((t) => t.overdue) : res.items;
+        return {
+          rows: rows.map((t) =>
+            withRecord(
+              [
+                'WFL',
+                t.documentName,
+                `${t.workflowName} · ${String(t.action).toLowerCase()}`,
+                t.overdue ? 'Overdue' : '',
+                t.stepName,
+                t.workflowName,
+                t.dueAt ? since(t.dueAt) : 'No deadline',
+              ],
+              t,
+            ),
+          ),
+          total: rows.length,
+          status: [
+            plural(rows.length, 'item'),
+            res.overdue > 0 ? `${res.overdue} overdue` : 'None overdue',
+            'A step reaches whoever holds the role today',
+            'Access lasts for the task, not beyond it',
+          ],
+        };
+      },
+    },
+  },
+
   types: {
     '*': {
       label: 'types',

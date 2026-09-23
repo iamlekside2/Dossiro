@@ -225,6 +225,14 @@ export const api = {
       request(`/support/tenants/${organizationId}/records?take=${take}`),
   },
 
+  /** Approvals in flight (WFL-9). */
+  workflow: {
+    tasks: () => request('/workflow/tasks'),
+    instance: (id) => request(`/workflow/instances/${id}`),
+    decide: (id, approve, comment) =>
+      request(`/workflow/tasks/${id}/decide`, { method: 'POST', body: { approve, comment } }),
+  },
+
   /** Retention schedules and what has fallen due under them (GOV-6, GOV-7). */
   retention: {
     policies: () => request('/retention/policies'),

@@ -16,6 +16,7 @@ import {
 } from '../../common/db';
 import type { AuthUser } from '../../common/types/auth.types';
 import { AuditService } from '../audit/audit.service';
+import { WorkflowService } from '../workflow/workflow.service';
 
 export interface TypeInput {
   name: string;
@@ -64,6 +65,7 @@ export class DocumentTypesService {
   constructor(
     private readonly db: DatabaseService,
     private readonly audit: AuditService,
+    private readonly workflow: WorkflowService,
   ) {}
 
   /* -- Types --------------------------------------------------------------- */
@@ -675,6 +677,11 @@ export class DocumentTypesService {
       resourceId: documentId,
       metadata: { event: typeId ? 'Document type set' : 'Document type cleared' },
     });
+
+    // A trigger tests index values, which only exist once the record has a
+    // type — so this is the moment a workflow can meaningfully start, not the
+    // upload (WFL-1, WFL-2). Never throws into this path.
+    if (typeId) await this.workflow.onDocumentFiled(user, documentId);
 
     return this.valuesFor(user, documentId);
   }
