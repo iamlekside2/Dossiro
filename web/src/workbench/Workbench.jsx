@@ -41,7 +41,7 @@ const DATE_COL = /edited|updated|when|due|expires/i;
 const COL_KEY = [1, 4, 5, 6];
 
 export default function Workbench() {
-  const [tab, setTab] = useState('repo');
+  const [tab, setTab] = useState('home');
   const [scope, setScope] = useState(null); // null = the area's default
   const [sortCol, setSortCol] = useState(null); // null = authored order
   const [sortDir, setSortDir] = useState('desc');
@@ -192,13 +192,19 @@ export default function Workbench() {
   // each loader needs from the current view, since a scope means a folder in
   // one area and a filter in another.
   const loaderContext =
-    tab === 'repo'
-      ? { folderId }
-      : tab === 'search'
-        ? { query, folderId: searchFolderId }
-        : tab === 'audit' || tab === 'sharing' || tab === 'types' || tab === 'approvals' || tab === 'forms'
-          ? { scopeIndex }
-          : null;
+    tab === 'home'
+      ? { scopeIndex, userId: user?.id }
+      : tab === 'repo'
+        ? { folderId }
+        : tab === 'search'
+          ? { query, folderId: searchFolderId }
+          : tab === 'audit' ||
+              tab === 'sharing' ||
+              tab === 'types' ||
+              tab === 'approvals' ||
+              tab === 'forms'
+            ? { scopeIndex }
+            : null;
 
   const source = useAreaRows(tab, scopeIndex, true, loaderContext);
 

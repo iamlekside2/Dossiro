@@ -13,6 +13,7 @@
    ========================================================================== */
 
 export const TABS = [
+  ['home', 'Home', ''],
   ['repo', 'Repository', '1,204'],
   ['search', 'Search', '318'],
   ['capture', 'Capture', '12'],
@@ -28,6 +29,7 @@ export const TABS = [
 ];
 
 export const CRUMBS = {
+  home: ['What needs you'],
   repo: ['Legal', 'Contracts', '2026', 'Vendor', 'Active'],
   search: ['All cabinets', 'Full-text search', '“indemnification cap”'],
   capture: ['Ingest', 'Capture', 'Scanner — 3rd floor'],
@@ -44,6 +46,20 @@ export const CRUMBS = {
 
 /* [heading, footnote, items[[label, depth, count]], defaultIndex] */
 export const SCOPES = {
+  home: [
+    'Your day',
+    'Everything here is yours specifically — what is assigned to you, and what you have opened.',
+    // The handoff also offered "Your unit", "Mentions" and "Saved searches".
+    // Nothing records a mention, saved searches have a table and no service,
+    // and a unit queue needs a query that does not exist. Three scopes that
+    // could only ever be empty are worse than three that are absent.
+    [
+      ['Waiting on you', 0, ''],
+      ['Overdue', 0, ''],
+      ['Recently opened', 0, ''],
+    ],
+    0,
+  ],
   repo: [
     'Cabinets',
     'Folders nest without limit. Locked drawers need a passcode even if your role allows access.',
@@ -232,6 +248,7 @@ export const SCOPES = {
 };
 
 export const TOOLBAR = {
+  home: ['Open'],
   repo: ['Open', 'Check out', 'New folder', 'Move…', 'Classify…', 'Share…'],
   search: ['Open', 'Refine…', 'Save this search', 'Export results'],
   capture: ['Start scan', 'Scan profile…', 'Insert separator', 'Pause', 'Discard'],
@@ -280,6 +297,7 @@ export const FIND_PLACEHOLDER_BY_SCOPE = {
 };
 
 export const FIND_PLACEHOLDER = {
+  home: 'Find in your day',
   admin: 'Find a person',
   hr: 'Find a person',
   types: 'Find a type',
@@ -288,6 +306,7 @@ export const FIND_PLACEHOLDER = {
 
 /* [label, width] where width 1 means minmax(0, 1fr) */
 export const COLS = {
+  home: [['What needs you', 1], ['Kind', 130], ['Where from', 150], ['When', 110]],
   // 'Owner' rather than 'Access': the document list does not carry the
   // caller's effective level, and computing it per row would be one request
   // each. The inspector's Access tab answers it properly for the selected row.
@@ -429,6 +448,7 @@ export const ROWS = {
 };
 
 export const PANES = {
+  home: [['details', 'Item']],
   repo: [['preview', 'Preview'], ['summary', 'Summary'], ['edit', 'Edit'], ['history', 'Versions'], ['access', 'Access']],
   search: [['summary', 'Summary'], ['preview', 'Preview'], ['details', 'Match']],
   capture: [['details', 'Scan profile'], ['preview', 'Preview'], ['convert', 'Convert']],
@@ -444,6 +464,7 @@ export const PANES = {
 };
 
 export const STATUS = {
+  home: ['Nothing waiting'],
   repo: ['1,204 items', '1 selected', '7 of 9 named automatically', '90-day recovery window'],
   search: ['318 results', '0.42 seconds', 'Scope: all cabinets', 'Transcripts included'],
   capture: ['12 items captured', '1 needs a rescan', 'Profile: contract bundle, 300 dpi'],
@@ -459,6 +480,7 @@ export const STATUS = {
 };
 
 export const BULK = {
+  home: [],
   // Share and Export are gone rather than inert. A share link carries exactly
   // one document, so "share six things" has no meaning at the API and would
   // have to invent one; Export has no endpoint at all. A button that does
@@ -581,6 +603,10 @@ export const DETAIL_NOTES = {
 };
 
 export const DETAILS = {
+  // Home rows are always live — an approval or an audit entry — so the shape
+  // detection in DetailsPane picks a describer and this is never reached. It
+  // exists because the pane maps over it before choosing one.
+  home: [['Item', [['Nothing selected', 'Choose a row', '']]]],
   repo: [
     ['Extracted by intelligent indexing', [['Counterparty', 'Northwind Logistics LLC', '99%'], ['Effective date', '1 September 2026', '98%'], ['Term', '36 months', '97%'], ['Liability cap', '12 months of fees', '94%'], ['Governing law', 'Delaware', '99%']]],
     ['Record', [['Document type', 'Master services agreement', ''], ['Classification', 'Confidential', ''], ['Retention', '7 years from execution', ''], ['Origin', 'E-form intake, 1 August', '']]],

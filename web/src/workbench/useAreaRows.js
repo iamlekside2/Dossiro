@@ -276,6 +276,74 @@ function typeFlag(t) {
 }
 
 const LIVE = {
+  /**
+   * The first screen anybody sees, and the one most likely to be believed
+   * without checking. Both halves are yours specifically: approvals assigned
+   * to you, and documents you personally opened.
+   */
+  home: {
+    '*': {
+      label: 'items',
+      async load({ scopeIndex = 0, userId } = {}) {
+        if (scopeIndex === 2) {
+          // Read from the audit trail rather than a "recent" table, because
+          // the trail is already the authority on what somebody opened and a
+          // second list would be a second thing to keep true.
+          const res = await api.audit.query({
+            actorId: userId,
+            action: 'DOCUMENT_VIEW',
+            take: 50,
+          });
+          return {
+            rows: res.items.map((e) =>
+              withRecord(
+                [
+                  'DOC',
+                  e.resourceName || 'A document',
+                  `Opened ${since(e.createdAt)}`,
+                  '',
+                  'Opened',
+                  e.channel ? String(e.channel).toLowerCase() : 'web',
+                  since(e.createdAt),
+                ],
+                e,
+              ),
+            ),
+            total: res.total,
+            status: [
+              plural(res.items.length, 'document'),
+              'From your audit trail, not a separate list',
+            ],
+          };
+        }
+
+        const res = await api.workflow.tasks();
+        const items = scopeIndex === 1 ? res.items.filter((t) => t.overdue) : res.items;
+        return {
+          rows: items.map((t) =>
+            withRecord(
+              [
+                'WFL',
+                t.documentName,
+                `${t.stepName} · ${t.workflowName}`,
+                t.overdue ? 'Overdue' : '',
+                String(t.action).toLowerCase(),
+                t.workflowName,
+                t.dueAt ? since(t.dueAt) : 'No deadline',
+              ],
+              t,
+            ),
+          ),
+          total: items.length,
+          status: [
+            items.length ? plural(items.length, 'item') : 'Nothing waiting',
+            res.overdue > 0 ? `${res.overdue} overdue` : 'None overdue',
+          ],
+        };
+      },
+    },
+  },
+
   // The forms a tenant has built, and what state each is in (SIG-5).
   forms: {
     '*': {

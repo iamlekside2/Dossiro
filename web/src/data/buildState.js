@@ -25,6 +25,12 @@ export const UNBUILT = 'not-built';
 export const HIDE_UNBUILT = false;
 
 export const AREA_STATE = {
+  home: {
+    state: LIVE,
+    endpoint: 'GET /api/workflow/tasks · GET /api/audit',
+    note: 'Your approvals and the documents you have actually opened. Mentions and saved searches '
+      + 'are not built, so they are absent rather than empty.',
+  },
   repo: {
     state: LIVE,
     endpoint: 'GET /api/documents · GET /api/folders/tree',
