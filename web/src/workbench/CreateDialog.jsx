@@ -77,6 +77,7 @@ const FORMS = {
         ? `Created inside ${ctx.folderName}. It inherits that folder's sensitivity, which you can raise but not lower.`
         : 'Created at the top of the repository, as a new cabinet.',
     submit: 'Create folder',
+    done: (ctx) => `Folder created${ctx?.folderName ? ` in ${ctx.folderName}` : ''}.`,
     fields: [{ key: 'name', label: 'Folder name', required: true, placeholder: 'Vendor contracts' }],
     async submitFn(values, ctx) {
       return api.folders.create({
@@ -90,6 +91,7 @@ const FORMS = {
     title: 'Move document',
     lede: (ctx) => `Where should ${ctx?.documentName ?? 'this document'} be filed?`,
     submit: 'Move',
+    done: (ctx) => `${ctx?.documentName ?? 'The document'} moved.`,
     // The destination list is the folder tree, flattened. Loaded when the
     // dialog opens rather than held in the shell, because it is only ever
     // needed here and a stale copy would offer a folder that has since moved.
@@ -125,6 +127,7 @@ const FORMS = {
       );
     },
     submit: 'Apply',
+    done: 'Classification applied.',
     initial: (ctx) => ({ classification: ctx?.classification ?? 'INTERNAL' }),
     fields: () => [
       {
@@ -155,18 +158,19 @@ const FORMS = {
       `A link that opens ${ctx?.documentName ?? 'this document'} for somebody with no account. `
       + 'They see that document and can reach nothing else.',
     submit: 'Create link',
-    initial: () => ({ expiresInDays: '7', maxDownloads: '', allowDownload: 'false' }),
+    done: 'Link created. It works immediately and expires on its own.',
+    initial: () => ({ expiresInHours: '168', maxDownloads: '', allowDownload: 'false' }),
     fields: () => [
       {
-        key: 'expiresInDays',
+        key: 'expiresInHours',
         label: 'Expires after',
         required: true,
         type: 'select',
         options: [
-          ['1', 'One day'],
-          ['7', 'One week'],
-          ['30', 'One month'],
-          ['90', 'Three months'],
+          ['24', 'One day'],
+          ['168', 'One week'],
+          ['720', 'One month'],
+          ['2160', 'Three months'],
         ],
         hint: 'The link stops working then, with nobody having to remember to revoke it.',
       },
@@ -187,9 +191,8 @@ const FORMS = {
       },
     ],
     async submitFn(values, ctx) {
-      return api.shares.create({
-        documentId: ctx.documentId,
-        expiresInDays: Number(values.expiresInDays),
+      return api.shares.create(ctx.documentId, {
+        expiresInHours: Number(values.expiresInHours),
         allowDownload: values.allowDownload === 'true',
         maxDownloads: values.maxDownloads ? Number(values.maxDownloads) : undefined,
       });
@@ -300,6 +303,10 @@ export default function CreateDialog({ kind, context, onClose, onCreated }) {
 
   // An invitation returns a link that is shown once. With SMTP off it is the
   // only way in, so the dialog stays open until it has been acknowledged.
+  const shareUrl = result?.share?.token
+    ? `${window.location.origin}/s/${result.share.token}`
+    : null;
+
   const handoffLink = result?.acceptUrl
     ? `${window.location.origin}${result.acceptUrl}`
     : result?.instructions
@@ -404,7 +411,22 @@ export default function CreateDialog({ kind, context, onClose, onCreated }) {
             )}
 
             {!handoffLink && !result.instructions && (
-              <div className={callout()}>Created.</div>
+              <div className={callout()}>{call(spec.done) ?? 'Created.'}</div>
+            )}
+
+            {/* A share is only useful once somebody has the link, so it is
+                shown here rather than left for the Sharing area to reveal. */}
+            {shareUrl && (
+              <div className={M.link}>
+                <code>{shareUrl}</code>
+                <button
+                  type="button"
+                  className={M.linkbtn}
+                  onClick={() => navigator.clipboard?.writeText(shareUrl)}
+                >
+                  Copy
+                </button>
+              </div>
             )}
 
             <div className={M.actions}>

@@ -221,6 +221,11 @@ export const api = {
   folders: {
     tree: (rootId) => request(`/folders/tree${rootId ? `?rootId=${rootId}` : ''}`),
     children: (id) => request(`/folders/${id ?? 'root'}/children`),
+
+    /** Omitting parentId creates a cabinet at the top of the repository. */
+    create: (body) => request('/folders', { method: 'POST', body }),
+    rename: (id, name) => request(`/folders/${id}/name`, { method: 'PATCH', body: { name } }),
+    move: (id, parentId) => request(`/folders/${id}/parent`, { method: 'PATCH', body: { parentId } }),
   },
 
   documents: {
