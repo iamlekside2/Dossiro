@@ -18,13 +18,22 @@ function Set-Policy($On) {
 }
 
 function Clear-Sessions {
-  Invoke-Sql 'UPDATE sessions SET "revokedAt" = now() WHERE "revokedAt" IS NULL;'
+  # Scoped to this suite's own account. Revoking every live session in the
+  # database signed out whoever else was using the app at the time — including
+  # a browser left open on another tenant — and nothing here needs that.
+  Invoke-Sql @'
+UPDATE sessions s SET "revokedAt" = now()
+  FROM users u
+ WHERE u.id = s."userId"
+   AND u.email = 'manager@acme.test'
+   AND s."revokedAt" IS NULL;
+'@
 }
 
 function Get-LiveSessions {
   [int](Get-SqlValue @'
 SELECT count(*) FROM sessions s JOIN users u ON u.id = s."userId"
- WHERE u.email = 'admin@acme.test' AND s."revokedAt" IS NULL AND s."expiresAt" > now();
+ WHERE u.email = 'manager@acme.test' AND s."revokedAt" IS NULL AND s."expiresAt" > now();
 '@)
 }
 
@@ -40,8 +49,8 @@ Head "Off by default - nobody is surprised by it"
 Set-Policy $false
 Clear-Sessions
 
-$a = Sign-In @{ email='admin@acme.test'; password='Dossiro!2026' } $CHROME
-$b = Sign-In @{ email='admin@acme.test'; password='Dossiro!2026' } $IPHONE
+$a = Sign-In @{ email='manager@acme.test'; password='Dossiro!2026' } $CHROME
+$b = Sign-In @{ email='manager@acme.test'; password='Dossiro!2026' } $IPHONE
 Show "two sign-ins both succeed when the policy is off" ($a.code -eq 200 -and $b.code -eq 200) `
   "first HTTP $($a.code), second HTTP $($b.code)"
 $n = Get-LiveSessions
@@ -53,10 +62,10 @@ Head "On - the second sign-in is refused, and says where the first is"
 Set-Policy $true
 Clear-Sessions
 
-$first = Sign-In @{ email='admin@acme.test'; password='Dossiro!2026' } $CHROME
+$first = Sign-In @{ email='manager@acme.test'; password='Dossiro!2026' } $CHROME
 Show "the first sign-in still works normally" ($first.code -eq 200) "HTTP $($first.code)"
 
-$second = Sign-In @{ email='admin@acme.test'; password='Dossiro!2026' } $IPHONE
+$second = Sign-In @{ email='manager@acme.test'; password='Dossiro!2026' } $IPHONE
 Show "the second is refused with 409, not 401" ($second.code -eq 409) `
   "HTTP $($second.code). The password was correct, so 401 would send them to reset a working password."
 Show "it carries a code the client can act on" ($second.body.code -eq 'SESSION_ACTIVE') "code=$($second.body.code)"
@@ -70,7 +79,7 @@ Show "the refused attempt created no session" ((Get-LiveSessions) -eq 1) "$(Get-
 # =====================================================================
 Head "Taking over - deliberate, and recorded"
 # =====================================================================
-$take = Sign-In @{ email='admin@acme.test'; password='Dossiro!2026'; takeover=$true } $IPHONE
+$take = Sign-In @{ email='manager@acme.test'; password='Dossiro!2026'; takeover=$true } $IPHONE
 Show "signing in again with takeover succeeds" ($take.code -eq 200) "HTTP $($take.code)"
 Show "exactly one session survives" ((Get-LiveSessions) -eq 1) "$(Get-LiveSessions) live session"
 
