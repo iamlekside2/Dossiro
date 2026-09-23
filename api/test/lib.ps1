@@ -136,3 +136,54 @@ function Assert-ApiUp {
     exit 1
   }
 }
+
+<#
+  A document belonging to the suite that asked for it.
+
+  Several suites used to open with `GET /documents?take=1` and then file the
+  corpus document they got back as a throwaway type. Filing a type replaces
+  whatever type the document already carried and deletes the index values that
+  belonged to it, so each run quietly destroyed a little of the seed. Nothing
+  reported it, because the suite doing the damage asserts nothing about that
+  document's history — the failure surfaced two suites later, as a count that
+  had drifted.
+
+  Upload your own, and remove it with Remove-ProbeDocument.
+#>
+function New-ProbeDocument {
+  param(
+    [Parameter(Mandatory)][string]$Token,
+    [string]$Name = 'probe.txt',
+    [string]$Text = 'A document belonging to this test suite.',
+    [string]$FolderName = 'Contracts'
+  )
+  $folder = Get-SqlValue @"
+SELECT f.id FROM folders f JOIN organizations o ON o.id = f."organizationId"
+ WHERE o.slug = 'acme' AND f.name = '$FolderName' LIMIT 1;
+"@
+  $tmp = Join-Path $env:TEMP $Name
+  Write-NoBom $tmp $Text
+  $out = Join-Path $env:TEMP ("probe-" + [Guid]::NewGuid().ToString('N') + ".json")
+  & curl.exe -s -o $out -X POST "$script:API/documents" `
+    -H "Authorization: Bearer $Token" -F "file=@$tmp" -F "folderId=$folder" | Out-Null
+  $doc = Get-Content $out -Raw | ConvertFrom-Json
+  Remove-Item $tmp, $out -Force -ErrorAction SilentlyContinue
+  return $doc
+}
+
+function Remove-ProbeDocument {
+  param([Parameter(Mandatory)][string]$DocumentId)
+  Invoke-Sql @"
+DELETE FROM access_grants WHERE "documentId" = '$DocumentId';
+DELETE FROM workflow_tasks WHERE "instanceId" IN (
+  SELECT id FROM workflow_instances WHERE "documentId" = '$DocumentId');
+DELETE FROM workflow_instances WHERE "documentId" = '$DocumentId';
+DELETE FROM document_field_values WHERE "documentId" = '$DocumentId';
+DELETE FROM document_index WHERE "documentId" = '$DocumentId';
+DELETE FROM processing_jobs WHERE "documentId" = '$DocumentId';
+DELETE FROM change_log WHERE "entityType" = 'document' AND "entityId" = '$DocumentId';
+DELETE FROM document_versions WHERE "documentId" = '$DocumentId';
+DELETE FROM documents WHERE id = '$DocumentId';
+"@
+  return (Get-SqlValue "SELECT count(*) FROM documents WHERE id = '$DocumentId';")
+}

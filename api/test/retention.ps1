@@ -34,9 +34,12 @@ VALUES ('rchk_anchor', '$org', 'rchk_type', 'Closed on', 'DATE', true, now());
 
 # Two documents: one whose anchor date is two years ago (overdue), one whose
 # anchor is next year (not yet due).
-$docs = (Invoke-Api GET '/documents?take=2' $tok).body.items
-$overdue = $docs[0].id
-$future  = $docs[1].id
+# Its own two documents. This suite files them as rchk_type and its tidy-up
+# sets documentTypeId back to NULL, which on corpus documents means "forget
+# whatever type you had" — two of the seed's contracts lost their type on every
+# run, and the failure surfaced in search-fields as a count that had drifted.
+$overdue = (New-ProbeDocument -Token $tok -Name 'retention-overdue.txt').id
+$future  = (New-ProbeDocument -Token $tok -Name 'retention-future.txt').id
 
 foreach ($d in @($overdue, $future)) {
   Invoke-Api PATCH "/documents/$d/type" $tok @{ documentTypeId = 'rchk_type' } | Out-Null
@@ -126,8 +129,12 @@ Show "and the schedule that brought it up, captured at the time" `
 
 # -- Documents with no schedule ----------------------------------------------------------
 
+# Actually untyped, rather than "not one of ours and therefore probably
+# untyped". That held only while this suite was clearing the type off corpus
+# documents, which is the bug it no longer has.
 $untyped = (Invoke-Api GET '/documents?take=50' $tok).body.items |
-  Where-Object { $_.id -ne $overdue -and $_.id -ne $future } | Select-Object -First 1
+  Where-Object { $_.id -ne $overdue -and $_.id -ne $future -and -not $_.documentTypeId } |
+  Select-Object -First 1
 $r = Invoke-Api GET "/retention/document/$($untyped.id)" $tok
 Show "a document with no schedule says so rather than 404ing" `
   ($r.code -eq 200 -and $r.body.scheduled -eq $false) $r.body.reason
@@ -135,11 +142,16 @@ Show "a document with no schedule says so rather than 404ing" `
 # -- Tidy up ------------------------------------------------------------------------------
 
 Invoke-Sql @"
-UPDATE documents SET "deletedAt" = NULL, "deletedById" = NULL, "purgeAfter" = NULL,
-                     "documentTypeId" = NULL
- WHERE id IN ('$overdue', '$future');
 DELETE FROM retention_decisions WHERE "documentId" IN ('$overdue', '$future');
 DELETE FROM legal_holds WHERE id = 'rchk_hold';
+"@
+
+# The documents go before the type they are filed as, or the foreign key holds.
+$goneA = Remove-ProbeDocument -DocumentId $overdue
+$goneB = Remove-ProbeDocument -DocumentId $future
+Show "the probe documents are removed" ($goneA -eq '0' -and $goneB -eq '0') 'the suite leaves the corpus as it found it'
+
+Invoke-Sql @"
 DELETE FROM document_types WHERE id = 'rchk_type';
 DELETE FROM retention_policies WHERE id = 'rchk_pol';
 "@

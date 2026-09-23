@@ -19,7 +19,21 @@ $clerk = (Get-Token 'clerk@acme.test' 'Dossiro!2026').accessToken
 $type = (Invoke-Api GET '/document-types' $admin).body.items[0]
 Show "a type to restrict" ([bool]$type.id) "$($type.name)"
 
-$doc = (Invoke-Api GET '/documents?take=1' $clerk).body.items[0]
+# Its own document: this suite files it as a throwaway type repeatedly, which
+# would overwrite the type a corpus document already carried.
+$doc = New-ProbeDocument -Token $admin -Name 'filing-roles-probe.txt' -FolderName 'Shared'
+
+# The clerk is given write on it outright. This suite is about whether a type's
+# role list gates filing; the clerk being able to reach the document at all is a
+# precondition, not the thing under test. It used to hold only because
+# PATCH /documents/:id/type checked nothing, so the suite passed for the wrong
+# reason and would have gone red the moment that was fixed.
+$clerkId = Get-SqlValue "SELECT id FROM users WHERE email = 'clerk@acme.test';"
+Invoke-Sql @"
+INSERT INTO access_grants (id, "resourceType", "documentId", "subjectType", "userId", level, "isDeny")
+VALUES ('tfr-probe-grant', 'DOCUMENT', '$($doc.id)', 'USER', '$clerkId', 'WRITE', false);
+"@
+$lvl = (Invoke-Api GET "/access/documents/$($doc.id)" $clerk).body
 Show "a document the clerk can write to" ([bool]$doc.id) "$($doc.name)"
 
 try {
@@ -70,5 +84,10 @@ finally {
   Invoke-Api PATCH "/document-types/$($type.id)/roles" $admin @{ roleIds = @() } | Out-Null
   Invoke-Api PATCH "/documents/$($doc.id)/type" $admin @{ documentTypeId = $null } | Out-Null
 }
+
+Head "Cleanup"
+
+$left = Remove-ProbeDocument -DocumentId $doc.id
+Show "the probe document is removed" ($left -eq '0') 'the suite leaves the corpus as it found it'
 
 Summary

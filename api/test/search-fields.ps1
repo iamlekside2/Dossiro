@@ -32,6 +32,18 @@ $filed = (Invoke-Api GET "/search?documentTypeId=$($contract.id)&take=3" $tok).b
 Show "the seed filed documents as Contract" ($filed.Count -eq 3) "$($filed.Count) found"
 
 $a, $b, $c = $filed
+
+# Clear all four on all three first. The suite deliberately leaves some fields
+# unset to prove `unset` and `set` separate them, and a value left behind by an
+# earlier run — on a document that sorted into a different slot that time —
+# makes those two queries fail with nothing to show for it. What is not set
+# below has to be actually unset, not merely unmentioned.
+foreach ($d in @($a, $b, $c)) {
+  foreach ($f in @($fContractor, $fExpiry, $fValue, $fRegion)) {
+    Invoke-Api PATCH "/documents/$($d.id)/fields/$f" $tok @{ value = $null } | Out-Null
+  }
+}
+
 Invoke-Api PATCH "/documents/$($a.id)/fields/$fContractor" $tok @{ value = 'Northwind Logistics' } | Out-Null
 Invoke-Api PATCH "/documents/$($a.id)/fields/$fExpiry"     $tok @{ value = '2027-03-01' } | Out-Null
 Invoke-Api PATCH "/documents/$($a.id)/fields/$fValue"      $tok @{ value = 412000000 } | Out-Null

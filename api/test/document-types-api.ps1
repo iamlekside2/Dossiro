@@ -84,7 +84,10 @@ Show "a type with fields publishes" ($r.body.status -eq 'PUBLISHED') $r.body.sta
 
 # -- Filing a document as this type ------------------------------------------
 
-$docId = (Invoke-Api GET '/documents?take=1' $tok).body.items[0].id
+# Its own document, not whichever one the corpus happens to return first.
+# This suite files a throwaway type onto it and clears the type again, which
+# would destroy the type and index values a corpus document already carried.
+$docId = (New-ProbeDocument -Token $tok -Name 'dt-api-probe.txt').id
 $r = Invoke-Api PATCH "/documents/$docId/type" $tok @{ documentTypeId = $type.id }
 Show "a document can be filed as a type" ($r.code -eq 200) "HTTP $($r.code)"
 Show "its fields come back empty but present" `
@@ -133,5 +136,10 @@ Show "clearing the type removes the values that belonged to it" ($r.body.items.C
 
 $r = Invoke-Api DELETE "/document-types/$($type.id)" $tok
 Show "an unused type deletes" ($r.code -eq 200) "HTTP $($r.code)"
+
+Head "Cleanup"
+
+$left = Remove-ProbeDocument -DocumentId $docId
+Show "the probe document is removed" ($left -eq '0') 'the suite leaves the corpus as it found it'
 
 Summary
