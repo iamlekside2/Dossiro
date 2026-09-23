@@ -72,6 +72,12 @@ jobs:
           # tenant, and the sign-in page would lose its branding.
           VITE_API_URL: /api
 
+      # The site is not one of the root workspaces — those are api and web — so
+      # the install above does not reach it. It has its own lock file.
+      - name: Install the marketing site
+        working-directory: site
+        run: npm ci
+
       - name: Build the marketing site
         working-directory: site
         run: npm run build
