@@ -276,6 +276,57 @@ function typeFlag(t) {
 }
 
 const LIVE = {
+  /** The workflows a tenant has defined, and what each is doing (WFL-7). */
+  workflows: {
+    '*': {
+      label: 'workflows',
+      async load({ scopeIndex = 0 } = {}) {
+        const res = await api.workflow.definitions();
+        const items =
+          scopeIndex === 1
+            ? res.items.filter((w) => w.isActive)
+            : scopeIndex === 2
+              ? res.items.filter((w) => !w.isActive)
+              : scopeIndex === 3
+                ? res.items.filter((w) => Number(w.inFlight) > 0)
+                : scopeIndex === 4
+                  ? res.items.filter((w) => Number(w.overdue) > 0)
+                  : res.items;
+
+        const startsWhen = (w) =>
+          w.triggerTypeName
+            ? `A ${w.triggerTypeName} is filed`
+            : w.triggerFolderName
+              ? `Anything filed in ${w.triggerFolderName}`
+              : 'Started by hand';
+
+        return {
+          rows: items.map((w) =>
+            withRecord(
+              [
+                'WFL',
+                w.name,
+                w.description || startsWhen(w),
+                Number(w.overdue) > 0 ? `${w.overdue} overdue` : w.isActive ? '' : 'Draft',
+                startsWhen(w),
+                `${(w.steps ?? []).length} steps`,
+                `${w.inFlight} in flight`,
+              ],
+              w,
+            ),
+          ),
+          total: items.length,
+          status: [
+            plural(items.length, 'workflow'),
+            `${res.live} live`,
+            `${res.inFlight} in flight`,
+            'A role reaches whoever holds it today',
+          ],
+        };
+      },
+    },
+  },
+
   /**
    * The pipeline, as it actually ran. Not a picture of intake — a record of
    * what was read, what could not be, and why.

@@ -9,6 +9,11 @@ import {
 import { AccessPane, DetailsPane, EditPane, SummaryPane, VersionsPane } from './panes/Core.jsx';
 import { ShareLinkPane } from './panes/Share.jsx';
 import { SupportSessionPane } from './panes/Support.jsx';
+import {
+  WorkflowDetailsPane,
+  WorkflowInFlightPane,
+  WorkflowStepsPane,
+} from './panes/Workflows.jsx';
 import { SearchMatchPane } from './panes/Search.jsx';
 import { TypeAccessPane, TypeDetailsPane, TypeFieldsPane } from './panes/Types.jsx';
 import { ins } from './panes/ins.js';
@@ -32,6 +37,8 @@ const BODIES = {
   branchstaff: BranchStaffPane,
   hostname: HostnamePane,
   support: SupportSessionPane,
+  steps: WorkflowStepsPane,
+  inflight: WorkflowInFlightPane,
   preview: Preview,
   summary: SummaryPane,
   edit: EditPane,
@@ -82,6 +89,11 @@ export default function Inspector({
     // A search result is a document, so the Repository's Summary pane answers
     // for it unchanged; only the match itself needs its own describer.
     search: { preview: LivePreview, summary: DocumentSummaryPane, details: SearchMatchPane },
+    workflows: {
+      steps: WorkflowStepsPane,
+      details: WorkflowDetailsPane,
+      inflight: WorkflowInFlightPane,
+    },
   };
 
   const wired = (Boolean(record?.record) && LIVE_BODIES[area]) || null;

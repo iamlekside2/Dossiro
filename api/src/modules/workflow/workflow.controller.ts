@@ -31,6 +31,21 @@ export class WorkflowController {
     return this.workflow.myTasks(user);
   }
 
+  @Get('definitions')
+  @ApiOperation({
+    summary: 'The workflows this tenant has defined',
+    description: 'With how many are in flight under each, and how many of those are overdue.',
+  })
+  definitions(@CurrentUser() user: AuthUser) {
+    return this.workflow.definitions(user);
+  }
+
+  @Get('definitions/:id/in-flight')
+  @ApiOperation({ summary: 'What this workflow currently has running' })
+  inFlight(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.workflow.inFlight(user, id);
+  }
+
   @Get('instances/:id')
   @ApiOperation({ summary: 'One workflow in flight, with every step and decision' })
   instance(@CurrentUser() user: AuthUser, @Param('id') id: string) {

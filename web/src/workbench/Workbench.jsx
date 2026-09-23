@@ -204,7 +204,8 @@ export default function Workbench() {
               tab === 'approvals' ||
               tab === 'forms' ||
               tab === 'hr' ||
-              tab === 'ingest'
+              tab === 'ingest' ||
+              tab === 'workflows'
             ? { scopeIndex }
             : null;
 

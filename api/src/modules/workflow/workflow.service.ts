@@ -458,6 +458,61 @@ export class WorkflowService {
     return { ...inst, tasks };
   }
 
+  /** The workflows a tenant has defined, and what each is doing right now. */
+  async definitions(user: AuthUser) {
+    const items = await this.db.query(
+      `SELECT w.id, w.name, w.description, w."isActive", w.steps, w.trigger, w."createdAt",
+              COALESCE(a.n, 0) AS "inFlight",
+              COALESCE(o.n, 0) AS overdue,
+              COALESCE(c.n, 0) AS completed,
+              t.name AS "triggerTypeName",
+              f.name AS "triggerFolderName"
+         FROM workflow_definitions w
+         LEFT JOIN document_types t ON t.id = (w.trigger->>'documentTypeId')
+         LEFT JOIN folders f ON f.id = (w.trigger->>'folderId')
+         LEFT JOIN LATERAL (SELECT count(*) AS n FROM workflow_instances
+                             WHERE "definitionId" = w.id AND status = 'ACTIVE') a ON TRUE
+         LEFT JOIN LATERAL (SELECT count(*) AS n FROM workflow_instances
+                             WHERE "definitionId" = w.id AND status = 'COMPLETED') c ON TRUE
+         LEFT JOIN LATERAL (
+              SELECT count(*) AS n
+                FROM workflow_tasks wt
+                JOIN workflow_instances wi ON wi.id = wt."instanceId"
+               WHERE wi."definitionId" = w.id
+                 AND wi.status = 'ACTIVE'
+                 AND wt.status = 'PENDING'
+                 AND wt."dueAt" IS NOT NULL
+                 AND wt."dueAt" < now()) o ON TRUE
+        WHERE w."organizationId" = $1
+        ORDER BY w."isActive" DESC, w.name ASC`,
+      [user.organizationId],
+    );
+
+    return {
+      items,
+      total: items.length,
+      live: items.filter((w) => w.isActive).length,
+      inFlight: items.reduce((n, w) => n + Number(w.inFlight), 0),
+    };
+  }
+
+  /** Everything a given workflow currently has running. */
+  async inFlight(user: AuthUser, definitionId: string) {
+    const items = await this.db.query(
+      `SELECT i.id, i.status, i."currentStep", i."startedAt",
+              d.name AS "documentName", d.id AS "documentId",
+              (SELECT count(*) FROM workflow_tasks
+                WHERE "instanceId" = i.id AND status = 'PENDING') AS "openTasks"
+         FROM workflow_instances i
+         JOIN documents d ON d.id = i."documentId"
+        WHERE i."definitionId" = $1 AND d."organizationId" = $2
+        ORDER BY i."startedAt" DESC
+        LIMIT 100`,
+      [definitionId, user.organizationId],
+    );
+    return { items, total: items.length };
+  }
+
   /* -- Escalation ------------------------------------------------------------- */
 
   /**

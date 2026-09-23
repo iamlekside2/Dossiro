@@ -24,6 +24,7 @@ export const TABS = [
   ['approvals', 'Approvals', '14'],
   ['sharing', 'Sharing', '6'],
   ['types', 'Types', ''],
+  ['workflows', 'Workflows', ''],
   ['audit', 'Audit', ''],
   ['admin', 'Administration', ''],
 ];
@@ -40,12 +41,26 @@ export const CRUMBS = {
   approvals: ['My work', 'Assigned to me'],
   sharing: ['Governance', 'External links'],
   types: ['Governance', 'Document types'],
+  workflows: ['Governance', 'Workflows'],
   audit: ['Governance', 'Event log', 'Last 7 days'],
   admin: ['Governance', 'Administration', 'Personnel'],
 };
 
 /* [heading, footnote, items[[label, depth, count]], defaultIndex] */
 export const SCOPES = {
+  workflows: [
+    'Workflows',
+    'A workflow starts when a document is filed as a type its trigger names. A step assigned to '
+      + 'a role reaches whoever holds it today, not whoever held it when the workflow was written.',
+    [
+      ['All workflows', 0, ''],
+      ['Live', 0, ''],
+      ['Drafts', 0, ''],
+      ['In flight', 0, ''],
+      ['Overdue steps', 0, ''],
+    ],
+    0,
+  ],
   home: [
     'Your day',
     'Everything here is yours specifically — what is assigned to you, and what you have opened.',
@@ -248,6 +263,7 @@ export const SCOPES = {
 };
 
 export const TOOLBAR = {
+  workflows: ['Open'],
   home: ['Open'],
   repo: ['Open', 'Check out', 'New folder', 'Move…', 'Classify…', 'Share…'],
   search: ['Open', 'Refine…', 'Save this search', 'Export results'],
@@ -297,6 +313,7 @@ export const FIND_PLACEHOLDER_BY_SCOPE = {
 };
 
 export const FIND_PLACEHOLDER = {
+  workflows: 'Find a workflow',
   home: 'Find in your day',
   admin: 'Find a person',
   hr: 'Find a person',
@@ -306,6 +323,7 @@ export const FIND_PLACEHOLDER = {
 
 /* [label, width] where width 1 means minmax(0, 1fr) */
 export const COLS = {
+  workflows: [['Workflow', 1], ['Starts when', 190], ['Steps', 90], ['In flight', 100]],
   home: [['What needs you', 1], ['Kind', 130], ['Where from', 150], ['When', 110]],
   // 'Owner' rather than 'Access': the document list does not carry the
   // caller's effective level, and computing it per row would be one request
@@ -448,6 +466,7 @@ export const ROWS = {
 };
 
 export const PANES = {
+  workflows: [['steps', 'Steps'], ['details', 'Workflow'], ['inflight', 'In flight']],
   home: [['details', 'Item']],
   repo: [['preview', 'Preview'], ['summary', 'Summary'], ['edit', 'Edit'], ['history', 'Versions'], ['access', 'Access']],
   search: [['summary', 'Summary'], ['preview', 'Preview'], ['details', 'Match']],
@@ -464,6 +483,7 @@ export const PANES = {
 };
 
 export const STATUS = {
+  workflows: ['No workflows yet'],
   home: ['Nothing waiting'],
   repo: ['1,204 items', '1 selected', '7 of 9 named automatically', '90-day recovery window'],
   search: ['318 results', '0.42 seconds', 'Scope: all cabinets', 'Transcripts included'],
@@ -480,6 +500,7 @@ export const STATUS = {
 };
 
 export const BULK = {
+  workflows: [],
   home: [],
   // Share and Export are gone rather than inert. A share link carries exactly
   // one document, so "share six things" has no meaning at the API and would

@@ -89,6 +89,12 @@ export const AREA_STATE = {
     note: 'Real types with their real index fields. Defining, publishing and restricting who may '
       + 'file as a type all work.',
   },
+  workflows: {
+    state: LIVE,
+    endpoint: 'GET /api/workflow/definitions',
+    note: 'Real definitions from the engine, with what each has in flight. Building one is '
+      + 'API-only so far — the screen lists them and shows their steps.',
+  },
   audit: {
     state: LIVE,
     endpoint: 'GET /api/audit · GET /api/audit/integrity',

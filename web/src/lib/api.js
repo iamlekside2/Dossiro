@@ -257,6 +257,8 @@ export const api = {
   /** Approvals in flight (WFL-9). */
   workflow: {
     tasks: () => request('/workflow/tasks'),
+    definitions: () => request('/workflow/definitions'),
+    inFlight: (id) => request(`/workflow/definitions/${id}/in-flight`),
     instance: (id) => request(`/workflow/instances/${id}`),
     decide: (id, approve, comment) =>
       request(`/workflow/tasks/${id}/decide`, { method: 'POST', body: { approve, comment } }),
