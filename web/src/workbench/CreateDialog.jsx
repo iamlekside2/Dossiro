@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import api from '../lib/api.js';
 import { btn, callout } from '../ui.js';
 import { M } from '../form.js';
@@ -67,25 +67,228 @@ const FORMS = {
       });
     },
   },
+
+  /* -- Repository ---------------------------------------------------------- */
+
+  folder: {
+    title: 'New folder',
+    lede: (ctx) =>
+      ctx?.folderName
+        ? `Created inside ${ctx.folderName}. It inherits that folder's sensitivity, which you can raise but not lower.`
+        : 'Created at the top of the repository, as a new cabinet.',
+    submit: 'Create folder',
+    fields: [{ key: 'name', label: 'Folder name', required: true, placeholder: 'Vendor contracts' }],
+    async submitFn(values, ctx) {
+      return api.folders.create({
+        name: values.name.trim(),
+        parentId: ctx?.folderId ?? undefined,
+      });
+    },
+  },
+
+  move: {
+    title: 'Move document',
+    lede: (ctx) => `Where should ${ctx?.documentName ?? 'this document'} be filed?`,
+    submit: 'Move',
+    // The destination list is the folder tree, flattened. Loaded when the
+    // dialog opens rather than held in the shell, because it is only ever
+    // needed here and a stale copy would offer a folder that has since moved.
+    load: () => api.folders.tree().then(flattenTree),
+    initial: (ctx) => ({ folderId: ctx?.folderId ?? '' }),
+    fields: (ctx, folders) => [
+      {
+        key: 'folderId',
+        label: 'Destination',
+        required: false,
+        type: 'select',
+        options: [['', 'Unfiled — no folder'], ...(folders ?? [])],
+        hint:
+          'A folder is a floor, not a ceiling: moving into somewhere more sensitive than the '
+          + 'document is refused rather than silently reclassifying it.',
+      },
+    ],
+    async submitFn(values, ctx) {
+      return applyToEach(ctx, (id) => api.documents.move(id, values.folderId || null));
+    },
+  },
+
+  classify: {
+    title: 'Change classification',
+    // Agreement matters here because the subject may be "3 documents".
+    lede: (ctx) => {
+      const many = (ctx?.documentIds?.length ?? 1) > 1;
+      const subject = ctx?.documentName ?? 'this document';
+      return (
+        `How sensitive ${many ? 'are' : 'is'} ${subject}? This governs who may reach `
+        + `${many ? 'them' : 'it'} and how ${many ? 'they' : 'it'} may be shared, independently of `
+        + 'any permission granted on the folder.'
+      );
+    },
+    submit: 'Apply',
+    initial: (ctx) => ({ classification: ctx?.classification ?? 'INTERNAL' }),
+    fields: () => [
+      {
+        key: 'classification',
+        label: 'Classification',
+        required: true,
+        type: 'select',
+        options: [
+          ['PUBLIC', 'Public — may leave the organisation freely'],
+          ['INTERNAL', 'Internal — staff only'],
+          ['CONFIDENTIAL', 'Confidential — external shares must name their recipients'],
+          ['RESTRICTED', 'Restricted — cannot leave the organisation by any route'],
+        ],
+        hint:
+          'Lowering it below the folder the document sits in is refused. Move it out first if that '
+          + 'is really what you mean.',
+      },
+    ],
+    async submitFn(values, ctx) {
+      return applyToEach(ctx, (id) => api.documents.classify(id, values.classification));
+    },
+  },
+
+
+  share: {
+    title: 'Share outside the organisation',
+    lede: (ctx) =>
+      `A link that opens ${ctx?.documentName ?? 'this document'} for somebody with no account. `
+      + 'They see that document and can reach nothing else.',
+    submit: 'Create link',
+    initial: () => ({ expiresInDays: '7', maxDownloads: '', allowDownload: 'false' }),
+    fields: () => [
+      {
+        key: 'expiresInDays',
+        label: 'Expires after',
+        required: true,
+        type: 'select',
+        options: [
+          ['1', 'One day'],
+          ['7', 'One week'],
+          ['30', 'One month'],
+          ['90', 'Three months'],
+        ],
+        hint: 'The link stops working then, with nobody having to remember to revoke it.',
+      },
+      {
+        key: 'allowDownload',
+        label: 'What they may do',
+        type: 'select',
+        options: [
+          ['false', 'Read it on screen only'],
+          ['true', 'Read and download'],
+        ],
+        hint: 'View-only is enforced by the server, not hidden in the interface.',
+      },
+      {
+        key: 'maxDownloads',
+        label: 'Close after this many downloads',
+        placeholder: 'Leave empty for no limit',
+      },
+    ],
+    async submitFn(values, ctx) {
+      return api.shares.create({
+        documentId: ctx.documentId,
+        expiresInDays: Number(values.expiresInDays),
+        allowDownload: values.allowDownload === 'true',
+        maxDownloads: values.maxDownloads ? Number(values.maxDownloads) : undefined,
+      });
+    },
+  },
 };
 
-export default function CreateDialog({ kind, onClose, onCreated }) {
+/**
+ * Applies an action to every document the dialog is acting on.
+ *
+ * Keeps going after a refusal rather than stopping at the first, because a
+ * mixed selection legitimately produces mixed results — four documents move
+ * and the fifth is too sensitive for the destination. Throws a summary when
+ * any failed, so the dialog shows what happened instead of closing as though
+ * everything worked.
+ */
+async function applyToEach(ctx, fn) {
+  const ids = ctx?.documentIds?.length ? ctx.documentIds : [ctx?.documentId].filter(Boolean);
+  const failures = [];
+
+  for (const id of ids) {
+    try {
+      await fn(id);
+    } catch (err) {
+      failures.push(err.body?.message ?? err.message);
+    }
+  }
+
+  if (failures.length) {
+    const done = ids.length - failures.length;
+    throw new Error(
+      ids.length === 1
+        ? failures[0]
+        : `${done} of ${ids.length} done. ${failures[0]}`,
+    );
+  }
+  return { count: ids.length };
+}
+
+/** The folder tree as [id, indented name] pairs for a picker. */
+function flattenTree(nodes, depth = 0, out = []) {
+  for (const n of nodes ?? []) {
+    out.push([n.id, `${'  '.repeat(depth)}${n.name}`]);
+    flattenTree(n.children, depth + 1, out);
+  }
+  return out;
+}
+
+/**
+ * @param context  What the dialog is acting on — the selected document, the
+ *                 folder currently in scope. Move and Classify are about a
+ *                 record that is already on screen, so they need to know which
+ *                 one rather than asking for an id.
+ */
+export default function CreateDialog({ kind, context, onClose, onCreated }) {
   const spec = FORMS[kind];
   const [values, setValues] = useState({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
 
+  // Options can depend on what is on screen — the folder list for a move, the
+  // classifications above the destination's floor — so fields may be a
+  // function of the context rather than a fixed list. Loaded once per open.
+  const [loaded, setLoaded] = useState(null);
+  useEffect(() => {
+    if (!spec?.load) return undefined;
+    let cancelled = false;
+    spec
+      .load(context)
+      .then((d) => !cancelled && setLoaded(d))
+      .catch((err) => !cancelled && setError(err.body?.message ?? err.message));
+    return () => {
+      cancelled = true;
+    };
+  }, [spec, context]);
+
+  // Defaults come from the record being acted on, so Classify opens showing
+  // what the document is now rather than an arbitrary first option.
+  useEffect(() => {
+    if (spec?.initial) setValues(spec.initial(context, loaded));
+  }, [spec, context, loaded]);
+
   if (!spec) return null;
 
-  const ready = spec.fields.every((f) => !f.required || (values[f.key] ?? '').trim());
+  // Everything a spec supplies may be a function of what is being acted on,
+  // so a dialog can name the actual document rather than say "this record".
+  const call = (v) => (typeof v === 'function' ? v(context, loaded) : v);
+  const fields = call(spec.fields) ?? [];
+  const title = call(spec.title);
+  const lede = call(spec.lede);
+  const ready = fields.every((f) => !f.required || String(values[f.key] ?? '').trim());
 
   async function submit(e) {
     e.preventDefault();
     setBusy(true);
     setError(null);
     try {
-      const res = await spec.submitFn(values);
+      const res = await spec.submitFn(values, context);
       setResult(res);
       onCreated?.();
     } catch (err) {
@@ -104,30 +307,44 @@ export default function CreateDialog({ kind, onClose, onCreated }) {
       : null;
 
   return (
-    <div className={M.backdrop} role="dialog" aria-modal="true" aria-label={spec.title}>
+    <div className={M.backdrop} role="dialog" aria-modal="true" aria-label={title}>
       <form className={M.card} onSubmit={submit}>
         <h2 className={M.title}>
-          {spec.title}
+          {title}
         </h2>
         <p className={M.lede}>
-          {spec.lede}
+          {lede}
         </p>
 
         {!result ? (
           <>
-            {spec.fields.map((f) => (
+            {fields.map((f) => (
               <label className={M.field} key={f.key}>
                 <span className={M.fieldLabel}>
                   {f.label}
                   {f.required ? '' : ' (optional)'}
                 </span>
-                <input
-                  className={M.input}
-                  type={f.type ?? 'text'}
-                  value={values[f.key] ?? ''}
-                  placeholder={f.placeholder}
-                  onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
-                />
+                {f.type === 'select' ? (
+                  <select
+                    className={M.input}
+                    value={values[f.key] ?? ''}
+                    onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+                  >
+                    {(f.options ?? []).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    className={M.input}
+                    type={f.type ?? 'text'}
+                    value={values[f.key] ?? ''}
+                    placeholder={f.placeholder}
+                    onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+                  />
+                )}
                 {f.hint && <span className={M.fieldHint}>{f.hint}</span>}
               </label>
             ))}
@@ -140,7 +357,7 @@ export default function CreateDialog({ kind, onClose, onCreated }) {
 
             <div className={M.actions}>
               <button type="submit" className={btn('primary')} disabled={!ready || busy}>
-                {busy ? 'Working…' : spec.submit}
+                {busy ? 'Working…' : call(spec.submit)}
               </button>
               <button type="button" className={btn()} onClick={onClose}>
                 Cancel
@@ -204,6 +421,12 @@ export default function CreateDialog({ kind, onClose, onCreated }) {
 
 /** Which dialog, if any, a toolbar verb opens. */
 export function dialogForVerb(area, scopeIndex, verb) {
+  if (area === 'repo') {
+    if (verb.startsWith('New folder')) return 'folder';
+    if (verb.startsWith('Move')) return 'move';
+    if (verb.startsWith('Classify')) return 'classify';
+    return null; // Open, Check out and Share are actions, not forms.
+  }
   if (area !== 'admin') return null;
   if (scopeIndex === 0 && verb.startsWith('Add person')) return 'person';
   if (scopeIndex === 2 && (verb.startsWith('New branch') || verb.startsWith('Open branch'))) return 'branch';

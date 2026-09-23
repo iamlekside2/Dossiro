@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useIsNarrow, useIsPhone } from '../hooks/useMediaQuery.js';
 import LockedDrawerPrompt from '../screens/LockedDrawerPrompt.jsx';
 import { LOCKED_DRAWERS, useSession } from '../session/SessionContext.jsx';
+import api from '../lib/api.js';
 import { useAreaRows } from './useAreaRows.js';
 import { useFolderScopes } from './useFolderScopes.js';
 import {
@@ -50,7 +51,7 @@ export default function Workbench() {
   /** What is typed in the toolbar's find box, per area. */
   const [find, setFind] = useState('');
 
-  const { isUnlocked, unlockDrawer } = useSession();
+  const { isUnlocked, unlockDrawer, user } = useSession();
   /** Scope index awaiting a drawer passcode, or null. */
   const [pendingDrawer, setPendingDrawer] = useState(null);
 
@@ -69,6 +70,20 @@ export default function Workbench() {
 
   /** Which "New …" dialog is open, if any. */
   const [dialog, setDialog] = useState(null);
+
+  /**
+   * Why the last toolbar action failed.
+   *
+   * Shown rather than logged: a checkout that quietly does nothing is worse
+   * than one that names who is holding the document.
+   */
+  const [verbError, setVerbError] = useState(null);
+
+  /**
+   * Documents a dialog should apply to, when it was opened from the bulk bar
+   * rather than the toolbar. Null means "just the selected row".
+   */
+  const [bulkIds, setBulkIds] = useState(null);
 
   // Repository's cabinets are real folders; every other area still lists the
   // handoff's sample scopes. Loaded once and kept, so switching areas and back
@@ -248,6 +263,110 @@ export default function Workbench() {
   const activePane = paneSet.some((p) => p[0] === pane) ? pane : paneSet[0][0];
   const selCount = Object.values(sel).filter(Boolean).length;
 
+  /** The live document behind the selected row, when there is one. */
+  const liveDoc = selectedRow?.record?.id ? selectedRow.record : null;
+
+  /** What a dialog is acting on. */
+  const dialogContext = useMemo(
+    () => ({
+      documentId: liveDoc?.id,
+      // One or many. Move and Classify are the two verbs the bulk bar shares
+      // with the toolbar, so they accept either and the dialog says which.
+      documentIds: bulkIds ?? (liveDoc?.id ? [liveDoc.id] : []),
+      documentName: bulkIds
+        ? `${bulkIds.length} document${bulkIds.length === 1 ? '' : 's'}`
+        : liveDoc?.name,
+      classification: liveDoc?.classification,
+      folderId,
+      folderName: tab === 'repo' ? scopeItems[scopeIndex]?.[0] : undefined,
+    }),
+    [liveDoc, bulkIds, folderId, tab, scopeItems, scopeIndex],
+  );
+
+  /**
+   * The toolbar, with Repository's lock verb reading the document's state.
+   *
+   * A static "Check out" beside a document you already hold offers an action
+   * that would be refused, and hides the one you actually want.
+   */
+  const toolbarVerbs = useMemo(() => {
+    const base = TOOLBAR_BY_SCOPE[tab]?.[scopeIndex] ?? TOOLBAR[tab];
+    if (tab !== 'repo' || !liveDoc) return base;
+    const mine = liveDoc.checkedOutById && liveDoc.checkedOutById === user?.id;
+    return base.map((v) => (v === 'Check out' && mine ? 'Check in' : v));
+  }, [tab, scopeIndex, liveDoc, user?.id]);
+
+  /**
+   * Toolbar verbs that do something rather than open a form.
+   *
+   * Reports failure rather than swallowing it: a checkout that silently does
+   * nothing is worse than one that says who is holding the document.
+   */
+  async function runVerb(verb) {
+    if (tab !== 'repo' || !liveDoc) return;
+    try {
+      if (verb.startsWith('Open')) {
+        const { url } = await api.documents.content(liveDoc.id);
+        window.open(url, '_blank', 'noopener');
+        // Revoked on a delay: revoking immediately races the new tab's load.
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        return;
+      }
+      if (verb.startsWith('Check out')) {
+        await api.documents.checkOut(liveDoc.id);
+      } else if (verb.startsWith('Check in')) {
+        await api.documents.checkIn(liveDoc.id);
+      } else if (verb.startsWith('Share')) {
+        setDialog('share');
+        return;
+      } else {
+        return;
+      }
+      source.reload();
+    } catch (err) {
+      setVerbError(err.body?.message ?? err.message);
+    }
+  }
+
+  /**
+   * The same actions, applied to everything ticked.
+   *
+   * Runs one at a time and keeps going after a refusal, because a mixed
+   * selection legitimately produces mixed results — three documents move and
+   * the fourth is too sensitive for the destination. Reports what failed
+   * rather than stopping at the first one and leaving the rest ambiguous.
+   */
+  async function runBulk(verb) {
+    const ids = rows.filter((r) => sel[r[1]] && r.record?.id).map((r) => r.record.id);
+    if (tab !== 'repo' || ids.length === 0) return;
+
+    if (verb.startsWith('Classify') || verb.startsWith('Move')) {
+      // Both need a destination, so they go through the same dialog the
+      // toolbar uses — applied to the selection rather than the active row.
+      setBulkIds(ids);
+      setDialog(verb.startsWith('Classify') ? 'classify' : 'move');
+      return;
+    }
+
+    if (!verb.startsWith('Delete')) return;
+
+    const failures = [];
+    for (const id of ids) {
+      try {
+        await api.documents.remove(id);
+      } catch (err) {
+        failures.push(err.body?.message ?? err.message);
+      }
+    }
+    setSel({});
+    source.reload();
+    if (failures.length) {
+      setVerbError(
+        `${ids.length - failures.length} of ${ids.length} deleted. ${failures[0]}`,
+      );
+    }
+  }
+
   /* Repository rewrites the breadcrumb's last segment; every other area
      appends the scope, so a search query or batch identity is never lost. */
   const crumbs = useMemo(() => {
@@ -329,10 +448,15 @@ export default function Workbench() {
 
         <Toolbar
           crumbs={crumbs}
-          verbs={TOOLBAR_BY_SCOPE[tab]?.[scopeIndex] ?? TOOLBAR[tab]}
+          verbs={toolbarVerbs}
           onVerb={(verb) => {
             const kind = dialogForVerb(tab, scopeIndex, verb);
-            if (kind) setDialog(kind);
+            if (kind) {
+              setDialog(kind);
+              return;
+            }
+            // Verbs that act rather than ask.
+            runVerb(verb);
           }}
           findPlaceholder={
             FIND_PLACEHOLDER_BY_SCOPE[tab]?.[scopeIndex] ??
@@ -395,6 +519,7 @@ export default function Workbench() {
             }
             onClear={() => setSel({})}
             bulkVerbs={BULK[tab] ?? []}
+            onBulkVerb={runBulk}
             selCount={selCount}
             isDenied={isDenied}
             isLoading={isLoading}
@@ -440,9 +565,36 @@ export default function Workbench() {
         {dialog && (
           <CreateDialog
             kind={dialog}
-            onClose={() => setDialog(null)}
-            onCreated={source.reload}
+            context={dialogContext}
+            onClose={() => {
+              setDialog(null);
+              setBulkIds(null);
+            }}
+            onCreated={() => {
+              source.reload();
+              setSel({});
+              // A move or a new folder changes the tree the scope pane draws.
+              if (dialog === 'folder' || dialog === 'move') folders.reload();
+            }}
           />
+        )}
+
+        {/* A refusal from a toolbar verb. Dismissable, and it says what the
+            server said rather than "something went wrong". */}
+        {verbError && (
+          <div
+            role="alert"
+            className="fixed bottom-10 left-1/2 z-50 flex max-w-[560px] -translate-x-1/2 items-start gap-3 border border-red-border bg-red-bg px-4 py-3 text-detail text-red shadow-menu"
+          >
+            <span>{verbError}</span>
+            <button
+              type="button"
+              onClick={() => setVerbError(null)}
+              className="ml-auto cursor-pointer border-0 bg-transparent font-semibold text-red"
+            >
+              Dismiss
+            </button>
+          </div>
         )}
       </div>
     </div>

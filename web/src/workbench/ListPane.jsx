@@ -23,6 +23,7 @@ export default function ListPane({
   onSelectAll,
   onClear,
   bulkVerbs,
+  onBulkVerb,
   selCount,
   isDenied,
   isLoading,
@@ -87,6 +88,7 @@ export default function ListPane({
           count={selCount}
           total={rows.length}
           verbs={bulkVerbs}
+          onVerb={onBulkVerb}
           onSelectAll={onSelectAll}
           onClear={onClear}
         />
@@ -208,7 +210,7 @@ const Cell = ({ children }) => (
   </div>
 );
 
-function BulkBar({ count, total, verbs, onSelectAll, onClear }) {
+function BulkBar({ count, total, verbs, onVerb, onSelectAll, onClear }) {
   return (
     <div className="flex h-bulkbar flex-none items-center gap-2.5 bg-ink px-4 text-white max-narrow:gap-1.5 max-narrow:overflow-x-auto max-narrow:px-3">
       <span className="whitespace-nowrap text-detail font-semibold">
@@ -226,6 +228,7 @@ function BulkBar({ count, total, verbs, onSelectAll, onClear }) {
         <button
           key={v}
           type="button"
+          onClick={() => onVerb?.(v)}
           className={`h-[26px] cursor-pointer whitespace-nowrap border-0 bg-transparent px-2.5 text-detail text-white hover:bg-ink-2 ${
             i === 0 ? 'font-semibold' : ''
           }`}

@@ -124,9 +124,13 @@ async function main(): Promise<void> {
   // Real bytes on disk, so downloads, share links and full-text search all have
   // something to work with. Named to match what the verification suites search
   // for.
-  await upsertDocument(org.id, admin.id, financeFolder.id, 'dossiro-test.txt', [
+  // Filed in Shared, not Finance. This is the fixture the external-recipient
+  // suite builds an anonymous share on, and an anonymous share of a
+  // confidential record is refused on purpose — so it has to live somewhere a
+  // document may legitimately be INTERNAL.
+  await upsertDocument(org.id, admin.id, shared.id, 'dossiro-test.txt', [
     'Dossiro acceptance fixture.',
-    'Quarterly reconciliation notes for the Finance cabinet.',
+    'Notes shared with an external reviewer.',
   ]);
   const invoice = await upsertDocument(org.id, manager.id, invoices.id, 'invoice-0001.txt', [
     'Invoice 0001 — consultancy, March.',
@@ -460,7 +464,11 @@ async function upsertDocument(
       name,
       ContentKind.DOCUMENT,
       DocumentStatus.ACTIVE,
-      Classification.INTERNAL,
+      // The folder is a floor, exactly as ingest enforces it. Hardcoding
+      // INTERNAL here produced documents less sensitive than the cabinet
+      // holding them — a state the API now refuses to create, so the seed must
+      // not manufacture it either.
+      await floorFor(folderId),
       ownerId,
     ],
   );
@@ -777,3 +785,22 @@ main()
     process.exit(1);
   })
   .finally(() => db.end());
+
+/**
+ * The classification a document in this folder must be at least.
+ *
+ * Mirrors `atLeastFolder` in documents.service.ts. A seed that produces rows
+ * the API would refuse is a seed that hides bugs — the share suites failed for
+ * exactly that reason once the floor started being enforced.
+ */
+async function floorFor(folderId: string | null): Promise<Classification> {
+  if (!folderId) return Classification.INTERNAL;
+  const rows = await db.query<{ classification: Classification }>(
+    'SELECT classification FROM folders WHERE id = $1',
+    [folderId],
+  );
+  const folder = rows[0]?.classification;
+  if (!folder) return Classification.INTERNAL;
+  const RANK = { PUBLIC: 0, INTERNAL: 1, CONFIDENTIAL: 2, RESTRICTED: 3 } as const;
+  return RANK[folder] > RANK[Classification.INTERNAL] ? folder : Classification.INTERNAL;
+}

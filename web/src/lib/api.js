@@ -119,6 +119,36 @@ async function request(path, options = {}) {
   }
 }
 
+/**
+ * A response body as a Blob, with the same refresh-on-401 behaviour as
+ * `request`. Separate because `raw` parses text and would corrupt binary.
+ */
+async function requestBlob(path, retried = false) {
+  const res = await fetch(`${BASE}${path}`, {
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+  });
+
+  if (res.status === 401 && getRefreshToken() && !retried) {
+    if (await refreshOnce()) return requestBlob(path, true);
+    setAccessToken(null);
+    setRefreshToken(null);
+    onSignedOut?.();
+  }
+
+  if (!res.ok) {
+    // The error body is JSON even when the success body is not.
+    let message = `Request failed (${res.status})`;
+    try {
+      message = (await res.json()).message ?? message;
+    } catch {
+      /* a non-JSON error body is not worth a second failure */
+    }
+    throw new ApiError(message, res.status, null);
+  }
+
+  return res.blob();
+}
+
 const qs = (params) =>
   Object.entries(params)
     .filter(([, v]) => v !== undefined && v !== null && v !== '')
@@ -203,6 +233,33 @@ export const api = {
       request(`/documents/${id}/type`, { method: 'PATCH', body: { documentTypeId } }),
     setField: (id, fieldId, value) =>
       request(`/documents/${id}/fields/${fieldId}`, { method: 'PATCH', body: { value } }),
+
+    /** null files it at the root, unfiled. */
+    move: (id, folderId) =>
+      request(`/documents/${id}/folder`, { method: 'PATCH', body: { folderId } }),
+
+    classify: (id, classification) =>
+      request(`/documents/${id}/classification`, { method: 'PATCH', body: { classification } }),
+
+    checkOut: (id) => request(`/documents/${id}/checkout`, { method: 'POST' }),
+    checkIn: (id) => request(`/documents/${id}/checkin`, { method: 'POST' }),
+    remove: (id) => request(`/documents/${id}`, { method: 'DELETE' }),
+
+    /**
+     * The document's bytes, as an object URL the browser can render.
+     *
+     * Not a plain address, tempting as that is. The content endpoint
+     * authenticates with a bearer header, and neither `<iframe src>` nor
+     * `window.open()` can carry one — both would arrive unauthenticated and be
+     * refused. So the bytes come through fetch, which also means they go
+     * through the refresh handling above rather than 401ing on a stale token.
+     *
+     * The caller owns the returned URL and must revoke it.
+     */
+    async content(id) {
+      const res = await requestBlob(`/documents/${id}/content?disposition=inline`);
+      return { url: URL.createObjectURL(res), type: res.type, size: res.size };
+    },
   },
 
   /** User-defined document types and their typed index fields (TYP-1..7). */

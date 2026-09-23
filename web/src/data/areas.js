@@ -445,7 +445,11 @@ export const STATUS = {
 };
 
 export const BULK = {
-  repo: ['Classify…', 'Move…', 'Share…', 'Export…', 'Delete'],
+  // Share and Export are gone rather than inert. A share link carries exactly
+  // one document, so "share six things" has no meaning at the API and would
+  // have to invent one; Export has no endpoint at all. A button that does
+  // nothing is worse than an absent one.
+  repo: ['Classify…', 'Move…', 'Delete'],
   capture: ['Rescan', 'Accept', 'Assign profile…', 'Discard'],
   ingest: ['Accept', 'Review…', 'Change destination…', 'Reject'],
   invoices: ['Verify', 'Post…', 'Dispute', 'Export…'],
