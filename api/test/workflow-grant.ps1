@@ -172,21 +172,78 @@ $q3b = (Invoke-Api GET '/workflow/tasks?queue=waiting' $mgrTok).body
 $task3b = $q3b.items | Where-Object { $_.documentId -eq $doc3.id } | Select-Object -First 1
 Show "but it has left their queue" (-not $task3b) 'the queue corrects itself'
 
+Head "An instance runs the steps it started with"
+
+# Every read of a running instance used to join the definition and take its
+# steps live, so editing a workflow rewrote what was already in progress. A task
+# records the index of its step, so removing one from the middle of a definition
+# silently repoints every open task at a different step — a different name, a
+# different action, a different grant.
+$doc4 = New-Probe 'wf-grant-probe-4.txt'
+Invoke-Api PATCH "/documents/$($doc4.id)/type" $adminTok @{ documentTypeId = $type } | Out-Null
+
+$q4 = (Invoke-Api GET '/workflow/tasks?queue=waiting' $mgrTok).body
+$task4 = $q4.items | Where-Object { $_.documentId -eq $doc4.id } | Select-Object -First 1
+Show "the task is raised under the current definition" ([bool]$task4) "$($task4.stepName)"
+
+$startedWith = (Get-SqlValue @"
+SELECT jsonb_array_length(i.steps) FROM workflow_instances i
+ WHERE i."documentId" = '$($doc4.id)';
+"@)
+Show "and the instance kept its own copy of the steps" ($startedWith -eq '2') "$startedWith steps"
+
+# Rewrite the definition out from under it: one step, renamed. Written as SQL
+# because there is no endpoint for it, which is the situation this protects
+# against. The original is kept and put back in cleanup — every other suite
+# runs against this definition.
+$defId4 = Get-SqlValue @"
+SELECT "definitionId" FROM workflow_instances WHERE "documentId" = '$($doc4.id)';
+"@
+$originalSteps = Get-SqlValue "SELECT steps::text FROM workflow_definitions WHERE id = '$defId4';"
+
+Invoke-Sql @"
+UPDATE workflow_definitions
+   SET steps = jsonb_build_array(jsonb_build_object(
+         'key', 'rewritten', 'name', 'A completely different step',
+         'assignee', jsonb_build_object('type', 'USER', 'id', '$mgrId')))
+ WHERE id = '$defId4';
+"@
+
+$q4b = (Invoke-Api GET '/workflow/tasks?queue=waiting' $mgrTok).body
+$task4b = $q4b.items | Where-Object { $_.documentId -eq $doc4.id } | Select-Object -First 1
+Show "the open task keeps the step it was raised for" ($task4b.stepName -eq $task4.stepName) "$($task4b.stepName)"
+
+# And deciding it advances through the original steps, not the new one.
+$decide4 = Invoke-Api POST "/workflow/tasks/$($task4b.id)/decide" $mgrTok @{ approve = $true }
+Show "deciding it follows the steps it started with" ($decide4.code -eq 200 -or $decide4.code -eq 201) "HTTP $($decide4.code)"
+
+$nextStep = Get-SqlValue @"
+SELECT t."stepKey" FROM workflow_tasks t JOIN workflow_instances i ON i.id = t."instanceId"
+ WHERE i."documentId" = '$($doc4.id)' AND t.status = 'PENDING';
+"@
+Show "so the second step is the original one" ($nextStep -eq 'admin') "stepKey=$nextStep"
+
 Head "Cleanup"
+
+Invoke-Sql @"
+UPDATE workflow_definitions SET steps = '$originalSteps'::jsonb WHERE id = '$defId4';
+"@
+$restored = Get-SqlValue "SELECT jsonb_array_length(steps) FROM workflow_definitions WHERE id = '$defId4';"
+Show "the definition is put back as it was" ($restored -eq '2') "$restored steps"
 
 Invoke-Sql @"
 DELETE FROM access_grants WHERE id IN ('wf-grant-deny', 'wf-grant-deny-late');
 DELETE FROM workflow_tasks WHERE "instanceId" IN (
-  SELECT id FROM workflow_instances WHERE "documentId" IN ('$($doc.id)', '$($doc2.id)', '$($doc3.id)'));
-DELETE FROM workflow_instances WHERE "documentId" IN ('$($doc.id)', '$($doc2.id)', '$($doc3.id)');
-DELETE FROM document_field_values WHERE "documentId" IN ('$($doc.id)', '$($doc2.id)', '$($doc3.id)');
-DELETE FROM document_index WHERE "documentId" IN ('$($doc.id)', '$($doc2.id)', '$($doc3.id)');
-DELETE FROM processing_jobs WHERE "documentId" IN ('$($doc.id)', '$($doc2.id)', '$($doc3.id)');
-DELETE FROM change_log WHERE "entityType" = 'document' AND "entityId" IN ('$($doc.id)', '$($doc2.id)', '$($doc3.id)');
-DELETE FROM document_versions WHERE "documentId" IN ('$($doc.id)', '$($doc2.id)', '$($doc3.id)');
-DELETE FROM documents WHERE id IN ('$($doc.id)', '$($doc2.id)', '$($doc3.id)');
+  SELECT id FROM workflow_instances WHERE "documentId" IN ('$($doc.id)', '$($doc2.id)', '$($doc3.id)', '$($doc4.id)'));
+DELETE FROM workflow_instances WHERE "documentId" IN ('$($doc.id)', '$($doc2.id)', '$($doc3.id)', '$($doc4.id)');
+DELETE FROM document_field_values WHERE "documentId" IN ('$($doc.id)', '$($doc2.id)', '$($doc3.id)', '$($doc4.id)');
+DELETE FROM document_index WHERE "documentId" IN ('$($doc.id)', '$($doc2.id)', '$($doc3.id)', '$($doc4.id)');
+DELETE FROM processing_jobs WHERE "documentId" IN ('$($doc.id)', '$($doc2.id)', '$($doc3.id)', '$($doc4.id)');
+DELETE FROM change_log WHERE "entityType" = 'document' AND "entityId" IN ('$($doc.id)', '$($doc2.id)', '$($doc3.id)', '$($doc4.id)');
+DELETE FROM document_versions WHERE "documentId" IN ('$($doc.id)', '$($doc2.id)', '$($doc3.id)', '$($doc4.id)');
+DELETE FROM documents WHERE id IN ('$($doc.id)', '$($doc2.id)', '$($doc3.id)', '$($doc4.id)');
 "@
-$left = Get-SqlValue "SELECT count(*) FROM documents WHERE id IN ('$($doc.id)', '$($doc2.id)', '$($doc3.id)');"
+$left = Get-SqlValue "SELECT count(*) FROM documents WHERE id IN ('$($doc.id)', '$($doc2.id)', '$($doc3.id)', '$($doc4.id)');"
 Show "the probe documents are removed" ($left -eq '0') 'the suite leaves the corpus as it found it'
 
 Summary

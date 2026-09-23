@@ -140,8 +140,9 @@ export function WorkflowDetailsPane({ record }) {
         </div>
       ) : null}
       <div className={ins.noteSection}>
-        Editing a workflow is API-only so far. Changing one affects records filed afterwards;
-        anything already in flight finishes under the steps it started with.
+        A workflow cannot be edited from here or through the API yet — the definition is written
+        straight to the database. When it can be, changing one will affect records filed afterwards:
+        an instance keeps a copy of the steps it started with and finishes under those.
       </div>
     </div>
   );

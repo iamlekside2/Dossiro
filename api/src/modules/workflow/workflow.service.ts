@@ -185,9 +185,10 @@ export class WorkflowService {
 
     await this.db.transaction(async () => {
       await this.db.execute(
-        `INSERT INTO workflow_instances (id, "definitionId", "documentId", status, "currentStep", "initiatorId")
-         VALUES ($1, $2, $3, 'ACTIVE', 0, $4)`,
-        [instanceId, def.id, documentId, user.id],
+        `INSERT INTO workflow_instances (id, "definitionId", "documentId", status, "currentStep",
+                                          "initiatorId", steps)
+         VALUES ($1, $2, $3, 'ACTIVE', 0, $4, $5)`,
+        [instanceId, def.id, documentId, user.id, JSON.stringify(def.steps)],
       );
       await this.raiseTasks(instanceId, def.steps, 0, documentId);
     });
@@ -320,7 +321,7 @@ export class WorkflowService {
     }>(
       `SELECT t.id, t."instanceId", t."stepIndex", t."assigneeId", t.status,
               i."documentId", d.name AS "documentName", d."organizationId",
-              i."definitionId", w.steps, w.name AS "workflowName"
+              i."definitionId", i.steps, w.name AS "workflowName"
          FROM workflow_tasks t
          JOIN workflow_instances i ON i.id = t."instanceId"
          JOIN workflow_definitions w ON w.id = i."definitionId"
@@ -412,7 +413,7 @@ export class WorkflowService {
               t."grantedLevel",
               i.id AS "instanceId", i."currentStep",
               d.id AS "documentId", d.name AS "documentName", d.classification,
-              w.name AS "workflowName", w.steps,
+              w.name AS "workflowName", i.steps,
               (t."dueAt" IS NOT NULL AND t."dueAt" < now()) AS overdue
          FROM workflow_tasks t
          JOIN workflow_instances i ON i.id = t."instanceId"
@@ -456,7 +457,7 @@ export class WorkflowService {
   /** One instance, with its whole history. */
   async instance(user: AuthUser, id: string) {
     const inst = await this.db.maybeOne<Record<string, unknown>>(
-      `SELECT i.*, w.name AS "workflowName", w.steps, d.name AS "documentName",
+      `SELECT i.*, w.name AS "workflowName", d.name AS "documentName",
               d."organizationId"
          FROM workflow_instances i
          JOIN workflow_definitions w ON w.id = i."definitionId"
@@ -563,11 +564,10 @@ export class WorkflowService {
       documentId: string;
       documentName: string;
     }>(
-      `SELECT t.id, t."instanceId", t."stepIndex", w.steps,
+      `SELECT t.id, t."instanceId", t."stepIndex", i.steps,
               d."organizationId", d.id AS "documentId", d.name AS "documentName"
          FROM workflow_tasks t
          JOIN workflow_instances i ON i.id = t."instanceId"
-         JOIN workflow_definitions w ON w.id = i."definitionId"
          JOIN documents d ON d.id = i."documentId"
         WHERE t.status = 'PENDING'
           AND t."dueAt" IS NOT NULL
