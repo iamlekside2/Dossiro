@@ -313,6 +313,25 @@ export default function Workbench() {
     // A type is either a draft, published or archived, and only one of the two
     // transitions is meaningful at a time. Offering both means one of them
     // does nothing, which teaches people to distrust the toolbar.
+    // Only the transition that means something, in every area that has one.
+    // Offering both makes one of them a button that does nothing.
+    if (tab === 'forms') {
+      const published = selectedRow?.record?.isPublished;
+      if (selectedRow?.record == null) return [];
+      return base.filter((v) => (published ? v === 'Withdraw' : v === 'Publish'));
+    }
+
+    if (tab === 'admin' && scopeIndex === 0) {
+      const status = selectedRow?.record?.status;
+      return base.filter((v) =>
+        v === 'Suspend'
+          ? status === 'ACTIVE'
+          : v === 'Reinstate'
+            ? status === 'SUSPENDED'
+            : true,
+      );
+    }
+
     if (tab === 'types') {
       const status = selectedRow?.record?.status;
       if (!status) return base.filter((v) => v === 'New type');
@@ -333,6 +352,13 @@ export default function Workbench() {
   async function runVerb(verb) {
     if (tab === 'types') return runTypeVerb(verb);
     if (tab === 'ingest') return runIngestVerb();
+    if (tab === 'approvals') return runApprovalVerb(verb);
+    if (tab === 'sharing') return runSharingVerb(verb);
+    if (tab === 'forms') return runFormVerb(verb);
+    if (tab === 'admin' && (verb.startsWith('Suspend') || verb.startsWith('Reinstate'))) {
+      return runAdminVerb(verb);
+    }
+    if ((tab === 'home' || tab === 'search') && verb.startsWith('Open')) return openBehindRow();
     if (tab !== 'repo' || !liveDoc) return;
     try {
       if (verb.startsWith('Open')) {
@@ -377,6 +403,85 @@ export default function Workbench() {
     }
   }
 
+  /**
+   * Opens whatever document the selected row is about.
+   *
+   * Four areas list something that stands for a document rather than being
+   * one — an approval, an audit entry, a search hit, a pipeline job — so the
+   * id is in a different place on each and the verb finds it rather than each
+   * area growing its own Open.
+   */
+  async function openBehindRow() {
+    const r = selectedRow?.record;
+    const documentId = r?.documentId ?? (r?.resourceType === 'Document' ? r?.resourceId : null) ?? r?.id;
+    if (!documentId) {
+      setVerbError('There is no document behind this row to open.');
+      return;
+    }
+    try {
+      const { url } = await api.documents.content(documentId);
+      window.open(url, '_blank', 'noopener');
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      setVerbError(err.body?.message ?? err.message);
+    }
+  }
+
+  /** Approve or return the selected task (WFL-9). */
+  async function runApprovalVerb(verb) {
+    if (verb.startsWith('Open')) return openBehindRow();
+    const task = selectedRow?.record;
+    if (!task?.id) return;
+    try {
+      await api.workflow.decide(task.id, verb.startsWith('Approve'));
+      source.reload();
+    } catch (err) {
+      setVerbError(err.body?.message ?? err.message);
+    }
+  }
+
+  /** Copy a link's address, or close it. */
+  async function runSharingVerb(verb) {
+    const link = selectedRow?.record;
+    if (!link?.id) return;
+    if (verb.startsWith('Copy')) {
+      const url = `${window.location.origin}/s/${link.token}`;
+      await navigator.clipboard?.writeText(url).catch(() => undefined);
+      return;
+    }
+    try {
+      await api.shares.revoke(link.id);
+      source.reload();
+    } catch (err) {
+      setVerbError(err.body?.message ?? err.message);
+    }
+  }
+
+  /** Open a form to submissions, or close it. */
+  async function runFormVerb(verb) {
+    const form = selectedRow?.record;
+    if (!form?.id) return;
+    try {
+      await api.forms.publish(form.id, verb.startsWith('Publish'));
+      source.reload();
+    } catch (err) {
+      setVerbError(err.body?.message ?? err.message);
+    }
+  }
+
+  /** Suspend somebody, or let them back in. */
+  async function runAdminVerb(verb) {
+    const person = selectedRow?.record;
+    if (!person?.id) return;
+    try {
+      if (verb.startsWith('Suspend')) await api.users.suspend(person.id);
+      else await api.users.reinstate(person.id);
+      source.reload();
+    } catch (err) {
+      setVerbError(err.body?.message ?? err.message);
+    }
+  }
+
   async function runTypeVerb(verb) {
     const type = selectedRow?.record;
     if (!type?.id) return;
@@ -410,8 +515,36 @@ export default function Workbench() {
     const ids = rows.filter((r) => sel[r[1]] && r.record?.id).map((r) => r.record.id);
     if (ids.length === 0) return;
 
+    if (tab === 'approvals') {
+      for (const id of ids) await api.workflow.decide(id, true).catch(() => undefined);
+      setSel({});
+      source.reload();
+      return;
+    }
+
+    if (tab === 'sharing') {
+      for (const id of ids) await api.shares.revoke(id).catch(() => undefined);
+      setSel({});
+      source.reload();
+      return;
+    }
+
     if (tab === 'ingest') {
       for (const id of ids) await api.processing.retry(id).catch(() => undefined);
+      setSel({});
+      source.reload();
+      return;
+    }
+
+    if (tab === 'approvals') {
+      for (const id of ids) await api.workflow.decide(id, true).catch(() => undefined);
+      setSel({});
+      source.reload();
+      return;
+    }
+
+    if (tab === 'sharing') {
+      for (const id of ids) await api.shares.revoke(id).catch(() => undefined);
       setSel({});
       source.reload();
       return;

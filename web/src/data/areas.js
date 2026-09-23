@@ -263,20 +263,34 @@ export const SCOPES = {
 };
 
 export const TOOLBAR = {
-  workflows: ['Open'],
+  // Editing a definition is API-only, and a definition is not a document to
+  // open. Nothing to offer here yet, so nothing is offered.
+  workflows: [],
   home: ['Open'],
   repo: ['Open', 'Check out', 'New folder', 'Move…', 'Classify…', 'Share…'],
-  search: ['Open', 'Refine…', 'Save this search', 'Export results'],
+  // Saved searches have a table and no service; there is no export. Refining
+  // is what the scope list and the find box already do.
+  search: ['Open'],
   capture: ['Start scan', 'Scan profile…', 'Insert separator', 'Pause', 'Discard'],
   ingest: ['Read it again'],
   invoices: ['Verify', 'Post to ledger', 'Dispute…', 'Open purchase order'],
-  forms: ['Edit fields', 'Preview', 'Publish', 'Duplicate', 'Submissions'],
-  hr: ['Open file', 'Request documents…', 'Start onboarding', 'Log leave', 'Completeness report'],
-  approvals: ['Approve', 'Return', 'Reassign…', 'Open document'],
-  sharing: ['New link…', 'Revoke', 'Extend…', 'Copy address'],
+  // Building a form is API-only so far, so only its state can be changed here.
+  forms: ['Publish', 'Withdraw'],
+  // HR is a view over records filed elsewhere. Selecting a person is the
+  // action; onboarding, leave and timesheets are processes that do not exist.
+  hr: [],
+  // Reassigning needs a query that does not exist. The other three do.
+  approvals: ['Approve', 'Return', 'Open document'],
+  // A link is made from the document it carries, in Repository. Extending one
+  // has no endpoint — a link's life is set when it is created.
+  sharing: ['Copy address', 'Revoke'],
   types: ['New type', 'Add field…', 'Publish', 'Archive'],
-  audit: ['Export evidence', 'Filter…', 'Legal hold…'],
-  admin: ['Add person…', 'Change role…', 'Suspend', 'Reset passcode…', 'Restore…'],
+  // Export and legal hold have no endpoint, and filtering is the scope list.
+  // An empty toolbar is honest; three dead buttons are not.
+  audit: [],
+  // Role assignment and passcode reset have no endpoint. Suspending and
+  // reinstating do.
+  admin: ['Add person…', 'Suspend', 'Reinstate'],
 };
 
 /**
@@ -510,7 +524,7 @@ export const BULK = {
   capture: ['Rescan', 'Accept', 'Assign profile…', 'Discard'],
   ingest: ['Read them again'],
   invoices: ['Verify', 'Post…', 'Dispute', 'Export…'],
-  forms: ['Make required', 'Change type…', 'Remove'],
+  forms: [],
   hr: ['Request documents…', 'Assign onboarding…', 'Export…'],
   approvals: ['Approve', 'Return', 'Reassign…'],
   sharing: ['Extend…', 'Revoke', 'Copy addresses'],
