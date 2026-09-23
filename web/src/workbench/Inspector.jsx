@@ -1,5 +1,6 @@
 ﻿import { BranchPane, BranchStaffPane, HostnamePane } from './panes/Branch.jsx';
 import Preview from './panes/Preview.jsx';
+import LivePreview from './panes/LivePreview.jsx';
 import {
   DocumentAccessPane,
   DocumentSummaryPane,
@@ -65,7 +66,12 @@ export default function Inspector({
   // Which panes a real record can answer for itself, per area. Everything not
   // listed here is still the design's illustration, and the note below says so.
   const LIVE_BODIES = {
-    repo: { summary: DocumentSummaryPane, history: DocumentVersionsPane, access: DocumentAccessPane },
+    repo: {
+      preview: LivePreview,
+      summary: DocumentSummaryPane,
+      history: DocumentVersionsPane,
+      access: DocumentAccessPane,
+    },
     audit: { details: DetailsPane },
     sharing: { access: ShareLinkPane },
     // Every pane here answers from the row's own record, so the whole area is
@@ -73,7 +79,7 @@ export default function Inspector({
     types: { fields: TypeFieldsPane, details: TypeDetailsPane, access: TypeAccessPane },
     // A search result is a document, so the Repository's Summary pane answers
     // for it unchanged; only the match itself needs its own describer.
-    search: { summary: DocumentSummaryPane, details: SearchMatchPane },
+    search: { preview: LivePreview, summary: DocumentSummaryPane, details: SearchMatchPane },
   };
 
   const wired = (Boolean(record?.record) && LIVE_BODIES[area]) || null;
@@ -85,8 +91,8 @@ export default function Inspector({
   const ILLUSTRATION_NOTE = {
     audit: 'The event is real; this pane is from the design. Event shows the actual record.',
     sharing: 'The link is real; this pane is from the design. Link shows the actual settings.',
-    search: 'The result is real; this pane is from the design. Summary and Match show the actual document.',
-    repo: 'The row is real; this pane is from the design. Summary, Versions and Access show the actual document.',
+    search: 'The result is real; this pane is from the design. Preview, Summary and Match show the actual document.',
+    repo: 'The row is real; this pane is from the design. Preview, Summary, Versions and Access show the actual document.',
   };
   const illustrationNote = ILLUSTRATION_NOTE[area] ?? ILLUSTRATION_NOTE.repo;
 
