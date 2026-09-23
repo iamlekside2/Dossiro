@@ -197,6 +197,9 @@ export const api = {
   platform: {
     listOrganizations: () => request('/platform/organizations'),
     provision: (body) => request('/platform/organizations', { method: 'POST', body }),
+    /** A tenant's licence as its own deployment reads it (PLT-4, PLT-5). */
+    license: (id) => request(`/platform/organizations/${id}/license`),
+    operators: () => request('/platform/operators'),
     /** `reason` is required by the API for SUSPENDED and CLOSED. */
     setStatus: (id, status, reason) =>
       request(`/platform/organizations/${id}/status`, { method: 'PATCH', body: { status, reason } }),

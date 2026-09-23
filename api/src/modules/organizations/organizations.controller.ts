@@ -48,6 +48,33 @@ export class OrganizationsController {
 
   @OptionalAuth()
   @UseGuards(PlatformStaffGuard)
+  @Get('platform/organizations/:id/license')
+  @ApiOperation({
+    summary: 'A tenant’s licence, as its own deployment sees it (PLT-4, PLT-5)',
+    description:
+      'Read from the signed payload rather than from the seat column, which is why editing the '
+      + 'database changes nothing. Reports what the tenant’s own installation would conclude, '
+      + 'including how long before writes stop.',
+  })
+  license(@Param('id') id: string) {
+    return this.orgs.licenseFor(id);
+  }
+
+  @OptionalAuth()
+  @UseGuards(PlatformStaffGuard)
+  @Get('platform/operators')
+  @ApiOperation({
+    summary: 'Everyone who can act on the platform side',
+    description:
+      'The people the tenant-facing promises are made about. Listing them here is the first half '
+      + 'of being able to say who they are.',
+  })
+  operators() {
+    return this.orgs.operators();
+  }
+
+  @OptionalAuth()
+  @UseGuards(PlatformStaffGuard)
   @Patch('platform/organizations/:id/status')
   @ApiOperation({
     summary: 'Change a tenantâ€™s commercial status',

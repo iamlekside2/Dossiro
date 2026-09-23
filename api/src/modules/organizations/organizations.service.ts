@@ -10,6 +10,7 @@ import {
   type OrganizationDomain,
   type User,
 } from '../../common/db';
+import { LicenseService } from '../../common/licensing/license.service';
 import { SYSTEM_ROLES } from '../../common/rbac/permissions';
 import { AuditService, type JsonValue } from '../audit/audit.service';
 import { UsersService } from '../users/users.service';
@@ -50,6 +51,7 @@ export class OrganizationsService {
     private readonly db: DatabaseService,
     private readonly users: UsersService,
     private readonly audit: AuditService,
+    private readonly license: LicenseService,
   ) {}
 
   /**
@@ -130,7 +132,9 @@ export class OrganizationsService {
           slug,
           input.plan ?? 'standard',
           input.seatLimit ?? null,
-          input.region ?? 'us-east-1',
+          // Lagos unless asked otherwise in writing. The contract's residency
+          // clause promises Nigeria, so the default has to match it (NFR-5).
+          input.region ?? 'ng-lagos-1',
           OrgStatus.TRIAL,
         ],
       );
@@ -215,9 +219,46 @@ export class OrganizationsService {
     };
   }
 
+  /**
+   * What a tenant's own deployment concludes about its licence.
+   *
+   * Delegated to the licence service rather than read off the organisation
+   * row, because the row is not the authority — the signed payload is. An
+   * operator looking at a seat count in this console should be looking at the
+   * same number the customer's installation enforces (PLT-5).
+   */
+  async licenseFor(organizationId: string) {
+    const org = await this.db.maybeOne<{ id: string; name: string; region: string | null }>(
+      'SELECT id, name, region FROM organizations WHERE id = $1',
+      [organizationId],
+    );
+    if (!org) throw new NotFoundException('No such tenant.');
+
+    const status = await this.license.statusFor(organizationId);
+    return { organizationId: org.id, organizationName: org.name, region: org.region, ...status };
+  }
+
+  /** Everyone on the platform side, with what they can do. */
+  async operators() {
+    const items = await this.db.query(
+      `SELECT u.id, u."displayName", u.email, u.tier, u.status, u."lastLoginAt", u."mfaEnabled",
+              COALESCE(
+                (SELECT json_agg(r.name ORDER BY r.name)
+                   FROM user_roles ur JOIN roles r ON r.id = ur."roleId"
+                  WHERE ur."userId" = u.id),
+                '[]'::json
+              ) AS roles
+         FROM users u
+         JOIN organizations o ON o.id = u."organizationId"
+        WHERE o."isPlatform" = true AND u."deletedAt" IS NULL
+        ORDER BY u."displayName" ASC`,
+    );
+    return { items, total: items.length };
+  }
+
   async list() {
     return this.db.query(
-      `SELECT o.id, o.name, o.slug, o."isPlatform", o.status, o.plan, o."seatLimit",
+      `SELECT o.id, o.name, o.slug, o."isPlatform", o.status, o.plan, o."seatLimit", o.region,
               o."createdAt",
               COALESCE(u.seats, 0) AS "seatsUsed",
               COALESCE(d.docs, 0)  AS documents,

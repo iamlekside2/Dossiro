@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import api from '../lib/api.js';
 import SupportAccess from './SupportAccess.jsx';
+import { CONSOLE_AREAS, REAL, areaById } from './console/areas.js';
+import {
+  BillingPanel,
+  DeploymentPanel,
+  OperatorsPanel,
+  SupportPanel,
+  UnbuiltPanel,
+} from './console/panels.jsx';
 import { useSession } from '../session/SessionContext.jsx';
 import { chip } from '../ui.js';
 import {
@@ -34,6 +42,8 @@ export default function PlatformConsole() {
   const [suspending, setSuspending] = useState(null);
   /** Which tenant's support access is open, if any. */
   const [supporting, setSupporting] = useState(null);
+  const [areaId, setAreaId] = useState('tenants');
+  const area = areaById(areaId);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -62,7 +72,10 @@ export default function PlatformConsole() {
 
   return (
     <div className="allow-scroll min-h-screen bg-surface-3">
-      {/* Ink chrome, so this is never mistaken for a customer's own tenancy. */}
+      {/* Ochre above ink. The strip exists so that a screenshot of this console
+          can never be mistaken for a customer's own tenancy — which matters
+          most in the moment somebody is about to act on the wrong one. */}
+      <div className="h-[3px] bg-ochre" aria-hidden="true" />
       <header className="flex h-[46px] items-center gap-2.5 bg-ink px-5 text-white">
         <span className="h-[14px] w-[14px] shrink-0 bg-blue-on-dark" aria-hidden="true" />
         <span className="text-row font-bold">Platform</span>
@@ -78,25 +91,60 @@ export default function PlatformConsole() {
         </button>
       </header>
 
+      {/* Areas. An unbuilt one is still listed and still opens — saying what is
+          missing is more use than hiding that it was ever meant to exist. */}
+      <nav className="flex items-stretch overflow-x-auto border-b border-line bg-chrome" role="tablist">
+        {CONSOLE_AREAS.map((a) => (
+          <button
+            key={a.id}
+            type="button"
+            role="tab"
+            aria-selected={a.id === areaId}
+            onClick={() => setAreaId(a.id)}
+            className={`flex items-center gap-1.5 whitespace-nowrap border-0 border-r border-line px-[14px] py-2.5 text-ui ${
+              a.id === areaId
+                ? 'bg-surface font-semibold shadow-[inset_0_-2px_0_var(--color-blue)]'
+                : 'bg-transparent hover:bg-line-soft'
+            }`}
+          >
+            {a.label}
+            {a.state !== REAL && (
+              <span className="border border-ochre-border bg-ochre-bg px-1 py-px text-tag font-bold uppercase tracking-[0.04em] text-ochre">
+                Not built
+              </span>
+            )}
+          </button>
+        ))}
+      </nav>
+
       <main className="mx-auto max-w-[1120px] px-5 pb-16 pt-8">
         <div className="mb-[22px] flex flex-wrap items-start justify-between gap-5">
           <div>
-            <h1 className="mb-1 text-screen font-bold tracking-[-0.02em]">Tenants</h1>
-            <p className="max-w-[62ch] text-row leading-[1.6] text-muted">
-              Each client company is one organisation. There is no self-serve signup — a tenant
-              exists because someone here created it.
-            </p>
+            <h1 className="mb-1 text-screen font-bold tracking-[-0.02em]">{area.heading}</h1>
+            <p className="max-w-[62ch] text-row leading-[1.6] text-muted">{area.note}</p>
           </div>
-          <Button tone="primary" onClick={() => setCreating(true)}>
-            Provision a tenant
-          </Button>
+          {area.id === 'tenants' && (
+            <Button tone="primary" onClick={() => setCreating(true)}>
+              Provision a tenant
+            </Button>
+          )}
         </div>
 
         {error && <Callout tone="red" className="mb-4">{error}</Callout>}
 
         {issued && <IssuedInvite issued={issued} onDismiss={() => setIssued(null)} />}
 
-        {loading ? (
+        {area.state !== REAL ? (
+          <UnbuiltPanel area={area} />
+        ) : area.id === 'deployment' ? (
+          <DeploymentPanel tenants={tenants} />
+        ) : area.id === 'billing' ? (
+          <BillingPanel tenants={tenants} />
+        ) : area.id === 'support' ? (
+          <SupportPanel tenants={tenants} />
+        ) : area.id === 'operators' ? (
+          <OperatorsPanel />
+        ) : loading ? (
           <p className="text-row text-dim">Loading tenants…</p>
         ) : (
           <div className="overflow-x-auto border border-line bg-surface">
@@ -174,10 +222,12 @@ export default function PlatformConsole() {
           </div>
         )}
 
-        <p className="mt-4 max-w-[70ch] text-meta leading-[1.6] text-dim">
-          Suspending a tenant revokes every session and blocks new sign-ins immediately. Documents
-          are untouched — suspension is a commercial state, not a delete.
-        </p>
+        {area.id === 'tenants' && (
+          <p className="mt-4 max-w-[70ch] text-meta leading-[1.6] text-dim">
+            Suspending a tenant revokes every session and blocks new sign-ins immediately.
+            Documents are untouched — suspension is a commercial state, not a delete.
+          </p>
+        )}
       </main>
 
       {creating && (
