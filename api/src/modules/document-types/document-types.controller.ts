@@ -13,8 +13,8 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
-import { Classification, DocumentTypeStatus, FieldKind } from '../../common/db';
-import { CurrentUser, RequirePermissions } from '../../common/decorators';
+import { AccessLevel, Classification, DocumentTypeStatus, FieldKind } from '../../common/db';
+import { CurrentUser, RequireAccess, RequirePermissions } from '../../common/decorators';
 import { PERMISSIONS } from '../../common/rbac/permissions';
 import type { AuthUser } from '../../common/types/auth.types';
 import { DocumentTypesService } from './document-types.service';
@@ -250,12 +250,14 @@ export class DocumentTypesController {
   /* -- Values on a document ------------------------------------------------- */
 
   @Get('documents/:id/fields')
+  @RequireAccess({ param: 'id', type: 'DOCUMENT', level: AccessLevel.READ })
   @ApiOperation({ summary: 'What this document holds in its type’s fields' })
   values(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.types.valuesFor(user, id);
   }
 
   @Patch('documents/:id/type')
+  @RequireAccess({ param: 'id', type: 'DOCUMENT', level: AccessLevel.WRITE })
   @ApiOperation({
     summary: 'File a document as a type, or return it to untyped',
     description:
@@ -267,6 +269,7 @@ export class DocumentTypesController {
   }
 
   @Patch('documents/:id/fields/:fieldId')
+  @RequireAccess({ param: 'id', type: 'DOCUMENT', level: AccessLevel.WRITE })
   @ApiOperation({ summary: 'Record a value against one index field (TYP-3)' })
   setValue(
     @CurrentUser() user: AuthUser,

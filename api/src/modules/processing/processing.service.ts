@@ -1,5 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { DatabaseService, JobStatus, JobType, newId } from '../../common/db';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { AccessLevel, DatabaseService, JobStatus, JobType, newId } from '../../common/db';
+import type { AuthUser } from '../../common/types/auth.types';
+import { AccessService } from '../access/access.service';
 import { SearchService } from '../search/search.service';
 import { StorageService } from '../storage/storage.service';
 
@@ -46,6 +48,7 @@ export class ProcessingService {
     private readonly db: DatabaseService,
     private readonly storage: StorageService,
     private readonly search: SearchService,
+    private readonly access: AccessService,
   ) {}
 
   /* -- Enqueueing -------------------------------------------------------------- */
@@ -223,7 +226,21 @@ export class ProcessingService {
   }
 
   /** Puts a failed job back, for something that has since been fixed. */
-  async retry(organizationId: string, jobId: string) {
+  async retry(user: AuthUser, jobId: string) {
+    // The route addresses a job, so @RequireAccess cannot resolve it to the
+    // document the way it does for reindex. Resolved here instead: requeuing
+    // work on a record is a write to that record, whoever asked for it.
+    const job = await this.db.maybeOne<{ documentId: string }>(
+      `SELECT j."documentId"
+         FROM processing_jobs j
+         JOIN documents d ON d.id = j."documentId"
+        WHERE j.id = $1 AND d."organizationId" = $2`,
+      [jobId, user.organizationId],
+    );
+    if (!job) throw new NotFoundException('No such job.');
+    await this.access.assertDocument(user, job.documentId, AccessLevel.WRITE);
+
+    const organizationId = user.organizationId;
     const done = await this.db.execute(
       `UPDATE processing_jobs j
           SET status = 'PENDING', attempts = 0, error = NULL, "finishedAt" = NULL

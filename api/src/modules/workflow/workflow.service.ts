@@ -522,6 +522,8 @@ export class WorkflowService {
 
   /** Everything a given workflow currently has running. */
   async inFlight(user: AuthUser, definitionId: string) {
+    // Each row names a document. Scoped to what the caller can read, or the
+    // screen becomes a list of every record moving through the organisation.
     const items = await this.db.query(
       // An instance whose current task has a blockedReason is waiting on nobody.
       // It is reported here because this is the only screen that looks at a
@@ -538,9 +540,10 @@ export class WorkflowService {
          FROM workflow_instances i
          JOIN documents d ON d.id = i."documentId"
         WHERE i."definitionId" = $1 AND d."organizationId" = $2
+          AND ($3::text[] IS NULL OR d."folderId" = ANY($3::text[]))
         ORDER BY i."startedAt" DESC
         LIMIT 100`,
-      [definitionId, user.organizationId],
+      [definitionId, user.organizationId, await this.access.readableFolderIds(user)],
     );
     return { items, total: items.length };
   }

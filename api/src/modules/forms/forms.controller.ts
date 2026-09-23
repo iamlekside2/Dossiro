@@ -104,6 +104,11 @@ export class FormsController {
   }
 
   @Get(':id/submissions')
+  // Reading what people submitted is the same right as changing the form that
+  // asked for it. Submitting is deliberately open — that is the point of a
+  // form — but the answers are not, and this returned every submitted payload
+  // to anyone signed in, including an external party.
+  @RequirePermissions(PERMISSIONS.SETTINGS_MANAGE)
   @ApiOperation({ summary: 'What has come in, newest first' })
   submissions(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.forms.submissions(user, id);

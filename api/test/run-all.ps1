@@ -20,6 +20,7 @@ $suites = @(
   'type-filing-roles.ps1',
   'support-access.ps1',
   'workflow-grant.ps1',
+  'object-access.ps1',
   'retention.ps1',
   'endpoints.ps1'
 )

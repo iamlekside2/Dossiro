@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../../common/db';
+import { AccessService } from '../access/access.service';
 import type { AuthUser } from '../../common/types/auth.types';
 
 /**
@@ -18,7 +19,10 @@ import type { AuthUser } from '../../common/types/auth.types';
  */
 @Injectable()
 export class HrService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly access: AccessService,
+  ) {}
 
   /**
    * Everybody, with how much of their file is present.
@@ -85,6 +89,12 @@ export class HrService {
    * only sentence on this screen anybody acts on.
    */
   async file(user: AuthUser, userId: string) {
+    // Null for an administrator, meaning no restriction. For anybody else this
+    // is the set of folders they can read, and the file is assembled only from
+    // records inside it. Without this the endpoint answered "which documents
+    // name this person" to anyone who asked, including an external party with
+    // read access to a single shared folder.
+    const readable = await this.access.readableFolderIds(user);
     const person = await this.db.maybeOne<{ id: string; displayName: string; email: string }>(
       `SELECT id, "displayName", email, "jobTitle", status, "lastLoginAt"
          FROM users WHERE id = $1 AND "organizationId" = $2 AND "deletedAt" IS NULL`,
@@ -101,8 +111,9 @@ export class HrService {
          LEFT JOIN document_types t ON t.id = d."documentTypeId"
          LEFT JOIN folders fo ON fo.id = d."folderId"
         WHERE v."valueUser" = $1 AND v."organizationId" = $2
+          AND ($3::text[] IS NULL OR d."folderId" = ANY($3::text[]))
         ORDER BY d."updatedAt" DESC`,
-      [userId, user.organizationId],
+      [userId, user.organizationId, readable],
     );
 
     // A required field with no value, on a document that is about this person.
@@ -121,8 +132,9 @@ export class HrService {
            AND NOT EXISTS (
                  SELECT 1 FROM document_field_values v
                   WHERE v."documentId" = d.id AND v."fieldId" = f.id)
+           AND ($3::text[] IS NULL OR d."folderId" = ANY($3::text[]))
          ORDER BY d.name ASC, f.name ASC`,
-      [userId, user.organizationId],
+      [userId, user.organizationId, readable],
     );
 
     return { person, documents, gaps, complete: gaps.length === 0 };

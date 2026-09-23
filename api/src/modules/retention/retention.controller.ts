@@ -1,7 +1,8 @@
+import { AccessLevel } from '../../common/db';
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { IsIn, IsString, MaxLength, MinLength } from 'class-validator';
-import { CurrentUser, RequirePermissions } from '../../common/decorators';
+import { CurrentUser, RequirePermissions, RequireAccess } from '../../common/decorators';
 import { PERMISSIONS } from '../../common/rbac/permissions';
 import type { AuthUser } from '../../common/types/auth.types';
 import { RetentionService, type Decision } from './retention.service';
@@ -75,6 +76,7 @@ export class RetentionController {
   }
 
   @Get('document/:id')
+  @RequireAccess({ param: 'id', type: 'DOCUMENT', level: AccessLevel.READ })
   @ApiOperation({ summary: 'One document’s schedule, and whether it is held' })
   forDocument(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.retention.forDocument(user, id);
