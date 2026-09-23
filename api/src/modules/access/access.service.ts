@@ -51,18 +51,60 @@ export class AccessService {
     );
 
     const direct = this.resolveScope(directGrants);
-    if (direct !== null) return direct;
 
     // Scopes 2..n: the folder chain.
-    if (!doc.folderId) return AccessLevel.NONE;
-    return this.resolveFolderChain(user, doc.folderId);
+    const settled =
+      direct !== null ? direct : doc.folderId ? await this.resolveFolderChain(user, doc.folderId) : null;
+
+    // Somebody said something about this user here, granting or refusing. Either
+    // way it stands: an approval task is not a way around a deny, because the
+    // answer to "they were denied but must approve it" is to assign the step to
+    // somebody else.
+    if (settled !== null) return settled;
+
+    // Nobody said anything. An open task is itself the grant (WFL-4).
+    return (await this.taskGrant(user, doc.id)) ?? AccessLevel.NONE;
   }
 
   /** Effective level for a user on a folder. */
   async getFolderAccess(user: AuthUser, folderId: string): Promise<AccessLevel> {
     const adminLevel = this.adminOverride(user);
     if (adminLevel) return adminLevel;
-    return this.resolveFolderChain(user, folderId);
+    return (await this.resolveFolderChain(user, folderId)) ?? AccessLevel.NONE;
+  }
+
+  /**
+   * Access carried by an open workflow task on this document (WFL-4).
+   *
+   * Derived from the task rather than written as a grant row and deleted later.
+   * A row would have to be cleaned up on approval, rejection, escalation,
+   * reassignment and cancellation, and the one path that forgot would leave
+   * somebody holding access to a contract indefinitely. Computed this way the
+   * grant cannot outlive the task, because it *is* the task.
+   *
+   * It reaches the document only, never its folder, so an approver sees the one
+   * record they are deciding on and not what sits beside it.
+   */
+  private async taskGrant(user: AuthUser, documentId: string): Promise<AccessLevel | null> {
+    const rows = await this.db.query<{ grantedLevel: AccessLevel | null }>(
+      `SELECT t."grantedLevel"
+         FROM workflow_tasks t
+         JOIN workflow_instances i ON i.id = t."instanceId"
+        WHERE i."documentId" = $1
+          AND i.status = 'ACTIVE'
+          AND t.status IN ('PENDING', 'IN_PROGRESS')
+          AND t."grantedLevel" IS NOT NULL
+          AND (
+            t."assigneeId" = $2
+            OR (t."assigneeId" IS NULL AND t."assigneeGroupId" IN (
+                  SELECT "roleId" FROM user_roles WHERE "userId" = $2
+                  UNION SELECT "groupId" FROM group_members WHERE "userId" = $2))
+          )`,
+      [documentId, user.id],
+    );
+
+    const levels = rows.map((r) => r.grantedLevel).filter((l): l is AccessLevel => Boolean(l));
+    return levels.length ? strongestLevel(levels) : null;
   }
 
   /** Throws unless the user has at least `required` on the document. */
@@ -127,7 +169,12 @@ export class AccessService {
 
   // ---------------------------------------------------------------------------
 
-  private async resolveFolderChain(user: AuthUser, folderId: string): Promise<AccessLevel> {
+  /**
+   * Walks the folder chain. Returns null when no scope on it says anything
+   * about this user, which the document resolver needs to tell apart from a
+   * refusal before it consults an open task.
+   */
+  private async resolveFolderChain(user: AuthUser, folderId: string): Promise<AccessLevel | null> {
     const folder = await this.db.maybeOne<{ id: string; path: string }>(
       `SELECT id, path FROM folders WHERE id = $1 AND "organizationId" = $2`,
       [folderId, user.organizationId],
@@ -167,11 +214,13 @@ export class AccessService {
       const resolved = this.resolveScope(byFolder.get(id) ?? []);
       if (resolved !== null) return resolved;
 
-      // This folder is isolated: do not consult its ancestors.
-      if (inheritById.get(id) === false) return AccessLevel.NONE;
+      // This folder is isolated: do not consult its ancestors. Silence rather
+      // than a refusal — sealing a subtree stops what is inherited into it, it
+      // does not name a person the way a deny does.
+      if (inheritById.get(id) === false) return null;
     }
 
-    return AccessLevel.NONE;
+    return null;
   }
 
   /**

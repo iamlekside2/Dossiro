@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../../lib/api.js';
 import { ins } from './ins.js';
 import { callout, chip } from '../../ui.js';
+import LivePreview from './LivePreview.jsx';
 
 /**
  * Inspector panes for areas whose rows already carry everything they need.
@@ -74,6 +75,27 @@ export function ApprovalPane({ record }) {
         continuing past a refusal would make the approval decorative.
       </div>
     </div>
+  );
+}
+
+/**
+ * The document behind an approval task.
+ *
+ * A task's own `id` is the task, not the record it is about, so handing the row
+ * straight to the preview asks the server for a document that does not exist.
+ * Mapped here rather than by teaching the shared preview to guess, because a
+ * pane that accepts two shapes silently accepts a third one wrongly.
+ */
+export function TaskPreview({ record }) {
+  const t = record?.record;
+  if (!t?.documentId) return <Empty>Select something waiting on you.</Empty>;
+
+  return (
+    <LivePreview
+      record={{
+        record: { id: t.documentId, name: t.documentName, classification: t.classification },
+      }}
+    />
   );
 }
 

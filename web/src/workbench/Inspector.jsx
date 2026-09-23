@@ -15,6 +15,7 @@ import {
   FormPane as LiveFormPane,
   JobPane,
   ShareDetailsPane,
+  TaskPreview,
 } from './panes/Live.jsx';
 import {
   WorkflowDetailsPane,
@@ -82,7 +83,7 @@ export default function Inspector({
     // A search result is a document, so the Repository's Summary pane answers
     // for it unchanged; only the match itself needs its own describer.
     search: { preview: LivePreview, summary: DocumentSummaryPane, details: SearchMatchPane },
-    approvals: { approval: ApprovalPane, preview: LivePreview },
+    approvals: { approval: ApprovalPane, preview: TaskPreview },
     forms: { form: LiveFormPane },
     hr: { hrfile: EmployeeFilePane },
     ingest: { job: JobPane },
