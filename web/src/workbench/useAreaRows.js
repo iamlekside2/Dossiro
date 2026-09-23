@@ -276,6 +276,46 @@ function typeFlag(t) {
 }
 
 const LIVE = {
+  // The forms a tenant has built, and what state each is in (SIG-5).
+  forms: {
+    '*': {
+      label: 'forms',
+      async load({ scopeIndex = 0 } = {}) {
+        const res = await api.forms.list();
+        const items =
+          scopeIndex === 1
+            ? res.items.filter((f) => f.isPublished)
+            : scopeIndex === 2
+              ? res.items.filter((f) => !f.isPublished)
+              : res.items;
+        return {
+          rows: items.map((f) =>
+            withRecord(
+              [
+                'FRM',
+                f.name,
+                f.description || 'No description',
+                f.isPublished ? '' : 'Draft',
+                `${f.fieldCount} field${Number(f.fieldCount) === 1 ? '' : 's'}`,
+                // A form with nowhere to file is one that cannot be opened,
+                // which is worth saying on the row rather than at publish time.
+                f.targetFolderName ?? 'Nowhere yet',
+                `${f.submissionCount} received`,
+              ],
+              f,
+            ),
+          ),
+          total: items.length,
+          status: [
+            plural(items.length, 'form'),
+            `${res.items.filter((f) => f.isPublished).length} open for submissions`,
+            'Every submission is filed and indexed',
+          ],
+        };
+      },
+    },
+  },
+
   // What is waiting on you, and what is late (WFL-9). One fetch serves both:
   // the endpoint returns everything assigned to you, and lateness is a
   // property of each task rather than a different question to ask.

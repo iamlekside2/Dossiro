@@ -118,14 +118,15 @@ export const SCOPES = {
   ],
   forms: [
     'Forms',
-    'Every submission originates a workflow and becomes a searchable record.',
+    'A submission becomes a document in the form’s folder, indexed so it can be searched by its '
+      + 'own answers, and starts whatever workflow the form nominates.',
+    // The handoff listed five named forms as scopes, which only works while
+    // the list is fixed. These are states a form can be in, so the scope list
+    // holds whatever the tenant has actually built.
     [
-      ['Vendor onboarding', 0, 'Live'],
-      ['New hire pack', 0, 'Live'],
-      ['Expense claim', 0, 'Live'],
-      ['Records request', 0, 'Draft'],
-      ['Incident report', 0, 'Draft'],
-      ['Archived forms', 0, '1'],
+      ['All forms', 0, ''],
+      ['Open for submissions', 0, ''],
+      ['Drafts', 0, ''],
     ],
     0,
   ],
@@ -295,7 +296,7 @@ export const COLS = {
   capture: [['Captured item', 1], ['Pages', 86], ['Quality', 150], ['Status', 110]],
   ingest: [['Incoming file', 1], ['Proposed name', 210], ['Destination', 150], ['Status', 96]],
   invoices: [['Invoice', 1], ['Amount', 110], ['Match', 140], ['Due', 100]],
-  forms: [['Field', 1], ['Type', 110], ['Validation', 160], ['Maps to', 150]],
+  forms: [['Form', 1], ['Fields', 110], ['Files into', 160], ['Submissions', 110]],
   hr: [['Employee', 1], ['File', 120], ['Unit', 130], ['Updated', 120]],
   approvals: [['Waiting on you', 1], ['Step', 170], ['Workflow', 140], ['Due', 96]],
   sharing: [['Link', 1], ['Rights', 120], ['Expires', 130], ['Opens', 80]],

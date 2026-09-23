@@ -225,6 +225,18 @@ export const api = {
       request(`/support/tenants/${organizationId}/records?take=${take}`),
   },
 
+  /** E-forms and what has been submitted to them (SIG-5, SIG-6). */
+  forms: {
+    list: () => request('/forms'),
+    get: (id) => request(`/forms/${id}`),
+    create: (body) => request('/forms', { method: 'POST', body }),
+    update: (id, body) => request(`/forms/${id}`, { method: 'PATCH', body }),
+    publish: (id, published) =>
+      request(`/forms/${id}/published`, { method: 'PATCH', body: { published } }),
+    submit: (id, data) => request(`/forms/${id}/submissions`, { method: 'POST', body: { data } }),
+    submissions: (id) => request(`/forms/${id}/submissions`),
+  },
+
   /** Approvals in flight (WFL-9). */
   workflow: {
     tasks: () => request('/workflow/tasks'),

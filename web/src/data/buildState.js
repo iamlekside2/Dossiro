@@ -51,9 +51,11 @@ export const AREA_STATE = {
     note: 'The data model is complete, including line items with real columns. No extraction runs yet.',
   },
   forms: {
-    state: UNBUILT,
-    needs: 'A form builder (feature 17)',
-    note: 'FormDefinition and FormSubmission exist in the schema only.',
+    state: LIVE,
+    endpoint: 'GET /api/forms',
+    note: 'Real forms. A submission becomes a document in the form’s folder, is indexed so it can '
+      + 'be found by its own answers, and starts the workflow the form nominates. Building a form '
+      + 'is API-only so far — the screen lists and publishes them.',
   },
   hr: {
     state: UNBUILT,
