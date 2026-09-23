@@ -17,9 +17,9 @@ const CAPS = [
       'Documents live in cabinets, drawers and folders that nest as deep as you need. Every document carries a classification — Internal, Confidential, Restricted — and a child folder can never sit below its parent’s sensitivity.',
     ],
     list: [
-      'Folders, sub-folders and locked drawers with their own passcode',
+      'Folders and sub-folders that nest as deep as you need',
       'Classification inherited down the tree, never weakened by accident',
-      'Branches, so a document belongs to an office as well as a folder',
+      'Branches, so a folder belongs to an office as well as a parent',
     ],
   },
   {
@@ -38,7 +38,7 @@ const CAPS = [
     k: 'Search',
     title: 'Find by name, or by what’s inside',
     body: [
-      'Search across the whole repository by name, type, owner, date or classification — and, for scanned and text documents, by their actual contents. Results are always scoped to what you are allowed to see, so a search never reveals a document you can’t open.',
+      'Search across the whole repository by name, type, owner, date or classification — and, for documents that carry a text layer, by their actual contents. Scanned pages need text recognition, which is not built yet. Results are always scoped to what you are allowed to see, so a search never reveals a document you can’t open.',
     ],
     list: [
       'Metadata search across every field',
@@ -74,12 +74,12 @@ const CAPS = [
     k: 'Administration',
     title: 'Run the organisation, not just the files',
     body: [
-      'People, roles, groups and branches; single sign-on through Microsoft or Okta; custom web addresses; retention and classification rules. The administrative work lives in its own space, separate from the daily document work.',
+      'People, roles, groups and branches; a custom web address per organisation; retention and classification rules. The administrative work lives in its own space, separate from the daily document work.',
     ],
     list: [
       'Invite-only membership with tiered roles',
       'Groups and branches that mirror your org chart',
-      'SSO-ready; custom domain per organisation',
+      'A custom web address that identifies the organisation before sign-in',
     ],
   },
 ];

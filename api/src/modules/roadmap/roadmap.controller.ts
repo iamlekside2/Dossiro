@@ -13,7 +13,7 @@ import { Public } from '../../common/decorators';
  */
 
 interface PendingFeature {
-  feature: number | number[];
+  feature: number | string | Array<number | string>;
   title: string;
   /** What has to be true before this can be built. */
   blockedBy: string[];
@@ -23,6 +23,14 @@ interface PendingFeature {
 }
 
 const ROADMAP: PendingFeature[] = [
+  {
+    feature: ['TEN-4', 'TEN-5'],
+    title: 'Single sign-on',
+    blockedBy: ['An identity provider to register against', 'Per-tenant provider configuration'],
+    approach:
+      'OIDC against Entra and Okta first, since both speak it and the tenancy already resolves from the hostname before sign-in. On-premises Active Directory is LDAP rather than OIDC and is a second, separate piece. Nothing of either exists yet: there is no schema, no provider record and no callback route. Recorded here because it is a P0 requirement and was being advertised as though it were a configuration step.',
+    schemaReady: false,
+  },
   {
     feature: [1, 3],
     title: 'OCR and batch PDF conversion',
@@ -48,27 +56,11 @@ const ROADMAP: PendingFeature[] = [
     schemaReady: true,
   },
   {
-    feature: [11, 13],
-    title: 'Workflow routing and approvals',
-    blockedBy: ['Notification delivery', 'Workflow builder UI'],
-    approach:
-      'WorkflowDefinition.steps is an ordered JSON list; each step creates a WorkflowTask assigned to a user, group or role, and confers a temporary AccessLevel for the duration of the task.',
-    schemaReady: true,
-  },
-  {
     feature: 14,
     title: 'E-signatures and scribbled signatures',
     blockedBy: ['pdf-lib flattening', 'Certificate store for PAdES'],
     approach:
       'SignatureField coordinates are stored as 0-1 fractions of the page so they survive any zoom. Drawn signatures are PNGs; certificate signing is a later phase. Every signature carries an evidence bundle for disputes.',
-    schemaReady: true,
-  },
-  {
-    feature: 17,
-    title: 'E-forms',
-    blockedBy: ['Form builder UI'],
-    approach:
-      'FormDefinition.schema drives a renderer; a submission optionally merges into a docx/pdf template and can auto-start a workflow.',
     schemaReady: true,
   },
   {
@@ -116,6 +108,14 @@ export class RoadmapController {
         'Recycle bin, restore and legal hold (feature 24)',
         'WhatsApp and email upload/download with verified sender identity',
         'Delta sync feed for offline clients (feature 12, read side)',
+        'Document types with index fields, and the roles allowed to file as each (TYP-1, TYP-3)',
+        'Workflow routing and approvals, with escalation and access carried by the task (WFL-4, WFL-6)',
+        'E-forms whose submissions become filed, indexed documents (feature 17)',
+        'Retention policies and recorded disposition decisions (GOV-7)',
+        'Personnel files assembled from records that name a person (feature 16, filing side)',
+        'Text extraction so a document can be searched by its contents (feature 3, text layer only)',
+        'Branches, and a web address per tenancy that resolves before sign-in (TEN-2)',
+        'Break-glass support sessions a tenant approves, scopes and ends (PLT-2)',
       ],
       pending: ROADMAP,
     };

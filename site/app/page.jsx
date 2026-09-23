@@ -187,8 +187,9 @@ export default function Home() {
               <Tick title="Tamper-evident by design">
                 The database itself refuses to edit or delete the record — not the app, the database.
               </Tick>
-              <Tick title="Single sign-on ready">
-                Authenticate through Microsoft or Okta; passwords retire once SSO is connected.
+              <Tick title="One session at a time">
+                Signing in somewhere new ends the session you left behind, so a forgotten browser
+                is not a way in.
               </Tick>
             </div>
             <p className="mt-7">
