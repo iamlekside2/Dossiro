@@ -9,6 +9,34 @@ import {
   SupportPanel,
   UnbuiltPanel,
 } from './console/panels.jsx';
+import { ConsoleInspector } from './console/Inspector.jsx';
+import {
+  BILLING_PANES,
+  DEPLOYMENT_PANES,
+  OPERATOR_PANES,
+  TENANT_PANES,
+  billingPane,
+  deploymentPane,
+  operatorPane,
+  tenantPane,
+} from './console/panes.js';
+
+const REGION_LABEL = { 'ng-lagos-1': 'Lagos', 'ng-abuja-1': 'Abuja' };
+
+const EMPTY_HINT = {
+  tenants: 'Choose a tenant to see its plan, what it is using, and whether anyone here has looked inside it.',
+  deployment: 'Choose a tenant to see the licence its own deployment enforces.',
+  billing: 'Choose a tenant to see its seats.',
+  operators: 'Choose somebody, or open Rules to see what none of us can do.',
+};
+
+/** Which panes an area offers. */
+function panesFor(areaId) {
+  if (areaId === 'deployment') return DEPLOYMENT_PANES;
+  if (areaId === 'billing') return BILLING_PANES;
+  if (areaId === 'operators') return OPERATOR_PANES;
+  return TENANT_PANES;
+}
 import { useSession } from '../session/SessionContext.jsx';
 import { chip } from '../ui.js';
 import {
@@ -45,6 +73,70 @@ export default function PlatformConsole() {
   const [areaId, setAreaId] = useState('tenants');
   const area = areaById(areaId);
 
+  /** Which row the inspector is describing, per area. */
+  const [selected, setSelected] = useState({});
+  const [pane, setPane] = useState({});
+
+  const pick = (id) => setSelected((m) => ({ ...m, [areaId]: id }));
+  const pickPane = (id) => setPane((m) => ({ ...m, [areaId]: id }));
+
+  /**
+   * Operators live here rather than inside their panel, because the inspector
+   * has to describe whichever one is selected and a list the parent cannot see
+   * is a list the parent cannot describe.
+   */
+  const [operators, setOperators] = useState([]);
+  useEffect(() => {
+    api.platform.operators().then((r) => setOperators(r.items)).catch(() => setOperators([]));
+  }, []);
+  const operatorRow = operators.find((o) => o.id === selected.operators) ?? null;
+
+  /** Licences and sessions, fetched per tenant as one is selected. */
+  const [detail, setDetail] = useState({});
+  const chosenId = selected[areaId];
+  const chosen = tenants.find((t) => t.id === chosenId) ?? null;
+
+  useEffect(() => {
+    if (!chosen || chosen.isPlatform) return undefined;
+    let off = false;
+    Promise.all([
+      api.platform.license(chosen.id).catch(() => null),
+      api.support.sessions(chosen.id).then((r) => r.items).catch(() => []),
+    ]).then(([licence, sessions]) => {
+      if (!off) setDetail({ licence, sessions });
+    });
+    return () => {
+      off = true;
+    };
+  }, [chosen]);
+
+  function inspectorSpec() {
+    const activePane = pane[areaId] ?? panesFor(areaId)[0][0];
+
+    if (areaId === 'operators') {
+      // Rules describes nobody in particular, so it renders without a row.
+      return operatorPane(activePane, operatorRow);
+    }
+    if (!chosen) return null;
+    if (areaId === 'deployment') {
+      return deploymentPane(activePane, chosen, {
+        licence: detail.licence,
+        regionCounts: tenants
+          .filter((t) => !t.isPlatform)
+          .reduce((acc, t) => ({ ...acc, [t.region ?? 'unset']: (acc[t.region ?? 'unset'] ?? 0) + 1 }), {}),
+      });
+    }
+    if (areaId === 'billing') return billingPane(activePane, chosen);
+
+    return tenantPane(activePane, chosen, {
+      sessions: detail.sessions ?? [],
+      onRequestAccess: () => setSupporting(chosen),
+      onSuspend: () => setSuspending(chosen),
+      onActivate: () => setStatus(chosen.id, 'ACTIVE'),
+      onReactivate: () => setStatus(chosen.id, 'ACTIVE'),
+    });
+  }
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -77,7 +169,7 @@ export default function PlatformConsole() {
           most in the moment somebody is about to act on the wrong one. */}
       <div className="h-[3px] bg-ochre" aria-hidden="true" />
       <header className="flex h-[46px] items-center gap-2.5 bg-ink px-5 text-white">
-        <span className="h-[14px] w-[14px] shrink-0 bg-blue-on-dark" aria-hidden="true" />
+        <img src="/brand/dossiro-white.svg" alt="Dossiro" className="h-[17px] w-auto shrink-0" />
         <span className="text-row font-bold">Platform</span>
         <span className="text-detail text-ghost">Tenant administration</span>
         <span className="flex-1" />
@@ -117,7 +209,8 @@ export default function PlatformConsole() {
         ))}
       </nav>
 
-      <main className="mx-auto max-w-[1120px] px-5 pb-16 pt-8">
+      <main className="flex min-h-0 flex-1 items-stretch">
+        <div className="min-w-0 flex-1 overflow-y-auto px-5 pb-16 pt-8">
         <div className="mb-[22px] flex flex-wrap items-start justify-between gap-5">
           <div>
             <h1 className="mb-1 text-screen font-bold tracking-[-0.02em]">{area.heading}</h1>
@@ -137,16 +230,24 @@ export default function PlatformConsole() {
         {area.state !== REAL ? (
           <UnbuiltPanel area={area} />
         ) : area.id === 'deployment' ? (
-          <DeploymentPanel tenants={tenants} />
+          <DeploymentPanel tenants={tenants} selectedId={selected.deployment} onSelect={pick} />
         ) : area.id === 'billing' ? (
-          <BillingPanel tenants={tenants} />
+          <BillingPanel tenants={tenants} selectedId={selected.billing} onSelect={pick} />
         ) : area.id === 'support' ? (
           <SupportPanel tenants={tenants} />
         ) : area.id === 'operators' ? (
-          <OperatorsPanel />
+          <OperatorsPanel
+            items={operators}
+            selectedId={selected.operators}
+            onSelect={pick}
+          />
         ) : loading ? (
           <p className="text-row text-dim">Loading tenants…</p>
         ) : (
+          /* Rows select rather than carry their own buttons. The actions moved
+             into Lifecycle and Support access, where the consequence of each
+             is written beside it — a Suspend link in a table row says nothing
+             about what suspending does. */
           <div className="overflow-x-auto border border-line bg-surface">
             <table className="w-full border-collapse text-ui">
               <thead>
@@ -156,16 +257,21 @@ export default function PlatformConsole() {
                   <Th>Plan</Th>
                   <Th>Seats</Th>
                   <Th>Documents</Th>
-                  <Th>Domains</Th>
-                  <Th />
+                  <Th>Region</Th>
                 </tr>
               </thead>
               <tbody>
                 {tenants.map((t) => (
-                  <tr key={t.id} className="[&:last-child>td]:border-b-0">
+                  <tr
+                    key={t.id}
+                    onClick={() => pick(t.id)}
+                    className={`cursor-pointer [&:last-child>td]:border-b-0 ${
+                      selected[areaId] === t.id ? 'bg-blue-tint' : 'hover:bg-row-hover'
+                    }`}
+                  >
                     <Td>
                       <div className="text-row font-semibold text-ink">{t.name}</div>
-                      <Slug>{t.slug}</Slug>
+                      <Slug>{t.isPlatform ? 'this console' : t.slug}</Slug>
                     </Td>
                     <Td>
                       <span className={chip(STATUS_CHIP[t.status])}>{t.status}</span>
@@ -175,46 +281,8 @@ export default function PlatformConsole() {
                       {t.seatsUsed}
                       {t.seatLimit ? ` / ${t.seatLimit}` : ' / ∞'}
                     </Td>
-                    <Td>{t.documents}</Td>
-                    <Td>
-                      {t.domains.length
-                        ? t.domains.map((d) => (
-                            <div key={d.domain} className="flex items-center gap-1.5 whitespace-nowrap">
-                              {d.domain}
-                              {!d.verifiedAt && <span className={chip('ochre')}>unverified</span>}
-                            </div>
-                          ))
-                        : '—'}
-                    </Td>
-                    <Td className="flex gap-2.5 whitespace-nowrap">
-                      {/* The platform realm cannot be suspended — offering the
-                          action would only ever produce a refusal. */}
-                      {t.isPlatform ? (
-                        <Slug>This console</Slug>
-                      ) : t.status === 'SUSPENDED' || t.status === 'CLOSED' ? (
-                        <LinkButton onClick={() => setStatus(t.id, 'ACTIVE')}>Reactivate</LinkButton>
-                      ) : (
-                        <>
-                          {/* Only a trial has anywhere to be activated to.
-                              Offering it on an already-active tenant is a
-                              button that does nothing. */}
-                          {t.status === 'TRIAL' && (
-                            <LinkButton onClick={() => setStatus(t.id, 'ACTIVE')}>Activate</LinkButton>
-                          )}
-                          {/* Never fires straight from the button. This locks a
-                              whole company out of its own records, and the
-                              reason is written to a trail nobody can edit
-                              afterwards — so it is asked for first. */}
-                          {/* The only route to a customer's records, and it
-                              is deliberately as visible as Suspend — hiding it
-                              would not make it rarer, only less considered. */}
-                          <LinkButton onClick={() => setSupporting(t)}>Support access</LinkButton>
-                          <LinkButton danger onClick={() => setSuspending(t)}>
-                            Suspend
-                          </LinkButton>
-                        </>
-                      )}
-                    </Td>
+                    <Td>{Number(t.documents).toLocaleString('en-GB')}</Td>
+                    <Td>{REGION_LABEL[t.region] ?? t.region ?? '—'}</Td>
                   </tr>
                 ))}
               </tbody>
@@ -222,11 +290,24 @@ export default function PlatformConsole() {
           </div>
         )}
 
-        {area.id === 'tenants' && (
-          <p className="mt-4 max-w-[70ch] text-meta leading-[1.6] text-dim">
-            Suspending a tenant revokes every session and blocks new sign-ins immediately.
-            Documents are untouched — suspension is a commercial state, not a delete.
-          </p>
+          {area.id === 'tenants' && (
+            <p className="mt-4 max-w-[70ch] text-meta leading-[1.6] text-dim">
+              Every organisation is one tenancy. There is no self-serve signup — a tenant exists
+              because somebody here created it.
+            </p>
+          )}
+        </div>
+
+        {/* One renderer, many panes. Absent on an area with nothing to select
+            and on an unbuilt one, where there is nothing to describe. */}
+        {area.state === REAL && area.id !== 'support' && (
+          <ConsoleInspector
+            panes={panesFor(area.id)}
+            active={pane[areaId] ?? panesFor(area.id)[0][0]}
+            onSelect={pickPane}
+            empty={EMPTY_HINT[area.id] ?? 'Choose a row.'}
+            spec={inspectorSpec()}
+          />
         )}
       </main>
 

@@ -5,11 +5,10 @@ import { btn, callout, chip } from '../../ui.js';
 /**
  * The console's area bodies.
  *
- * Each is a plain table over data that exists. There is no inspector here on
- * purpose — the operator's questions are comparative ("which tenants are near
- * their seat limit", "who has looked inside anyone this month") rather than
- * about one row at a time, and a three-pane workbench would make every one of
- * them take two clicks instead of none.
+ * Each is a table over data that exists, scanned across rather than read one
+ * at a time — "which tenants are near their seat limit" is the question these
+ * answer. Selecting a row hands it to the inspector beside them, which is
+ * where anything about one tenant in particular lives.
  */
 
 const naira = (n) =>
@@ -79,7 +78,7 @@ const REGION_NAME = {
   'ng-abuja-1': 'Abuja',
 };
 
-export function DeploymentPanel({ tenants }) {
+export function DeploymentPanel({ tenants, selectedId, onSelect }) {
   const real = tenants.filter((t) => !t.isPlatform);
   const [licences, setLicences] = useState({});
 
@@ -114,7 +113,11 @@ export function DeploymentPanel({ tenants }) {
         {real.map((t) => {
           const l = licences[t.id];
           return (
-            <tr key={t.id}>
+            <tr
+              key={t.id}
+              onClick={() => onSelect?.(t.id)}
+              className={`cursor-pointer ${selectedId === t.id ? 'bg-blue-tint' : 'hover:bg-row-hover'}`}
+            >
               <Td className="font-medium">{t.name}</Td>
               <Td>{REGION_NAME[t.region] ?? t.region ?? '—'}</Td>
               <Td>
@@ -146,37 +149,9 @@ export function DeploymentPanel({ tenants }) {
         })}
       </Table>
 
-      <div className="mt-5 grid gap-3 md:grid-cols-2">
-        <div className="border border-line bg-surface p-3.5">
-          <div className="mb-2 text-label font-bold uppercase tracking-[0.07em] text-soft">
-            Where records live
-          </div>
-          {Object.entries(byRegion).map(([region, n]) => (
-            <div key={region} className="flex justify-between py-1 text-detail">
-              <span>{REGION_NAME[region] ?? region}</span>
-              <span className="text-dim">
-                {n} {n === 1 ? 'tenancy' : 'tenancies'}
-              </span>
-            </div>
-          ))}
-          <Note>Fixed at the first record. No operator action moves a tenancy between regions.</Note>
-        </div>
-
-        <div className={callout('red')}>
-          <strong>There is no remote access path.</strong>
-          <p className="mt-1.5">
-            A self-hosted deployment is diagnosed by the customer exporting a bundle, us reading it
-            in a sandbox, and them applying a signed patch. Nothing on this screen reaches their
-            server, and there is no back door to fall back on.
-          </p>
-        </div>
-      </div>
-
       <Note>
-        Seat counts here are read from each deployment’s signed licence, not from its seat column —
-        which is why raising the number in the database changes nothing the deployment enforces
-        (PLT-5). An air-gapped installation verifies the same signature with no network at all
-        (PLT-4).
+        Residency and the diagnostic route for a self-hosted deployment are in the Residency and
+        Remote support panes, each beside the constraint that makes it true.
       </Note>
     </>
   );
@@ -187,7 +162,7 @@ export function DeploymentPanel({ tenants }) {
 /** Annual value per seat, in naira. The only figure here that is a decision. */
 const PER_SEAT = 48_000;
 
-export function BillingPanel({ tenants }) {
+export function BillingPanel({ tenants, selectedId, onSelect }) {
   const real = tenants.filter((t) => !t.isPlatform);
   const seats = real.reduce((n, t) => n + (t.seatsUsed ?? 0), 0);
   const licensed = real.reduce((n, t) => n + (t.seatLimit ?? 0), 0);
@@ -196,7 +171,11 @@ export function BillingPanel({ tenants }) {
     <>
       <Table head={['Tenant', 'Plan', 'Seats used', 'Seat limit', 'Documents', 'Annual value']}>
         {real.map((t) => (
-          <tr key={t.id}>
+          <tr
+            key={t.id}
+            onClick={() => onSelect?.(t.id)}
+            className={`cursor-pointer ${selectedId === t.id ? 'bg-blue-tint' : 'hover:bg-row-hover'}`}
+          >
             <Td className="font-medium">{t.name}</Td>
             <Td>{t.plan}</Td>
             <Td>{t.seatsUsed}</Td>
@@ -321,19 +300,16 @@ const RULES = [
   ['Act without leaving an entry', 'Every consequential action is recorded, including refusals.'],
 ];
 
-export function OperatorsPanel() {
-  const state = useLoad(() => api.platform.operators(), []);
-
-  if (state.loading) return <Loading />;
-  if (state.error) return <Failed error={state.error} />;
-
-  const items = state.data?.items ?? [];
-
+export function OperatorsPanel({ items = [], selectedId, onSelect }) {
   return (
     <>
       <Table head={['Operator', 'Email', 'Tier', 'Two-factor', 'Roles', 'Last signed in']}>
         {items.map((o) => (
-          <tr key={o.id}>
+          <tr
+            key={o.id}
+            onClick={() => onSelect?.(o.id)}
+            className={`cursor-pointer ${selectedId === o.id ? 'bg-blue-tint' : 'hover:bg-row-hover'}`}
+          >
             <Td className="font-medium">{o.displayName}</Td>
             <Td>{o.email}</Td>
             <Td>{String(o.tier).replace(/_/g, ' ').toLowerCase()}</Td>
@@ -350,23 +326,9 @@ export function OperatorsPanel() {
         ))}
       </Table>
 
-      <div className="mt-5">
-        <div className="mb-2 text-label font-bold uppercase tracking-[0.07em] text-soft">
-          What none of us can do
-        </div>
-        <div className="border border-line bg-surface">
-          {RULES.map(([rule, how]) => (
-            <div key={rule} className="border-b border-line-faint px-3.5 py-2.5 last:border-b-0">
-              <div className="text-[13.5px] font-medium">{rule}</div>
-              <div className="text-chip leading-[1.5] text-dim">{how}</div>
-            </div>
-          ))}
-        </div>
-        <div className={`${callout()} mt-3`}>
-          These are enforced in the platform, not in this interface. Removing the buttons would not
-          remove the capability — the capability was never granted.
-        </div>
-      </div>
+      <Note>
+        What none of us can do is in the Rules pane, beside the reason each one holds.
+      </Note>
     </>
   );
 }
