@@ -31,7 +31,11 @@ if (-not $doc) { throw 'No PUBLIC or INTERNAL document to build share fixtures o
 $expired = (Invoke-Api POST '/shares' $tok @{ documentId = $doc.id }).body.share
 $capped = (Invoke-Api POST '/shares' $tok @{ documentId = $doc.id; maxDownloads = 2 }).body.share
 
-Invoke-Sql "UPDATE share_links SET ""expiresAt"" = now() - interval '1 day' WHERE id = '$($expired.id)';"
+# AT TIME ZONE 'UTC' because the column holds UTC and psql's now() is local.
+# A day in the past survives the hour of skew, but the value written would
+# otherwise be an hour wrong, and the next assertion written against it might
+# not be so forgiving.
+Invoke-Sql "UPDATE share_links SET ""expiresAt"" = (now() AT TIME ZONE 'UTC') - interval '1 day' WHERE id = '$($expired.id)';"
 Invoke-Sql "UPDATE share_links SET ""downloadCount"" = 2 WHERE id = '$($capped.id)';"
 
 try {

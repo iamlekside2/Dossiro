@@ -644,6 +644,72 @@ export class DocumentsService {
     return (clean || 'untitled').slice(0, 255);
   }
 
+
+  /**
+   * A rendering of a document, for somebody permitted to read but not download
+   * (VEW-2).
+   *
+   * The requirement is that viewing must not require the ability to take a
+   * copy. The content endpoint hands over the stored bytes and is therefore
+   * gated on DOWNLOAD, which left a reader with nothing — so this serves the
+   * indexed text instead. Nothing of the original file reaches the browser:
+   * no bytes, no storage key, no signed URL.
+   *
+   * It is deliberately honest about its limits. A scan with no text layer has
+   * no rendering here, and saying so is better than quietly serving the file
+   * and defeating the restriction the caller is under. Closing that case needs
+   * page images from a rasteriser, which belongs with the viewer.
+   */
+  async renderForReading(user: AuthUser, id: string) {
+    const doc = await this.findOne(user, id);
+
+    const index = await this.db.maybeOne<{ contentText: string; wordCount: number }>(
+      `SELECT i."contentText", i."wordCount"
+         FROM document_index i
+         JOIN documents d ON d.id = i."documentId"
+        WHERE i."documentId" = $1 AND d."organizationId" = $2`,
+      [id, user.organizationId],
+    );
+
+    // Reading a document is an event in its own right, and one an auditor asks
+    // about. Recorded here as well as on download, or a view-only reader would
+    // leave no trace at all.
+    await this.audit.record({
+      organizationId: user.organizationId,
+      actorId: user.id,
+      action: AuditAction.DOCUMENT_VIEW,
+      resourceType: 'Document',
+      resourceId: id,
+      resourceName: doc.name as string,
+      metadata: { event: 'rendered_for_reading' },
+    });
+
+    const text = index?.contentText?.trim();
+    if (!text) {
+      return {
+        kind: 'none' as const,
+        name: doc.name,
+        mimeType: doc.mimeType,
+        reason:
+          'This file has no text layer yet, so there is nothing that can be shown without handing '
+          + 'over the file itself. Text extraction has not run on it.',
+      };
+    }
+
+    // Capped rather than streamed. This is a reading pane, not an export, and
+    // a thousand-page contract arriving in one response helps nobody.
+    const LIMIT = 200_000;
+    return {
+      kind: 'text' as const,
+      name: doc.name,
+      mimeType: doc.mimeType,
+      classification: doc.classification,
+      wordCount: index?.wordCount ?? null,
+      truncated: text.length > LIMIT,
+      text: text.slice(0, LIMIT),
+    };
+  }
+
   /* -- Move and reclassify ---------------------------------------------------
 
      Both change where a document sits in the access model, so both need write

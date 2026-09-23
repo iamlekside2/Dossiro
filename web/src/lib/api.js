@@ -251,6 +251,13 @@ export const api = {
     remove: (id) => request(`/documents/${id}`, { method: 'DELETE' }),
 
     /**
+     * A rendering for somebody who may read but not download (VEW-2).
+     *
+     * Returns the indexed text, never the stored bytes, and needs only READ.
+     */
+    view: (id) => request(`/documents/${id}/view`),
+
+    /**
      * The document's bytes, as an object URL the browser can render.
      *
      * Not a plain address, tempting as that is. The content endpoint

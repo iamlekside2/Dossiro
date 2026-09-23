@@ -70,8 +70,28 @@ export default function LivePreview({ record }) {
           setState({ status: 'binary', url: res.url, mime, size: res.size });
         }
       })
-      .catch((err) => {
-        if (!cancelled) setState({ status: 'error', error: err });
+      .catch(async (err) => {
+        if (cancelled) return;
+
+        // 403 means read without download. Rather than leave a reader with an
+        // empty pane, ask for a rendering instead — that endpoint needs only
+        // READ and never returns the stored bytes (VEW-2).
+        if (err?.status === 403) {
+          try {
+            const rendered = await api.documents.view(doc.id);
+            if (cancelled) return;
+            setState(
+              rendered.kind === 'text'
+                ? { status: 'text', text: rendered.text, readOnly: true, truncated: rendered.truncated }
+                : { status: 'norender', reason: rendered.reason },
+            );
+            return;
+          } catch (viewErr) {
+            if (!cancelled) setState({ status: 'error', error: viewErr });
+            return;
+          }
+        }
+        setState({ status: 'error', error: err });
       });
 
     return () => {
@@ -99,21 +119,26 @@ export default function LivePreview({ record }) {
   }
 
   if (state.status === 'error') {
-    // 403 here means read without download. The content endpoint is the only
-    // route to the bytes and it is gated on DOWNLOAD, so a reader who may see
-    // the record cannot yet see inside it — the gap against VEW-2, stated
-    // rather than shown as an empty pane.
-    const denied = state.error?.status === 403;
     return (
       <div className={ins.pane}>
-        <div className={callout(denied ? 'ochre' : 'red')}>
-          <strong>{denied ? 'You can open this record but not its contents.' : 'That did not load.'}</strong>
+        <div className={callout('red')}>
+          <strong>That did not load.</strong>
           <p className="mt-1.5">
-            {denied
-              ? 'Reading a document on screen currently needs the same right as downloading it. '
-                + 'Ask whoever owns this cabinet for download access.'
-              : (state.error?.message ?? 'The document could not be fetched.')}
+            {state.error?.message ?? 'The document could not be fetched.'}
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Read access, no download right, and nothing that can be rendered without
+  // handing over the file. Said plainly rather than shown as an empty sheet.
+  if (state.status === 'norender') {
+    return (
+      <div className={ins.pane}>
+        <div className={callout('ochre')}>
+          <strong>Nothing to show on screen yet.</strong>
+          <p className="mt-1.5">{state.reason}</p>
         </div>
       </div>
     );
@@ -141,6 +166,20 @@ export default function LivePreview({ record }) {
           <pre className="whitespace-pre-wrap break-words font-sans text-[13.5px] leading-[1.7] text-ink-2">
             {state.text}
           </pre>
+
+          {state.truncated && (
+            <p className={ins.note}>
+              Shown to the first 200,000 characters. Open the document for the rest.
+            </p>
+          )}
+
+          {state.readOnly && (
+            <p className={ins.note}>
+              You may read this record but not take a copy, so this is its text rather than the
+              file itself — the original never reaches your browser. Formatting, images and
+              signatures are not shown.
+            </p>
+          )}
         </div>
       </div>
     );

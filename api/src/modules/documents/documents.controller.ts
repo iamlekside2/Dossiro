@@ -177,6 +177,20 @@ export class DocumentsController {
     return this.documents.restore(user, id);
   }
 
+  @Get(':id/view')
+  @RequireAccess({ param: 'id', type: 'DOCUMENT', level: AccessLevel.READ })
+  @ApiOperation({
+    summary: 'A rendering of the document, for reading on screen (VEW-2)',
+    description:
+      'Requires READ, not DOWNLOAD. Returns the indexed text rather than the stored bytes, so '
+      + 'somebody permitted to read a record on screen can do so without being given the ability '
+      + 'to take a copy of it. Says plainly when no rendering exists rather than falling back to '
+      + 'the original file.',
+  })
+  view(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.documents.renderForReading(user, id);
+  }
+
   @Patch(':id/folder')
   @RequireAccess({ param: 'id', type: 'DOCUMENT', level: AccessLevel.WRITE })
   @ApiOperation({
