@@ -10,6 +10,13 @@ import { AccessPane, DetailsPane, EditPane, SummaryPane, VersionsPane } from './
 import { ShareLinkPane } from './panes/Share.jsx';
 import { SupportSessionPane } from './panes/Support.jsx';
 import {
+  ApprovalPane,
+  EmployeeFilePane,
+  FormPane as LiveFormPane,
+  JobPane,
+  ShareDetailsPane,
+} from './panes/Live.jsx';
+import {
   WorkflowDetailsPane,
   WorkflowInFlightPane,
   WorkflowStepsPane,
@@ -19,17 +26,10 @@ import { TypeAccessPane, TypeDetailsPane, TypeFieldsPane } from './panes/Types.j
 import { ins } from './panes/ins.js';
 import { chip } from '../ui.js';
 import {
-  CapabilitiesPane,
-  CompliancePane,
   ConvertPane,
-  DiffPane,
   FormPane,
   HrFilePane,
-  IntegrationsPane,
   LineItemsPane,
-  RecoveryPane,
-  RedactPane,
-  RoutePane,
 } from './panes/Area.jsx';
 
 const BODIES = {
@@ -46,16 +46,9 @@ const BODIES = {
   access: AccessPane,
   details: DetailsPane,
   lines: LineItemsPane,
-  redact: RedactPane,
   convert: ConvertPane,
   form: FormPane,
-  route: RoutePane,
-  diff: DiffPane,
   hrfile: HrFilePane,
-  caps: CapabilitiesPane,
-  integrations: IntegrationsPane,
-  compliance: CompliancePane,
-  recovery: RecoveryPane,
 };
 
 export default function Inspector({
@@ -82,13 +75,17 @@ export default function Inspector({
       access: DocumentAccessPane,
     },
     audit: { details: DetailsPane },
-    sharing: { access: ShareLinkPane },
+    sharing: { access: ShareLinkPane, details: ShareDetailsPane },
     // Every pane here answers from the row's own record, so the whole area is
     // live and the illustration note never appears on it.
     types: { fields: TypeFieldsPane, details: TypeDetailsPane, access: TypeAccessPane },
     // A search result is a document, so the Repository's Summary pane answers
     // for it unchanged; only the match itself needs its own describer.
     search: { preview: LivePreview, summary: DocumentSummaryPane, details: SearchMatchPane },
+    approvals: { approval: ApprovalPane, preview: LivePreview },
+    forms: { form: LiveFormPane },
+    hr: { hrfile: EmployeeFilePane },
+    ingest: { job: JobPane },
     workflows: {
       steps: WorkflowStepsPane,
       details: WorkflowDetailsPane,
@@ -103,6 +100,8 @@ export default function Inspector({
   const illustrated = Boolean(wired) && !wired[active];
 
   const ILLUSTRATION_NOTE = {
+    approvals: 'The task is real; this pane is from the design. Approval and Preview show the actual work.',
+    sharing: 'The link is real; this pane is from the design. Link and Session show the actual settings.',
     audit: 'The event is real; this pane is from the design. Event shows the actual record.',
     sharing: 'The link is real; this pane is from the design. Link shows the actual settings.',
     search: 'The result is real; this pane is from the design. Preview, Summary and Match show the actual document.',

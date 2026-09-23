@@ -485,15 +485,18 @@ export const PANES = {
   repo: [['preview', 'Preview'], ['summary', 'Summary'], ['edit', 'Edit'], ['history', 'Versions'], ['access', 'Access']],
   search: [['summary', 'Summary'], ['preview', 'Preview'], ['details', 'Match']],
   capture: [['details', 'Scan profile'], ['preview', 'Preview'], ['convert', 'Convert']],
-  ingest: [['details', 'Extracted'], ['redact', 'Redact'], ['convert', 'Convert']],
+  ingest: [['job', 'Job']],
   invoices: [['lines', 'Line items'], ['details', 'Match'], ['preview', 'Record']],
-  forms: [['form', 'Form'], ['details', 'Field'], ['route', 'Route']],
-  hr: [['hrfile', 'Employee file'], ['details', 'Person'], ['route', 'Onboarding']],
-  approvals: [['route', 'Approval'], ['diff', 'Changes'], ['preview', 'Preview']],
+  forms: [['form', 'Form']],
+  hr: [['hrfile', 'Employee file']],
+  approvals: [['approval', 'Approval'], ['preview', 'Preview']],
   sharing: [['access', 'Link'], ['details', 'Attention'], ['preview', 'Preview']],
   types: [['fields', 'Fields'], ['details', 'Type'], ['access', 'Who can file it']],
-  audit: [['details', 'Event'], ['compliance', 'Compliance'], ['access', 'Actor']],
-  admin: [['caps', 'Capabilities'], ['details', 'Person'], ['integrations', 'Integrations'], ['recovery', 'Recovery']],
+  // Compliance needs a control register and Actor needs a per-person view;
+  // neither exists, so the event describes itself and nothing else claims to.
+  audit: [['details', 'Event']],
+  // Capabilities, Integrations and Recovery have nothing behind them.
+  admin: [['details', 'Person']],
 };
 
 export const STATUS = {
