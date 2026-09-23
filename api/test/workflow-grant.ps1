@@ -125,9 +125,10 @@ DELETE FROM access_grants WHERE id = 'wf-grant-deny';
 DELETE FROM workflow_tasks WHERE "instanceId" IN (
   SELECT id FROM workflow_instances WHERE "documentId" IN ('$($doc.id)', '$($doc2.id)'));
 DELETE FROM workflow_instances WHERE "documentId" IN ('$($doc.id)', '$($doc2.id)');
-DELETE FROM document_index_values WHERE "documentId" IN ('$($doc.id)', '$($doc2.id)');
+DELETE FROM document_field_values WHERE "documentId" IN ('$($doc.id)', '$($doc2.id)');
+DELETE FROM document_index WHERE "documentId" IN ('$($doc.id)', '$($doc2.id)');
 DELETE FROM processing_jobs WHERE "documentId" IN ('$($doc.id)', '$($doc2.id)');
-DELETE FROM change_log WHERE "documentId" IN ('$($doc.id)', '$($doc2.id)');
+DELETE FROM change_log WHERE "entityType" = 'document' AND "entityId" IN ('$($doc.id)', '$($doc2.id)');
 DELETE FROM document_versions WHERE "documentId" IN ('$($doc.id)', '$($doc2.id)');
 DELETE FROM documents WHERE id IN ('$($doc.id)', '$($doc2.id)');
 "@
