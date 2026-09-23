@@ -193,7 +193,11 @@ export class ProcessingService {
   /* -- Reading the queue --------------------------------------------------------- */
 
   /** What is on the queue, for the Ingest screen. */
-  async queue(organizationId: string, status?: JobStatus) {
+  async queue(user: AuthUser, status?: JobStatus) {
+    // Each row names a document. Scoped to what the caller can read, or the
+    // pipeline screen lists every file arriving anywhere in the organisation.
+    const organizationId = user.organizationId;
+    const readable = await this.access.readableFolderIds(user);
     const items = await this.db.query(
       `SELECT j.id, j.type, j.status, j.attempts, j."maxAttempts", j.error,
               j."createdAt", j."startedAt", j."finishedAt", j.output,
@@ -204,9 +208,10 @@ export class ProcessingService {
          LEFT JOIN folders f ON f.id = d."folderId"
         WHERE d."organizationId" = $1
           AND ($2::"JobStatus" IS NULL OR j.status = $2)
+          AND ($3::text[] IS NULL OR d."folderId" = ANY($3::text[]))
         ORDER BY j."createdAt" DESC
         LIMIT 200`,
-      [organizationId, status ?? null],
+      [organizationId, status ?? null, readable],
     );
 
     const counts = await this.db.query<{ status: JobStatus; n: string }>(
@@ -214,8 +219,9 @@ export class ProcessingService {
          FROM processing_jobs j
          JOIN documents d ON d.id = j."documentId"
         WHERE d."organizationId" = $1
+          AND ($2::text[] IS NULL OR d."folderId" = ANY($2::text[]))
         GROUP BY j.status`,
-      [organizationId],
+      [organizationId, readable],
     );
 
     return {

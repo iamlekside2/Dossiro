@@ -20,7 +20,7 @@ export class ProcessingController {
   @ApiOperation({ summary: 'What is on the pipeline, and what became of it' })
   @ApiQuery({ name: 'status', required: false, enum: JobStatus })
   queue(@CurrentUser() user: AuthUser, @Query('status') status?: JobStatus) {
-    return this.processing.queue(user.organizationId, status);
+    return this.processing.queue(user, status);
   }
 
   @Post('jobs/:id/retry')

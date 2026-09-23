@@ -119,10 +119,42 @@ if ($form) {
   Show "submitted answers are refused outright" ($subs.code -eq 403) "HTTP $($subs.code)"
 }
 
+Head "A deleted record does not become public"
+
+# Deleting a record does not declassify it, and the queue that reads a file is
+# not a way to learn its name. Both listed everything in the organisation.
+$binDoc = New-ProbeDocument -Token $adminTok -Name 'object-access-bin.txt'
+Invoke-Api DELETE "/documents/$($binDoc.id)" $adminTok | Out-Null
+
+$binAdmin = Invoke-Api GET '/documents/recycle-bin' $adminTok
+$inAdminBin = $binAdmin.body.items | Where-Object { $_.id -eq $binDoc.id }
+Show "an administrator sees it in the bin" ([bool]$inAdminBin) "total $($binAdmin.body.total)"
+
+$binOut = Invoke-Api GET '/documents/recycle-bin' $outsider
+$inOutBin = $binOut.body.items | Where-Object { $_.id -eq $binDoc.id }
+Show "the outsider does not" (-not $inOutBin) "total $($binOut.body.total)"
+
+$qAdmin = Invoke-Api GET '/processing/queue' $adminTok
+$qOut   = Invoke-Api GET '/processing/queue' $outsider
+$inAdminQ = $qAdmin.body.items | Where-Object { $_.documentId -eq $binDoc.id }
+$inOutQ   = $qOut.body.items   | Where-Object { $_.documentId -eq $binDoc.id }
+Show "the pipeline names it for an administrator" ([bool]$inAdminQ) "$(($qAdmin.body.items | Measure-Object).Count) jobs"
+Show "and not for the outsider" (-not $inOutQ) "$(($qOut.body.items | Measure-Object).Count) jobs"
+
+# The counts printed beside the list have to agree with it, or the screen reads
+# "5 pending" above one row and the scoping looks like a bug.
+# counts is a map of status -> number, so the total is the sum of its values.
+$shown = ($qOut.body.items | Measure-Object).Count
+$claimed = 0
+$qOut.body.counts.PSObject.Properties | ForEach-Object { $claimed += [int]$_.Value }
+Show "and the counts beside the list agree with it" ($claimed -eq $shown) "$claimed counted, $shown shown"
+
 Head "Cleanup"
 
 $left  = Remove-ProbeDocument -DocumentId $doc.id
 $left2 = Remove-ProbeDocument -DocumentId $hrDoc.id
-Show "the probe documents are removed" ($left -eq '0' -and $left2 -eq '0') 'the suite leaves the corpus as it found it'
+$left3 = Remove-ProbeDocument -DocumentId $binDoc.id
+Show "the probe documents are removed" ($left -eq '0' -and $left2 -eq '0' -and $left3 -eq '0') `
+  'the suite leaves the corpus as it found it'
 
 Summary

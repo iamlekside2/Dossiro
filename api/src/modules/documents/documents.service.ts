@@ -574,19 +574,26 @@ export class DocumentsService {
   }
 
   async listRecycleBin(user: AuthUser, params: { skip?: number; take?: number } = {}) {
+    // Deleting a record does not declassify it. The bin listed every deleted
+    // document in the organisation by name, to anybody signed in — including
+    // people who could not have opened it while it was still filed.
+    const readable = await this.access.readableFolderIds(user);
     const page = paginate(params.take, params.skip);
 
     const items = await this.db.query<Document>(
       `SELECT * FROM documents
         WHERE "organizationId" = $1 AND "deletedAt" IS NOT NULL
+          AND ($2::text[] IS NULL OR "folderId" = ANY($2::text[]))
         ORDER BY "deletedAt" DESC
         ${page.text}`,
-      [user.organizationId],
+      [user.organizationId, readable],
     );
 
     const total = await this.db.count(
-      `SELECT count(*) FROM documents WHERE "organizationId" = $1 AND "deletedAt" IS NOT NULL`,
-      [user.organizationId],
+      `SELECT count(*) FROM documents
+        WHERE "organizationId" = $1 AND "deletedAt" IS NOT NULL
+          AND ($2::text[] IS NULL OR "folderId" = ANY($2::text[]))`,
+      [user.organizationId, readable],
     );
 
     return { items, total };
