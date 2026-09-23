@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators';
 import { DatabaseService, newId } from '../../common/db';
@@ -34,7 +34,23 @@ export class SyncController {
     @Query('since') since?: string,
     @Query('limit') limit?: string,
   ) {
-    const cursor = since ? BigInt(since) : 0n;
+    // `since` is the sequence number the client last saw, not a date. An
+    // offline client that has never synced sends nothing and starts at zero.
+    //
+    // Validated rather than left to BigInt(), which throws a SyntaxError that
+    // surfaces as a 500 — the caller gets "Internal server error" for what is
+    // their own malformed cursor, and the server looks broken. Sending a
+    // timestamp here is the obvious wrong guess, so it is worth naming.
+    let cursor = 0n;
+    if (since !== undefined && since !== '') {
+      if (!/^\d+$/.test(since)) {
+        throw new BadRequestException(
+          `since must be a sequence number, not a date. Send the cursor from your last sync, or omit it to start from the beginning.`,
+        );
+      }
+      cursor = BigInt(since);
+    }
+
     const take = Math.min(limit ? Number(limit) : 500, 2000);
 
     // `seq` is bigint. node-postgres hands those back as strings so that values
