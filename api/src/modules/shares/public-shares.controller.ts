@@ -30,7 +30,8 @@ export class PublicSharesController {
   @Post(':token/authorize')
   @HttpCode(200)
   // Tight limit: this is the endpoint an attacker would use to brute-force
-  // a 4-character access code.
+  // a six-digit access code. A million combinations at ten tries a minute is
+  // about nineteen years of trying, which is longer than any link lives.
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @ApiOperation({
     summary: 'Exchange the access code for a short-lived download ticket',

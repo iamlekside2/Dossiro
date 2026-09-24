@@ -189,13 +189,38 @@ const FORMS = {
         label: 'Close after this many downloads',
         placeholder: 'Leave empty for no limit',
       },
+      {
+        key: 'passcode',
+        label: 'Passcode',
+        type: 'select',
+        options: [
+          ['none', 'None — the link alone opens it'],
+          ['sixdigit', 'Require a six-digit passcode'],
+        ],
+        hint:
+          'The code is generated for you and shown once, next to the link. Send it by a different '
+          + 'route than the link — a passcode in the same email protects nothing.',
+      },
     ],
     async submitFn(values, ctx) {
-      return api.shares.create(ctx.documentId, {
+      // Generated rather than typed, for two reasons. The recipient's screen is
+      // six digit boxes, so a free-text passcode would produce a link its own
+      // recipient cannot enter — which happened. And people asked to invent a
+      // code reach for something guessable; six random digits are not.
+      const passcode =
+        values.passcode === 'sixdigit'
+          ? String(Math.floor(100000 + Math.random() * 900000))
+          : undefined;
+
+      const res = await api.shares.create(ctx.documentId, {
         expiresInHours: Number(values.expiresInHours),
         allowDownload: values.allowDownload === 'true',
         maxDownloads: values.maxDownloads ? Number(values.maxDownloads) : undefined,
+        password: passcode,
       });
+      // Shown once on the done screen. It is not retrievable afterwards — the
+      // server stores only its hash.
+      return { ...res, passcode };
     },
   },
   /* -- Document types ------------------------------------------------------ */
@@ -554,6 +579,18 @@ export default function CreateDialog({ kind, context, onClose, onCreated }) {
                 >
                   Copy
                 </button>
+              </div>
+            )}
+
+            {/* Shown once: the server keeps only a hash, so closing this dialog
+                is the last time anybody can read it. */}
+            {shareUrl && result.passcode && (
+              <div className={`${callout('ochre')} mt-3`}>
+                <strong>Passcode: {result.passcode}</strong>
+                <p className="mt-1.5">
+                  Send this by a different route than the link — text it or say it, don&rsquo;t put
+                  it in the same email. It cannot be shown again, only replaced by a new link.
+                </p>
               </div>
             )}
 

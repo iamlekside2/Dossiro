@@ -236,6 +236,55 @@ function Reader({ meta, token, ticket, isDemo, onSign }) {
   const expires = meta.expiresAt ? new Date(meta.expiresAt) : null;
   const viewer = meta.viewerEmail ?? 'this recipient';
 
+  /**
+   * The real document, fetched with the ticket the passcode earned.
+   *
+   * This screen used to render the handoff's sample agreement for every share.
+   * The gate was real and the room behind it was painted on: a recipient who
+   * entered the right code was shown a Master Services Agreement whatever the
+   * sender actually shared. The sample now renders only at /s/demo, where it is
+   * the design's showpiece and nobody was sent there expecting their document.
+   */
+  const [doc, setDoc] = useState({ status: isDemo ? 'demo' : 'loading' });
+
+  useEffect(() => {
+    if (isDemo || !ticket) return undefined;
+    let off = false;
+    let objectUrl = null;
+
+    (async () => {
+      try {
+        // Inline, not attachment: the server logs this as VIEW and serves it on
+        // view-only links. Only disposition=attachment counts as a download.
+        const res = await fetch(api.publicShare.contentUrl(token, ticket));
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error(body?.message ?? `The document could not be fetched (HTTP ${res.status}).`);
+        }
+        const mime = res.headers.get('content-type') ?? meta.mimeType ?? '';
+
+        if (/^text\/|json|xml/.test(mime)) {
+          const text = await res.text();
+          if (!off) setDoc({ status: 'text', text, mime });
+        } else if (/pdf|^image\//.test(mime)) {
+          objectUrl = URL.createObjectURL(await res.blob());
+          if (!off) setDoc({ status: 'frame', url: objectUrl, mime });
+        } else {
+          // Word documents and the rest need a rendering step this deployment
+          // does not have. Saying so beats an empty sheet.
+          if (!off) setDoc({ status: 'norender', mime });
+        }
+      } catch (err) {
+        if (!off) setDoc({ status: 'error', error: err.message });
+      }
+    })();
+
+    return () => {
+      off = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [token, ticket, isDemo, meta.mimeType]);
+
   function download() {
     if (!meta.allowDownload || isDemo) return;
     window.open(api.publicShare.contentUrl(token, ticket) + '&disposition=attachment', '_blank', 'noopener');
@@ -257,10 +306,15 @@ function Reader({ meta, token, ticket, isDemo, onSign }) {
         </div>
 
         <div className="ml-auto flex gap-2">
-          <ReaderAction primary onClick={onSign}>
-            Sign
-          </ReaderAction>
-          <ReaderAction>Ask a question</ReaderAction>
+          {/* Signing and questions are the design's illustration — the signature
+              flow is a roadmap item. Offering them on a real share would invite
+              a real counterparty to sign something and have nothing happen. */}
+          {isDemo && (
+            <ReaderAction primary onClick={onSign}>
+              Sign
+            </ReaderAction>
+          )}
+          {isDemo && <ReaderAction>Ask a question</ReaderAction>}
           <ReaderAction
             off={!meta.allowDownload}
             onClick={download}
@@ -270,6 +324,7 @@ function Reader({ meta, token, ticket, isDemo, onSign }) {
           </ReaderAction>
           <ReaderAction
             off={!meta.allowPrint}
+            onClick={meta.allowPrint && !isDemo ? () => window.print() : undefined}
             title={meta.allowPrint ? undefined : 'Printing is switched off for this link'}
           >
             Print
@@ -279,7 +334,14 @@ function Reader({ meta, token, ticket, isDemo, onSign }) {
 
       <div className="flex flex-none flex-wrap justify-between gap-[14px] border-b border-red-border bg-red-bg px-5 py-[9px] text-detail text-red">
         <span>
-          This document is confidential. Download, print and forwarding are switched off, and your
+          {/* Named for what this link actually permits, not for the strictest
+              link the design could imagine. */}
+          This document is confidential.
+          {!meta.allowDownload && !meta.allowPrint
+            ? ' Download, print and forwarding are switched off, and your'
+            : !meta.allowDownload
+              ? ' Downloading and forwarding are switched off, and your'
+              : ' Forwarding it is not permitted, and your'}{' '}
           reading time is reported to the sender.
         </span>
         <span>
@@ -307,59 +369,101 @@ function Reader({ meta, token, ticket, isDemo, onSign }) {
               </div>
             )}
 
-            <div className="mb-5 flex justify-between text-label font-bold uppercase tracking-[0.07em] text-soft">
-              <span>Confidential</span>
-              <span>CG-LEG-2026-0418</span>
-            </div>
+            {doc.status === 'demo' && (
+              <>
+                <div className="mb-5 flex justify-between text-label font-bold uppercase tracking-[0.07em] text-soft">
+                  <span>Confidential</span>
+                  <span>CG-LEG-2026-0418</span>
+                </div>
 
-            <h2 className="mb-1.5 text-sheet font-bold tracking-[-0.015em]">
-              Master Services Agreement
-            </h2>
-            <p className="mb-6 text-ui text-dim">Northwind Logistics LLC and Calm Global Inc.</p>
+                <h2 className="mb-1.5 text-sheet font-bold tracking-[-0.015em]">
+                  Master Services Agreement
+                </h2>
+                <p className="mb-6 text-ui text-dim">Northwind Logistics LLC and Calm Global Inc.</p>
 
-            {PAGE_LINES.map((w, i) =>
-              w === 0 ? (
-                <div key={i} className="h-[14px]" />
-              ) : (
+                {PAGE_LINES.map((w, i) =>
+                  w === 0 ? (
+                    <div key={i} className="h-[14px]" />
+                  ) : (
+                    <div
+                      key={i}
+                      className="mb-[7px] h-[9px] bg-line-faint"
+                      style={{ width: `${w * 100}%` }}
+                    />
+                  ),
+                )}
+
                 <div
-                  key={i}
-                  className="mb-[7px] h-[9px] bg-line-faint"
-                  style={{ width: `${w * 100}%` }}
-                />
-              ),
+                  className="my-6 border-l-2 border-blue bg-blue-bg px-[14px] py-3 text-body leading-[1.6] text-ink-2"
+                >
+                  11.2&nbsp;&nbsp;Aggregate liability shall not exceed{' '}
+                  <span className="bg-highlight">twelve (12) months</span> of fees paid
+                  under this agreement.
+                </div>
+
+                <div className="mt-8 grid grid-cols-2 gap-5">
+                  <div>
+                    <div className="border-b border-ink pb-1 font-[Georgia,serif] text-head-lg italic">
+                      A. Okoro
+                    </div>
+                    <div className="mt-[5px] text-chip text-dim">Signed 14 Aug 2026</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onSign}
+                    className="h-[52px] cursor-pointer border border-dashed border-ochre-dash bg-ochre-bg text-detail font-semibold text-ochre hover:bg-highlight"
+                  >
+                    Sign here
+                    <div className="mt-0.5 text-chip font-normal">You, on behalf of Northwind</div>
+                  </button>
+                </div>
+
+                <div className="absolute bottom-4 right-11 text-label text-faint">
+                  {page} of {pages}
+                </div>
+              </>
             )}
 
-            <div
-              className="my-6 border-l-2 border-blue bg-blue-bg px-[14px] py-3 text-body leading-[1.6] text-ink-2"
-            >
-              11.2&nbsp;&nbsp;Aggregate liability shall not exceed{' '}
-              <span className="bg-highlight">twelve (12) months</span> of fees paid
-              under this agreement.
-            </div>
+            {doc.status === 'loading' && (
+              <p className="py-10 text-center text-detail text-dim">Opening the document…</p>
+            )}
 
-            <div className="mt-8 grid grid-cols-2 gap-5">
-              <div>
-                <div className="border-b border-ink pb-1 font-[Georgia,serif] text-head-lg italic">
-                  A. Okoro
-                </div>
-                <div className="mt-[5px] text-chip text-dim">Signed 14 Aug 2026</div>
+            {doc.status === 'text' && (
+              <pre className="whitespace-pre-wrap break-words font-sans text-body leading-[1.7] text-ink">
+                {doc.text}
+              </pre>
+            )}
+
+            {doc.status === 'frame' && (
+              <iframe
+                src={doc.url}
+                title={meta.name}
+                className="h-[75vh] w-full border-0"
+              />
+            )}
+
+            {doc.status === 'norender' && (
+              <div className="py-8 text-center">
+                <p className="text-body font-semibold">This document cannot be shown in the browser.</p>
+                <p className="mt-2 text-detail text-dim">
+                  {meta.name} is {doc.mime || 'a format'} this viewer cannot draw.
+                  {meta.allowDownload
+                    ? ' Download it to open it in its own application.'
+                    : ' This link does not permit downloading, so ask the sender for a readable copy.'}
+                </p>
               </div>
-              <button
-                type="button"
-                onClick={onSign}
-                className="h-[52px] cursor-pointer border border-dashed border-ochre-dash bg-ochre-bg text-detail font-semibold text-ochre hover:bg-highlight"
-              >
-                Sign here
-                <div className="mt-0.5 text-chip font-normal">You, on behalf of Northwind</div>
-              </button>
-            </div>
+            )}
 
-            <div className="absolute bottom-4 right-11 text-label text-faint">
-              {page} of {pages}
-            </div>
+            {doc.status === 'error' && (
+              <div className="py-8 text-center">
+                <p className="text-body font-semibold text-red">That did not load.</p>
+                <p className="mt-2 text-detail text-dim">{doc.error}</p>
+              </div>
+            )}
           </div>
         </div>
 
+        {isDemo && (
         <aside className="w-[264px] shrink-0 overflow-y-auto border-l border-line bg-surface-2 p-4">
           <Label>Pages</Label>
           <div className="grid grid-cols-3 gap-2">
@@ -389,6 +493,7 @@ function Reader({ meta, token, ticket, isDemo, onSign }) {
             placeholder={`Ask about page ${page}`}
           />
         </aside>
+        )}
       </div>
     </div>
   );

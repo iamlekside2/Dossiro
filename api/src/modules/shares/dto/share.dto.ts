@@ -10,6 +10,7 @@ import {
   IsString,
   MaxLength,
   Min,
+  Matches,
   MinLength,
 } from 'class-validator';
 
@@ -44,10 +45,13 @@ export class CreateShareDto {
   @Min(1)
   maxDownloads?: number;
 
+  /**
+   * Exactly six digits, because the recipient's screen is six digit boxes.
+   * The API used to accept any string up to 128 characters, which let a sender
+   * set a passcode their recipient could not physically type.
+   */
   @IsOptional()
-  @IsString()
-  @MinLength(4)
-  @MaxLength(128)
+  @Matches(/^\d{6}$/, { message: 'A share passcode is exactly six digits.' })
   password?: string;
 
   /** false = view in the browser only, no bytes (feature 18). */
