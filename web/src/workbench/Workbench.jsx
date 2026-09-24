@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useIsNarrow, useIsPhone } from '../hooks/useMediaQuery.js';
 import LockedDrawerPrompt from '../screens/LockedDrawerPrompt.jsx';
 import { LOCKED_DRAWERS, useSession } from '../session/SessionContext.jsx';
@@ -52,6 +53,21 @@ export default function Workbench() {
   const [find, setFind] = useState('');
 
   const { isUnlocked, unlockDrawer, user } = useSession();
+  const navigate = useNavigate();
+
+  // A tenancy with no cabinets is one that has never been set up, and the only
+  // person who can fix that is an administrator — so they land on setup instead
+  // of an empty repository with every verb pointing at nothing. Everyone else
+  // sees the empty workbench, which at least says why it is empty.
+  useEffect(() => {
+    if (user?.tier !== 'ORG_ADMIN' || user?.isPlatform) return;
+    api.folders
+      .tree()
+      .then((roots) => {
+        if ((roots?.length ?? 0) === 0) navigate('/setup', { replace: true });
+      })
+      .catch(() => undefined);
+  }, [user, navigate]);
   /** Scope index awaiting a drawer passcode, or null. */
   const [pendingDrawer, setPendingDrawer] = useState(null);
 

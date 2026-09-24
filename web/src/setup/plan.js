@@ -363,11 +363,26 @@ export const RAIL = {
 
 /* -- What comes after setup ----------------------------------------------- */
 
+/**
+ * The starter cabinets the setup screen proposes. Names, not a taxonomy: every
+ * organisation renames these within a month, and the point is that filing has
+ * somewhere to land on day one.
+ */
+export const STARTER_CABINETS = [
+  ['General', 'Everything that has no better home yet. Most tenants keep it.'],
+  ['Finance', 'Invoices, statements, tax. Usually the first cabinet to get its own rules.'],
+  ['Human Resources', 'Personnel files and contracts of employment. Access is typically tightest here.'],
+  ['Legal', 'Agreements and disputes. The cabinet retention and holds care most about.'],
+  ['Operations', 'The day-to-day paper of actually running the organisation.'],
+];
+
 export const LATER = [
-  ['Connect capture devices', 'Scanners, mailboxes, watched folders, WhatsApp intake.'],
-  ['Turn on integrations', 'Microsoft 365, SharePoint, Adobe, Dynamics.'],
+  ['A custom web address', 'Add and verify a hostname from Administration; sign-in resolves your tenancy from it.'],
+  ['Single sign-on', 'Entra and Okta are on the roadmap. Passwords work today, one session at a time.'],
+  ['Branding', 'A logo and one accent colour, once that screen exists. Share links carry it too.'],
+  ['Retention rules', 'Policies exist in the platform; the screen for writing them is still to come.'],
+  ['Connect capture devices', 'Scanners, mailboxes, WhatsApp intake — verified senders only.'],
   ['Build e-forms', 'Replace the paper forms people still print.'],
-  ['Tune classification', 'The model learns your naming from the first few hundred records.'],
 ];
 
 /* -- Gate ----------------------------------------------------------------- */
